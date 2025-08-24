@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 export function useAutoLogout({ 
-  timeoutMinutes = 5, // lo modifiqueee a 5 (de 30)
-  warningMinutes = 2, //lo modifiqueee a 2 (de 3)
+  timeoutMinutes = 2, // Tiempo total de inactividad antes del logout
+  warningMinutes = 1, // Tiempo de advertencia antes del logout
   onWarning 
 } = {}) {
   const { logout, user } = useAuth();
@@ -24,12 +24,25 @@ export function useAutoLogout({
     if (warningTime > 0 && onWarning) {
       warningTimeoutRef.current = setTimeout(() => {
         onWarning();
+        
+        // Limpiar el timeout original y establecer uno nuevo para el logout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        
+        // Nuevo timeout que ejecutará logout después del tiempo de advertencia
+        timeoutRef.current = setTimeout(() => {
+          logout();
+        }, warningMinutes * 60 * 1000);
       }, warningTime);
     }
-    // Timer para logout automático
-    timeoutRef.current = setTimeout(() => {
-      logout();
-    }, timeoutMinutes * 60 * 1000);
+
+    // Timer para logout automático (solo si no hay advertencia)
+    if (warningTime <= 0 || !onWarning) {
+      timeoutRef.current = setTimeout(() => {
+        logout();
+      }, timeoutMinutes * 60 * 1000);
+    }
   };
   useEffect(() => {
     if (!user) return;
@@ -61,6 +74,7 @@ export function useAutoLogout({
   }, [user, timeoutMinutes, warningMinutes, logout, onWarning]);
   return {
     resetTimer,
+    warningMinutes,
     getLastActivity: () => lastActivityRef.current,
     getRemainingTime: () => {
       const elapsed = Date.now() - lastActivityRef.current;

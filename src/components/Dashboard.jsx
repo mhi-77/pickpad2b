@@ -17,24 +17,49 @@ export default function Dashboard({ appVersion }) {
   const [hasSearched, setHasSearched] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
+  const [warningInterval, setWarningInterval] = useState(null);
   const handleWarningCallback = useCallback(() => {
     setShowWarning(true);
+    // timeoutMinutes: 2, // Cambiado a 2 minutos para pruebas
+    // warningMinutes: 1, // Advertencia 1 minuto antes
   }, []);
-
-  // Auto logout después de 30 minutos de inactividad, advertencia a 1 minuto antes
-  const { resetTimer, getRemainingTime } = useAutoLogout({
-    timeoutMinutes: 3, // Minutos de inactividad para auto logout ***lo modifiquee eran 30
-    warningMinutes: 1, // Advertencia 3 minutos antes ***lo modifiquee eran 3
+  // Auto logout después de 2 minutos de inactividad, advertencia a 1 minuto antes
+  const { resetTimer, getRemainingTime, warningMinutes } = useAutoLogout({
+    timeoutMinutes: 3, // Minutos de inactividad para auto logout
+    warningMinutes: 1, // Advertencia 1 minuto antes del logout
+      
+      // Actualizar contador cada segundo
+      // const interval = setInterval(() => {
+      //   const newRemaining = getRemainingTime();
+      //   const seconds = Math.floor(newRemaining / 1000);
+      //   setWarningSeconds(seconds);
+        
+      //   if (seconds <= 0) {
+      //     clearInterval(interval);
+      //     setShowWarning(false);
+      //     logout();
+      //   }
+      // }, 1000);
+      
+      // setWarningInterval(interval);
     onWarning: handleWarningCallback
   });
 
   const handleExtendSession = () => {
     setShowWarning(false);
+    if (warningInterval) {
+      clearInterval(warningInterval);
+      setWarningInterval(null);
+    }
     resetTimer();
   };
 
   const handleWarningLogout = () => {
     setShowWarning(false);
+    if (warningInterval) {
+      clearInterval(warningInterval);
+      setWarningInterval(null);
+    }
     logout();
   };
 
@@ -210,6 +235,7 @@ export default function Dashboard({ appVersion }) {
       
       <SessionWarningModal
         isOpen={showWarning}
+        warningMinutes={warningMinutes}
         onExtendSession={handleExtendSession}
         onLogout={handleWarningLogout}
       />

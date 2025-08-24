@@ -3,16 +3,18 @@ import { AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 
 export default function SessionWarningModal({ 
   isOpen, 
+  warningMinutes = 1,
   onExtendSession, 
   onLogout
 }) {
-  const [seconds, setSeconds] = useState(60); // 1 minuto de advertencia
+  const [seconds, setSeconds] = useState(warningMinutes * 60);
   const intervalRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
     
-    setSeconds(60); //lo modifique a 60
+    const warningSeconds = warningMinutes * 60;
+    setSeconds(warningSeconds);
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -20,9 +22,10 @@ export default function SessionWarningModal({
 
     intervalRef.current = setInterval(() => {
       setSeconds(prev => {
-        
         if (prev <= 1) {
           clearInterval(intervalRef.current);
+          // Cuando el contador llega a 0, automáticamente hacer logout
+          onLogout();
           return 0;
         }
         return prev - 1;
@@ -34,7 +37,7 @@ export default function SessionWarningModal({
         clearInterval(intervalRef.current);
       }
     };
-  }, [isOpen]);
+  }, [isOpen, warningMinutes, onLogout]);
 
   if (!isOpen) return null;
 
