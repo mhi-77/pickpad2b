@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 export function useAutoLogout({ 
-  timeoutMinutes = 3, // lo modifiqueee a 3 (de 30)
-  warningMinutes = 1, //lo modifiqueee a 1 (de 3)
+  timeoutMinutes = 5, // lo modifiqueee a 5 (de 30)
+  warningMinutes = 2, //lo modifiqueee a 2 (de 3)
   onWarning 
 } = {}) {
   const { logout, user } = useAuth();
