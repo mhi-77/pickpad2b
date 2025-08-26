@@ -12,7 +12,25 @@ export default function SearchForm({ onSearch, isLoading }) {
 
   const handleReset = () => {
     setFilters({});
-    //onSearch({});
+  };
+
+  const toggleAdvanced = () => {
+    const newShowAdvanced = !showAdvanced;
+    setShowAdvanced(newShowAdvanced);
+    
+    if (newShowAdvanced) {
+      // Al activar búsqueda avanzada, limpiar el campo documento
+      setFilters(prev => {
+        const { documento, ...rest } = prev;
+        return rest;
+      });
+    } else {
+      // Al desactivar búsqueda avanzada, limpiar campos avanzados
+      setFilters(prev => {
+        const { apellido, nombre, localidad, mesa, clase, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const updateFilter = (key, value) => {
@@ -27,7 +45,7 @@ export default function SearchForm({ onSearch, isLoading }) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Búsqueda en Padrón Electoral</h2>
         <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
+          onClick={toggleAdvanced}
           className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
         >
           <Filter className="w-5 h-5" />
@@ -38,8 +56,8 @@ export default function SearchForm({ onSearch, isLoading }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Búsqueda principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Búsqueda simple por documento */}
+        {!showAdvanced && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <div className="flex items-center space-x-2">
@@ -48,37 +66,37 @@ export default function SearchForm({ onSearch, isLoading }) {
               </div>
             </label>
             <input
-              type="tel"
+              type="number" //type="tel"
               value={filters.documento || ''}
               onChange={(e) => updateFilter('documento', e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               placeholder="Ej: 12345678"
             />
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <div className="flex items-center space-x-2">
-                <User className="w-4 h-4" />
-                <span>Apellido</span>
-              </div>
-            </label>
-            <input
-              type="text"
-              value={filters.apellido || ''}
-              onChange={(e) => updateFilter('apellido', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              placeholder="Apellido del votante"
-            />
-          </div>
-        </div>
-
-        {/* Filtros avanzados */}
+        {/* Búsqueda avanzada */}
         {showAdvanced && (
           <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Búsqueda Avanzada</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Apellido</span>
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  value={filters.apellido || ''}
+                  onChange={(e) => updateFilter('apellido', e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="Apellido del votante"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <div className="flex items-center space-x-2">
@@ -108,19 +126,6 @@ export default function SearchForm({ onSearch, isLoading }) {
                   onChange={(e) => updateFilter('localidad', e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Localidad"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Circuito
-                </label>
-                <input
-                  type="text"
-                  value={filters.circuito || ''}
-                  onChange={(e) => updateFilter('circuito', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  placeholder="Circuito electoral"
                 />
               </div>
 
