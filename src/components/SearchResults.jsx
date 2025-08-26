@@ -46,7 +46,9 @@ export default function SearchResults({ results, isLoading }) {
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
-          Padrón Electoral - Resultados ({results.length})
+        <span>
+          Padrón Electoral - {results.length > 100 ? `Resultados (${results.length})` : 'Se muestran hasta 100 resultados. Refine la búsqueda'}
+        </span>
         </h3>
         <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Download className="w-4 h-4" />
@@ -57,29 +59,29 @@ export default function SearchResults({ results, isLoading }) {
       <div className="space-y-4">
         {results.map((record) => (
           <div
-            key={record.DOCUMENTO}
+            key={record.p_documento}
             className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  {record.APELLIDO}, {record.NOMBRE}
+                  {record.p_apellido}, {record.p_nombre}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Hash className="w-4 h-4" />
-                    <span>DNI: {record.DOCUMENTO}</span>
+                    <span>DNI: {record.p_documento}</span>
                   </div>
-                  {record.CLASE && (
+                  {record.p_clase && (
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4" />
-                      <span>Clase: {record.CLASE}</span>
+                      <span>Clase: {record.p_clase}</span>
                     </div>
                   )}
-                  {record.MESA && (
+                  {record.mesa_nro && (
                     <div className="flex items-center space-x-2">
                       <Users className="w-4 h-4" />
-                      <span>Mesa: {record.MESA}</span>
+                      <span>Mesa: {record.mesa_nro}</span>
                     </div>
                   )}
                   {record.LOCALIDAD && (
@@ -94,26 +96,26 @@ export default function SearchResults({ results, isLoading }) {
                       <span>Circuito: {record.CIRCUITO}</span>
                     </div>
                   )}
-                  {record.ORDEN && (
+                  {record.p_orden && (
                     <div className="flex items-center space-x-2">
                       <Hash className="w-4 h-4" />
-                      <span>Orden: {record.ORDEN}</span>
+                      <span>Orden: {record.p_orden}</span>
                     </div>
                   )}
                   </div>
               </div>
               
               <div className="flex items-center space-x-3 ml-4">
-                {record.SEXO && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSexoColor(record.SEXO)}`}>
-                    {record.SEXO === 'M' ? 'Masculino' : record.SEXO === 'F' ? 'Femenino' : record.SEXO}
+                {record.p_sexo && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSexoColor(record.p_sexo)}`}>
+                    {record.p_sexo === 'M' ? 'Masculino' : record.p_sexo === 'F' ? 'Femenino' : record.p_sexo}
                   </span>
                 )}
-                {record.VOTO !== null && (
+                {record.p_voto !== null && (
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    record.VOTO ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    record.p_voto ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {record.VOTO ? 'Votó' : 'No votó'}
+                    {record.p_voto ? 'Votó' : 'No votó'}
                   </span>
                 )}
               </div>
