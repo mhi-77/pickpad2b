@@ -48,7 +48,7 @@ export default function SearchForm({ onSearch, isLoading }) {
               </div>
             </label>
             <input
-              type="text"
+              type="tel"
               value={filters.documento || ''}
               onChange={(e) => updateFilter('documento', e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
