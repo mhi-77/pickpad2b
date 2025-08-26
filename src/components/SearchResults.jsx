@@ -47,7 +47,7 @@ export default function SearchResults({ results, isLoading }) {
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
         <span>
-          Padrón Electoral - {results.length > 100 ? `Resultados (${results.length})` : 'Se muestran hasta 100 resultados. Refine la búsqueda'}
+          Padrón Electoral - {results.length < 50 ? `Resultados (${results.length})` : 'Al menos 50 resultados. Refine la búsqueda'}
         </span>
         </h3>
         <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">

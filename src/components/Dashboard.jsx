@@ -121,7 +121,7 @@ export default function Dashboard({ appVersion }) {
       }
       
       // Limitar resultados para mejor rendimiento
-      query = query.limit(100);
+      query = query.limit(50);
       
       const { data, error } = await query;
       
