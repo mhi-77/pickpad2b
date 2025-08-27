@@ -59,29 +59,29 @@ export default function SearchResults({ results, isLoading }) {
       <div className="space-y-4">
         {results.map((record) => (
           <div
-            key={record.p_documento}
+            key={record.documento}
             className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  {record.p_apellido}, {record.p_nombre}
+                  {record.apellido}, {record.nombre}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Hash className="w-4 h-4" />
-                    <span>DNI: {record.p_documento}</span>
+                    <span>DNI: {record.documento}</span>
                   </div>
-                  {record.p_clase && (
+                  {record.clase && (
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4" />
-                      <span>Clase: {record.p_clase}</span>
+                      <span>Clase: {record.clase}</span>
                     </div>
                   )}
-                  {record.mesa_nro && (
+                  {record.mesa_numero && (
                     <div className="flex items-center space-x-2">
                       <Users className="w-4 h-4" />
-                      <span>Mesa: {record.mesa_nro}</span>
+                      <span>Mesa: {record.mesa_numero}</span>
                     </div>
                   )}
                   {record.LOCALIDAD && (
@@ -106,16 +106,16 @@ export default function SearchResults({ results, isLoading }) {
               </div>
               
               <div className="flex items-center space-x-3 ml-4">
-                {record.p_sexo && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSexoColor(record.p_sexo)}`}>
-                    {record.p_sexo === 'M' ? 'Masculino' : record.p_sexo === 'F' ? 'Femenino' : record.p_sexo}
+                {record.sexo && (
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSexoColor(record.sexo)}`}>
+                    {record.sexo === 'M' ? 'Masculino' : record.sexo === 'F' ? 'Femenino' : record.sexo}
                   </span>
                 )}
-                {record.p_voto !== null && (
+                {record.voto_emitido !== null && (
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    record.p_voto ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {record.p_voto ? 'Votó' : 'No votó'}
+                    {record.voto_emitido ? 'Votó' : 'No votó'}
                   </span>
                 )}
               </div>

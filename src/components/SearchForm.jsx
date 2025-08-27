@@ -135,8 +135,8 @@ export default function SearchForm({ onSearch, isLoading }) {
                 </label>
                 <input
                   type="number"
-                  value={filters.mesa || ''}
-                  onChange={(e) => updateFilter('mesa', e.target.value ? parseInt(e.target.value) : undefined)}
+                  value={filters.mesa_numero || ''}
+                  onChange={(e) => updateFilter('mesa_numero', e.target.value ? parseInt(e.target.value) : undefined)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Número de mesa"
                 />

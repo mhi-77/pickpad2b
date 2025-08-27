@@ -68,28 +68,28 @@ export default function Dashboard({ appVersion }) {
     setHasSearched(true);
     
     try {
-      let query = supabase.from('bd_padron').select('*');
+      let query = supabase.from('padron').select('*');
       
       // Aplicar filtros con tipos correctos
       if (filters.documento) {
-        // p_documento es bigint - convertir a número y búsqueda exacta
+        // documento es bigint - convertir a número y búsqueda exacta
         const docNumber = parseInt(filters.documento);
         if (!isNaN(docNumber)) {
-          query = query.eq('p_documento', docNumber);
+          query = query.eq('documento', docNumber);
         } else {
           // Si no es un número válido, buscar como texto
-          query = query.ilike('p_documento', `%${filters.documento}%`);
+          query = query.ilike('documento', `%${filters.documento}%`);
         }
       }
       
       if (filters.apellido) {
         // APELLIDO es text - búsqueda parcial case-insensitive
-        query = query.ilike('p_apellido', `%${filters.apellido}%`);
+        query = query.ilike('apellido', `%${filters.apellido}%`);
       }
       
       if (filters.nombre) {
         // NOMBRE es text - búsqueda parcial case-insensitive
-        query = query.ilike('p_nombre', `%${filters.nombre}%`);
+        query = query.ilike('nombre', `%${filters.nombre}%`);
       }
 
       //! OJO ESTOS FILTROS QUE NO ESTAN MAS O HAY QUE VER BIENNNN
@@ -102,13 +102,13 @@ export default function Dashboard({ appVersion }) {
         // CIRCUITO es text - búsqueda parcial case-insensitive
         query = query.ilike('CIRCUITO', `%${filters.circuito}%`);
       }
-      //! ///////////////////////////////////////////////////////
+      // ///////////////////////////////////////////////////////
       
-      if (filters.mesa) {
+      if (filters.mesa_numero) {
         // MESA es bigint - búsqueda exacta
-        const mesaNumber = parseInt(filters.mesa);
+        const mesaNumber = parseInt(filters.mesa_numero);
         if (!isNaN(mesaNumber)) {
-          query = query.eq('mesa_nro', mesaNumber);
+          query = query.eq('mesa_numero', mesaNumber);
         }
       }
       
@@ -116,7 +116,7 @@ export default function Dashboard({ appVersion }) {
         // CLASE es bigint - búsqueda exacta
         const claseNumber = parseInt(filters.clase);
         if (!isNaN(claseNumber)) {
-          query = query.eq('p_clase', claseNumber);
+          query = query.eq('clase', claseNumber);
         }
       }
       
