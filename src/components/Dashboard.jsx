@@ -4,6 +4,8 @@ import Sidebar from './Sidebar';
 import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
 import SessionWarningModal from './SessionWarningModal';
+import FiscalizarView from './FiscalizarView';
+import StatsView from './StatsView';
 import { useAuth } from '../context/AuthContext';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
@@ -152,17 +154,11 @@ export default function Dashboard({ appVersion }) {
         );
       case 'fiscalizar':
         return (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión del Fiscal</h2>
-            <p className="text-gray-600">Funcionalidad de gestión en desarrollo.</p>
-          </div>
+          <FiscalizarView />
         );
       case 'stats':
         return (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Estadísticas</h2>
-            <p className="text-gray-600">Funcionalidad de estadística en desarrollo.</p>
-          </div>
+          <StatsView />
         );
       case 'gusers':
         return (
