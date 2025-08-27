@@ -60,7 +60,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
               className="w-1/2 flex items-center justify-center space-x-2 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
             >
               <RefreshCw className="w-5 h-5" />
-              <span>Ver Todos</span>
+              <span>Todos</span>
             </button>
           </div>
         </div>
