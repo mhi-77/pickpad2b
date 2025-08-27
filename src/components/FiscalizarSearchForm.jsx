@@ -16,17 +16,15 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Fiscalización Electoral</h2>
+ 
+          <span className="text-2xl font-bold text-gray-900">Fiscalización Mesa N° {mesaNumero}</span>
           <div className="flex items-center space-x-4 mt-2">
             <div className="flex items-center space-x-2 text-blue-600">
-              <Users className="w-4 h-4" />
-              <span className="text-sm font-medium">Mesa N° {mesaNumero}</span>
+              
             </div>
-            <div className="text-sm text-gray-600">
-              Total empadronados: {totalRegistros}
-            </div>
+            
           </div>
         </div>
       </div>
@@ -34,9 +32,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
       <form onSubmit={handleSubmit} className="space-y-4">
          <div>
          
-
-         
-          <div className="flex space-x-2">
+          <div className="flex items-center justify-between mb-4">
             <input
               type="number"
               value={documento}
@@ -72,4 +68,3 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
     </div>
   );
 }
-
