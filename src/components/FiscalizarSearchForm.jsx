@@ -51,7 +51,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+              className="flex items-center space-x-2 px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
             >
               <RefreshCw className="w-5 h-5" />
               <span>Todos</span>

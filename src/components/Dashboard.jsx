@@ -10,43 +10,78 @@ import { useAuth } from '../context/AuthContext';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
 
+/**
+ * Componente Dashboard - Panel principal de la aplicación
+ * 
+ * Propósito: Actúa como el contenedor principal de la aplicación una vez que el usuario
+ * está autenticado. Maneja la navegación entre diferentes vistas, el auto-logout por
+ * inactividad y la búsqueda en el padrón electoral.
+ * 
+ * Props:
+ * - appVersion: string - Versión de la aplicación
+ */
 export default function Dashboard({ appVersion }) {
+  // Obtener datos del usuario y función de logout del contexto de autenticación
   const { user, logout } = useAuth();
+  
+  // Estados locales para el manejo de la UI
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /**
+   * Obtiene las iniciales del tipo de usuario
+   * Si hay dos o más palabras, toma la primera letra de las dos primeras
+   * Si hay una sola palabra, toma solo la primera letra
+   */
+  const getUserInitials = (roleDescription) => {
+    if (!roleDescription) return '';
+    
+    const words = roleDescription.trim().split(/\s+/);
+    
+    if (words.length >= 2) {
+      return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    } else {
+      return words[0].charAt(0).toUpperCase();
+    }
+  };
+
+  // Estado para controlar qué vista está activa (search, fiscalizar, stats, etc.)
   const [activeView, setActiveView] = useState('search');
+  // Estado para almacenar los resultados de búsqueda en el padrón
   const [searchResults, setSearchResults] = useState([]);
+  // Estado para indicar si se está realizando una búsqueda
   const [isSearching, setIsSearching] = useState(false);
+  // Estado para saber si ya se realizó al menos una búsqueda
   const [hasSearched, setHasSearched] = useState(false);
+  // Estado para controlar la visibilidad del modal de advertencia de sesión
   const [showWarning, setShowWarning] = useState(false);
 
+  // Estado para manejar el intervalo de advertencia de sesión
   const [warningInterval, setWarningInterval] = useState(null);
+  
+  /**
+   * Callback para manejar la advertencia de sesión por inactividad
+   * Se ejecuta cuando el usuario ha estado inactivo por un tiempo determinado
+   */
   const handleWarningCallback = useCallback(() => {
     setShowWarning(true);
-    // timeoutMinutes: 2, // Cambiado a 2 minutos para pruebas
-    // warningMinutes: 1, // Advertencia 1 minuto antes
   }, []);
-  // Auto logout después de 2 minutos de inactividad, advertencia a 1 minuto antes
+  
+  /**
+   * Hook personalizado para manejar el auto-logout por inactividad
+   * Configuración:
+   * - 10 minutos de inactividad total antes del logout
+   * - Advertencia 2 minutos antes del logout
+   */
   const { resetTimer, getRemainingTime, warningMinutes } = useAutoLogout({
-    timeoutMinutes: 10, // Minutos de inactividad para auto logout
-    warningMinutes: 2, // Advertencia 1 minuto antes del logout
-      
-      // Actualizar contador cada segundo
-      // const interval = setInterval(() => {
-      //   const newRemaining = getRemainingTime();
-      //   const seconds = Math.floor(newRemaining / 1000);
-      //   setWarningSeconds(seconds);
-        
-      //   if (seconds <= 0) {
-      //     clearInterval(interval);
-      //     setShowWarning(false);
-      //     logout();
-      //   }
-      // }, 1000);
-      
-      // setWarningInterval(interval);
+    timeoutMinutes: 10,
+    warningMinutes: 2,
     onWarning: handleWarningCallback
   });
 
+  /**
+   * Maneja la extensión de la sesión cuando el usuario responde a la advertencia
+   * Oculta el modal de advertencia y reinicia el timer de inactividad
+   */
   const handleExtendSession = () => {
     setShowWarning(false);
     if (warningInterval) {
@@ -56,6 +91,10 @@ export default function Dashboard({ appVersion }) {
     resetTimer();
   };
 
+  /**
+   * Maneja el logout desde el modal de advertencia
+   * Limpia los intervalos y ejecuta el logout
+   */
   const handleWarningLogout = () => {
     setShowWarning(false);
     if (warningInterval) {
@@ -65,49 +104,59 @@ export default function Dashboard({ appVersion }) {
     logout();
   };
 
+  /**
+   * Maneja la búsqueda en el padrón electoral
+   * 
+   * Flujo:
+   * 1. Activa el estado de carga
+   * 2. Construye la consulta a Supabase basada en los filtros
+   * 3. Aplica filtros específicos según el tipo de dato
+   * 4. Limita los resultados a 50 para mejor rendimiento
+   * 5. Actualiza el estado con los resultados
+   * 
+   * @param {Object} filters - Objeto con los filtros de búsqueda
+   */
   const handleSearch = async (filters) => {
     setIsSearching(true);
     setHasSearched(true);
     
     try {
+      // Inicializar consulta base a la tabla padron
       let query = supabase.from('padron').select('*');
       
-      // Aplicar filtros con tipos correctos
+      // Aplicar filtros específicos según los datos proporcionados
       if (filters.documento) {
-        // documento es bigint - convertir a número y búsqueda exacta
+        // El documento es bigint - intentar conversión a número para búsqueda exacta
         const docNumber = parseInt(filters.documento);
         if (!isNaN(docNumber)) {
           query = query.eq('documento', docNumber);
         } else {
-          // Si no es un número válido, buscar como texto
+          // Si no es un número válido, realizar búsqueda parcial como texto
           query = query.ilike('documento', `%${filters.documento}%`);
         }
       }
       
       if (filters.apellido) {
-        // APELLIDO es text - búsqueda parcial case-insensitive
+        // Apellido es texto - búsqueda parcial insensible a mayúsculas/minúsculas
         query = query.ilike('apellido', `%${filters.apellido}%`);
       }
       
       if (filters.nombre) {
-        // NOMBRE es text - búsqueda parcial case-insensitive
+        // Nombre es texto - búsqueda parcial insensible a mayúsculas/minúsculas
         query = query.ilike('nombre', `%${filters.nombre}%`);
       }
 
-      //! OJO ESTOS FILTROS QUE NO ESTAN MAS O HAY QUE VER BIENNNN
+      // NOTA: Estos filtros pueden necesitar revisión según el esquema actual
       if (filters.localidad) {
-        // LOCALIDAD es text - búsqueda parcial case-insensitive
         query = query.ilike('LOCALIDAD', `%${filters.localidad}%`);
       }
       
       if (filters.circuito) {
-        // CIRCUITO es text - búsqueda parcial case-insensitive
         query = query.ilike('CIRCUITO', `%${filters.circuito}%`);
       }
-      // ///////////////////////////////////////////////////////
       
       if (filters.mesa_numero) {
-        // MESA es bigint - búsqueda exacta
+        // Mesa es bigint - búsqueda exacta por número
         const mesaNumber = parseInt(filters.mesa_numero);
         if (!isNaN(mesaNumber)) {
           query = query.eq('mesa_numero', mesaNumber);
@@ -115,14 +164,14 @@ export default function Dashboard({ appVersion }) {
       }
       
       if (filters.clase) {
-        // CLASE es bigint - búsqueda exacta
+        // Clase (año de nacimiento) es entero - búsqueda exacta
         const claseNumber = parseInt(filters.clase);
         if (!isNaN(claseNumber)) {
           query = query.eq('clase', claseNumber);
         }
       }
       
-      // Limitar resultados para mejor rendimiento
+      // Limitar resultados a 50 para optimizar rendimiento y UX
       query = query.limit(50);
       
       const { data, error } = await query;
@@ -141,6 +190,10 @@ export default function Dashboard({ appVersion }) {
     setIsSearching(false);
   };
 
+  /**
+   * Renderiza el contenido principal basado en la vista activa
+   * Utiliza un switch para determinar qué componente mostrar
+   */
   const renderContent = () => {
     switch (activeView) {
       case 'search':
@@ -192,6 +245,7 @@ export default function Dashboard({ appVersion }) {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Sidebar de navegación */}
       <Sidebar 
         isOpen={sidebarOpen} 
         setIsOpen={setSidebarOpen}
@@ -201,22 +255,32 @@ export default function Dashboard({ appVersion }) {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
+        {/* Header principal con botón de menú móvil y botón de logout */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Botón de menú para dispositivos móviles */}
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-xl font-semibold text-gray-900">
-                {user?.roleDescription}
-              </h1>
+              {/* Círculo con inicial del tipo de usuario y nombre */}
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                  <span className="text-white  text-xl">
+                    {getUserInitials(user?.roleDescription)}
+                  </span>
+                </div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {user?.name}
+                </h1>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Botón de cerrar sesión */}
               <button
                 onClick={logout}
                 className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all duration-200"
@@ -229,12 +293,13 @@ export default function Dashboard({ appVersion }) {
           </div>
         </header>
 
-        {/* Main content */}
+        {/* Contenido principal que cambia según la vista activa */}
         <main className="flex-1 overflow-auto p-4">
           {renderContent()}
         </main>
       </div>
       
+      {/* Modal de advertencia de sesión por inactividad */}
       <SessionWarningModal
         isOpen={showWarning}
         warningMinutes={warningMinutes}

@@ -5,28 +5,61 @@ import { supabase } from '../lib/supabase';
 import FiscalizarSearchForm from './FiscalizarSearchForm';
 import FiscalizarResults from './FiscalizarResults';
 
+/**
+ * Componente FiscalizarView - Vista principal para la fiscalización electoral
+ * 
+ * Propósito: Permite a los fiscales (usuarios con tipo 2 o 3) gestionar el proceso
+ * de votación en su mesa asignada. Incluye búsqueda de votantes, marcado de votos
+ * y estadísticas en tiempo real.
+ * 
+ * Funcionalidades:
+ * - Verificación de permisos de usuario
+ * - Carga de datos del padrón de la mesa asignada
+ * - Búsqueda de votantes por documento
+ * - Marcado de votos emitidos
+ * - Estadísticas de participación
+ */
 export default function FiscalizarView() {
+  // Obtener datos del usuario autenticado
   const { user } = useAuth();
+  
+  // Estados para el manejo de datos y UI
   const [userProfile, setUserProfile] = useState(null);
+  // Datos completos del padrón de la mesa
   const [padronData, setPadronData] = useState([]);
+  // Datos filtrados según la búsqueda actual
   const [filteredData, setFilteredData] = useState([]);
+  // Estado de carga para búsquedas
   const [isLoading, setIsLoading] = useState(false);
+  // Estado de carga para actualizaciones de votos
   const [isUpdating, setIsUpdating] = useState(false);
+  // Mensajes de error
   const [error, setError] = useState('');
+  // Control del modal de éxito
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Cargar perfil del usuario y datos del padrón
+  /**
+   * Efecto para cargar el perfil del usuario al montar el componente
+   * Se ejecuta cuando cambia el usuario autenticado
+   */
   useEffect(() => {
     loadUserProfile();
   }, [user]);
 
-  // Cargar datos del padrón cuando el perfil esté disponible
+  /**
+   * Efecto para cargar los datos del padrón cuando el perfil esté disponible
+   * Se ejecuta cuando se obtiene el número de mesa del usuario
+   */
   useEffect(() => {
     if (userProfile?.mesa_numero) {
-      handleSearch(''); // Cargar todos los registros de la mesa
+      handleSearch(''); // Cargar todos los registros de la mesa asignada
     }
   }, [userProfile?.mesa_numero]);
 
+  /**
+   * Carga el perfil del usuario desde la base de datos
+   * Verifica permisos y mesa asignada
+   */
   const loadUserProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -41,13 +74,13 @@ export default function FiscalizarView() {
         return;
       }
 
-      // Verificar que el usuario tenga permisos (tipo 2 o 3)
+      // Verificar que el usuario tenga permisos de fiscal (tipo 2 o 3)
       if (data.usuario_tipo !== 2 && data.usuario_tipo !== 3) {
         setError('No tiene permisos para acceder a la fiscalización');
         return;
       }
 
-      // Verificar que tenga mesa asignada
+      // Verificar que el usuario tenga una mesa asignada
       if (!data.mesa_numero) {
         setError('No tiene mesa asignada para fiscalizar');
         return;
@@ -60,6 +93,11 @@ export default function FiscalizarView() {
     }
   };
 
+  /**
+   * Maneja la búsqueda de votantes en el padrón de la mesa
+   * 
+   * @param {string} documento - Número de documento a buscar (vacío para todos)
+   */
   const handleSearch = async (documento) => {
     if (!userProfile?.mesa_numero) {
       setError('No se ha cargado la información de la mesa');
@@ -70,6 +108,7 @@ export default function FiscalizarView() {
     setError('');
     
     try {
+      // Construir consulta base para la mesa asignada
       let query = supabase
         .from('padron')
         .select('*')
@@ -77,7 +116,7 @@ export default function FiscalizarView() {
         .order('orden', { ascending: true });
 
       if (documento.trim()) {
-        // Buscar por documento específico
+        // Si se proporciona documento, filtrar por ese número específico
         const docNumber = parseInt(documento.trim());
         if (!isNaN(docNumber)) {
           query = query.eq('documento', docNumber);
@@ -95,7 +134,7 @@ export default function FiscalizarView() {
 
       setFilteredData(data || []);
       
-      // Si es búsqueda de "Todos" (sin documento), actualizar también padronData
+      // Si es búsqueda general (sin documento específico), actualizar datos completos
       if (!documento.trim()) {
         setPadronData(data || []);
       }
@@ -108,9 +147,15 @@ export default function FiscalizarView() {
     }
   };
 
+  /**
+   * Marca un voto como emitido en la base de datos
+   * 
+   * @param {number} documento - Número de documento del votante
+   */
   const handleMarcarVoto = async (documento) => {
     setIsUpdating(true);
     try {
+      // Actualizar el registro en la base de datos
       const { error } = await supabase
         .from('padron')
         .update({
@@ -119,7 +164,7 @@ export default function FiscalizarView() {
           voto_pick_user: user.id
         })
         .eq('documento', documento)
-        .eq('mesa_numero', userProfile.mesa_numero); // Seguridad adicional
+        .eq('mesa_numero', userProfile.mesa_numero); // Seguridad: solo mesa asignada
 
       if (error) {
         console.error('Error updating vote:', error);
@@ -127,7 +172,7 @@ export default function FiscalizarView() {
         return;
       }
 
-      // Actualizar los datos localmente
+      // Actualizar los datos localmente para reflejar el cambio inmediatamente
       const updatedPadron = padronData.map(record => 
         record.documento === documento 
           ? { 
@@ -139,12 +184,12 @@ export default function FiscalizarView() {
           : record
       );
       
-      // Solo actualizar padronData si tiene datos
+      // Actualizar datos completos solo si existen
       if (padronData.length > 0) {
         setPadronData(updatedPadron);
       }
       
-      // Actualizar también los datos filtrados
+      // Actualizar también los datos filtrados para la vista actual
       const updatedFiltered = filteredData.map(record => 
         record.documento === documento 
           ? { 
@@ -158,7 +203,7 @@ export default function FiscalizarView() {
       
       setFilteredData(updatedFiltered);
 
-      // Mostrar modal de éxito
+      // Mostrar confirmación de éxito al usuario
       setShowSuccessModal(true);
 
     } catch (error) {
@@ -169,12 +214,13 @@ export default function FiscalizarView() {
     }
   };
 
-  // Calcular estadísticas
+  // Calcular estadísticas de participación en tiempo real
   const totalEmpadronados = padronData.length;
   const totalVotaron = padronData.filter(record => record.voto_emitido).length;
   const pendientes = totalEmpadronados - totalVotaron;
   const porcentajeParticipacion = totalEmpadronados > 0 ? ((totalVotaron / totalEmpadronados) * 100).toFixed(1) : 0;
 
+  // Renderizado condicional para errores
   if (error) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -187,6 +233,7 @@ export default function FiscalizarView() {
     );
   }
 
+  // Renderizado condicional para carga inicial
   if (!userProfile) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -202,7 +249,7 @@ export default function FiscalizarView() {
 
   return (
     <div className="space-y-8">
-      {/* Estadísticas */}
+      {/* Panel de estadísticas de participación */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-center space-x-3">
@@ -247,7 +294,7 @@ export default function FiscalizarView() {
         </div>
       </div>
 
-      {/* Formulario de búsqueda */}
+      {/* Formulario de búsqueda específico para fiscalización */}
       <FiscalizarSearchForm
         onSearch={handleSearch}
         isLoading={isLoading}
@@ -255,7 +302,7 @@ export default function FiscalizarView() {
         totalRegistros={totalEmpadronados}
       />
 
-      {/* Resultados */}
+      {/* Componente de resultados con funcionalidad de marcado de votos */}
       <FiscalizarResults
         results={filteredData}
         isLoading={isLoading}
