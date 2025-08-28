@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock } from 'lucide-react';
 
 export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating }) {
   if (isLoading) {
@@ -35,7 +35,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
-          Padrón Electoral - {results.length} registro{results.length !== 1 ? 's' : ''}
+          En padrón: {results.length} registro{results.length !== 1 ? 's' : ''}
         </h3>
       </div>
 
@@ -43,7 +43,9 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
         {results.map((record) => (
           <div
             key={record.documento}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+            className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 ${
+              record.voto_emitido ? 'bg-green-50' : ''
+            }`}
           >
             <div className="flex items-center justify-between">
               {/* Información del votante */}
@@ -52,7 +54,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 <div className="flex items-center space-x-2">
                   <Hash className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">N Orden</p>
+                    <p className="text-xs text-gray-500 uppercase">Orden</p>
                     <p className="font-bold text-lg">{record.orden || '---'}</p>
                   </div>
                 </div>
@@ -61,7 +63,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 <div className="flex items-center space-x-2 md:col-span-2">
                   <User className="w-4 h-4 text-gray-500" />
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Apellido y Nombre</p>
+                    <p className="text-xs text-gray-500 uppercase">Apellido y Nombres</p>
                     <p className="font-semibold text-gray-900">
                       {record.apellido}, {record.nombre}
                     </p>
@@ -71,7 +73,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 {/* Documento y año */}
                 <div className="flex items-center space-x-4">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">DOC</p>
+                    <p className="text-xs text-gray-500 uppercase">DOC:</p>
                     <p className="font-medium">{record.documento}</p>
                   </div>
                   <div className="text-center">
@@ -79,7 +81,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                     <p className="text-xs text-gray-600">---</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase">Año</p>
+                    <p className="text-xs text-gray-500 uppercase">Clase</p>
                     <p className="font-medium">{record.clase || '---'}</p>
                   </div>
                 </div>
@@ -100,10 +102,8 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                   >
                     {isUpdating ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <CheckCircle className="w-5 h-5" />
-                    )}
-                    <span className="font-medium">Votó</span>
+                    ) : null}
+                    <span className="font-medium">No votó</span>
                   </button>
                 )}
               </div>
