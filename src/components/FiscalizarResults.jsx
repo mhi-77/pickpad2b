@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X } from 'lucide-react';
+import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X, MapPin } from 'lucide-react';
 
 export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating, showSuccessModal, setShowSuccessModal }) {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
@@ -72,48 +72,56 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
               record.voto_emitido ? 'bg-green-50' : ''
             }`}
           >
-            <div className="flex items-center justify-between">
-              {/* Información del votante */}
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                {/* N ORDEN */}
-                <div className="flex items-center space-x-2">
-                  <Hash className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Orden</p>
-                    <p className="font-bold text-lg">{record.orden || '---'}</p>
-                  </div>
-                </div>
-
-                {/* Nombre completo */}
-                <div className="flex items-center space-x-2 md:col-span-2">
-                  <User className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Apellido y Nombres</p>
-                    <p className="font-semibold text-gray-900">
-                      {record.apellido}, {record.nombre}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Documento y año */}
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">DOC:</p>
-                    <p className="font-medium">{record.documento}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 uppercase">DNI</p>
-                    <p className="text-xs text-gray-600">---</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase">Clase</p>
-                    <p className="font-medium">{record.clase || '---'}</p>
+            {/* Primera sección: Orden + Apellido/Nombre + Domicilio */}
+            <div className="grid grid-cols-[auto_1fr] gap-4 mb-3">
+              {/* Número de orden (ocupa 2 filas) */}
+              <div className="row-span-2 flex items-center justify-center">
+                <div className="text-center">
+                  <Hash className="w-5 h-5 text-gray-500 mx-auto mb-1" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="font-bold text-2xl text-blue-800">{record.orden || '---'}</span>
                   </div>
                 </div>
               </div>
 
+              {/* Apellido y Nombre (primera fila) */}
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Apellido y Nombres</p>
+                  <p className="font-semibold text-lg text-gray-900">
+                    {record.apellido}, {record.nombre}
+                  </p>
+                </div>
+              </div>
+
+              {/* Domicilio (segunda fila) */}
+              <div className="flex items-center space-x-2">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Domicilio</p>
+                  <p className="font-medium text-gray-700">
+                    {record.domicilio || 'No especificado'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Segunda sección: Documento + Clase + Botón */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <div className="flex items-center space-x-6">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Documento</p>
+                  <p className="font-bold text-gray-900">{record.documento}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase">Clase</p>
+                  <p className="font-medium text-gray-700">{record.clase || '---'}</p>
+                </div>
+              </div>
+
               {/* Botón de votó */}
-              <div className="ml-6 flex items-center space-x-3">
+              <div className="flex items-center space-x-3">
                 {record.voto_emitido ? (
                   <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
                     <CheckCircle className="w-5 h-5" />
@@ -181,7 +189,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 <p className="text-yellow-800 font-medium mb-2">
                   ⚠️ Esta acción no se puede deshacer
                 </p>
-                
+               
               </div>
               
               {selectedVotante && (
