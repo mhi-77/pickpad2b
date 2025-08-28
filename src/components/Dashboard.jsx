@@ -145,7 +145,7 @@ export default function Dashboard({ appVersion }) {
     switch (activeView) {
       case 'search':
         return (
-          <div className="space-y-6">
+          <div className="space-y-10">
             <SearchForm onSearch={handleSearch} isLoading={isSearching} />
             {hasSearched && (
               <SearchResults results={searchResults} isLoading={isSearching} />
@@ -226,7 +226,7 @@ export default function Dashboard({ appVersion }) {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-4">
           {renderContent()}
         </main>
       </div>

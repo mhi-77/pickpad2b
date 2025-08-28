@@ -73,11 +73,11 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             }`}
           >
             {/* Primera sección: Orden + Apellido/Nombre + Domicilio */}
-            <div className="grid grid-cols-[auto_1fr] gap-4 mb-3">
+            <div className="grid grid-cols-[auto_1fr] gap-2 mb-3">
               {/* Número de orden (ocupa 2 filas) */}
               <div className="row-span-2 flex items-center justify-center">
                 <div className="text-center">
-                  <Hash className="w-5 h-5 text-gray-500 mx-auto mb-1" />
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-1">ORDEN</p>
                   <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
                     <span className="font-bold text-2xl text-blue-800">{record.orden || '---'}</span>
                   </div>
@@ -116,7 +116,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Clase</p>
-                  <p className="font-medium text-gray-700">{record.clase || '---'}</p>
+                  <p className="font-medium text-gray-700 text-center">{record.clase || '---'}</p>
                 </div>
               </div>
 
