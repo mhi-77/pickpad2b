@@ -6,6 +6,12 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // No ejecutar búsqueda si el campo está vacío
+    if (!documento.trim()) {
+      return;
+    }
+    
     onSearch(documento);
   };
 
@@ -19,12 +25,11 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
       <div className="flex items-center justify-between mb-4">
         <div>
  
-          <span className="text-2xl font-bold text-gray-900">Fiscalización Mesa N° {mesaNumero}</span>
+          <h2 className="text-2xl font-bold text-gray-900">Fiscalización Mesa N° {mesaNumero}</h2>
           <div className="flex items-center space-x-4 mt-2">
-            <div className="flex items-center space-x-2 text-blue-600">
-              
-            </div>
-            
+            <p className="text-sm text-gray-500">
+              Presione "Todos" para ver el padrón completo
+            </p>
           </div>
         </div>
       </div>
@@ -42,6 +47,15 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
             />
           </div>
           <div className="flex w-full gap-3">
+            
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-1/2 flex items-center justify-center space-x-2 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+            >
+              <RefreshCw className="w-5 h-5" />
+              <span>Todos</span>
+            </button>
             <button
               type="submit"
               disabled={isLoading}
@@ -54,14 +68,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
               )}
               <span>Buscar</span>
             </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-1/2 flex items-center justify-center space-x-2 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
-            >
-              <RefreshCw className="w-5 h-5" />
-              <span>Todos</span>
-            </button>
+            
           </div>
         </div>
       </form>

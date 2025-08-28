@@ -10,7 +10,7 @@ export default function FiscalizarView() {
   const [userProfile, setUserProfile] = useState(null);
   const [padronData, setPadronData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,11 +19,12 @@ export default function FiscalizarView() {
     loadUserProfile();
   }, [user]);
 
+  // Cargar datos del padrón cuando el perfil esté disponible
   useEffect(() => {
     if (userProfile?.mesa_numero) {
-      loadPadronData();
+      handleSearch(''); // Cargar todos los registros de la mesa
     }
-  }, [userProfile]);
+  }, [userProfile?.mesa_numero]);
 
   const loadUserProfile = async () => {
     try {
@@ -58,41 +59,51 @@ export default function FiscalizarView() {
     }
   };
 
-  const loadPadronData = async () => {
+  const handleSearch = async (documento) => {
+    if (!userProfile?.mesa_numero) {
+      setError('No se ha cargado la información de la mesa');
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
+    
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('padron')
         .select('*')
         .eq('mesa_numero', userProfile.mesa_numero)
         .order('orden', { ascending: true });
 
+      if (documento.trim()) {
+        // Buscar por documento específico
+        const docNumber = parseInt(documento.trim());
+        if (!isNaN(docNumber)) {
+          query = query.eq('documento', docNumber);
+        }
+      }
+
+      const { data, error } = await query;
+
       if (error) {
-        console.error('Error loading padron:', error);
-        setError('Error al cargar los datos del padrón');
+        console.error('Error searching padron:', error);
+        setError('Error al buscar en el padrón');
+        setFilteredData([]);
         return;
       }
 
-      setPadronData(data || []);
       setFilteredData(data || []);
+      
+      // Si es búsqueda de "Todos" (sin documento), actualizar también padronData
+      if (!documento.trim()) {
+        setPadronData(data || []);
+      }
     } catch (error) {
-      console.error('Error loading padron data:', error);
-      setError('Error al cargar los datos del padrón');
+      console.error('Error during search:', error);
+      setError('Error al buscar en el padrón');
+      setFilteredData([]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSearch = (documento) => {
-    if (!documento.trim()) {
-      // Si no hay documento, mostrar todos los registros
-      setFilteredData(padronData);
-    } else {
-      // Buscar por documento exacto
-      const filtered = padronData.filter(record => 
-        record.documento.toString() === documento.trim()
-      );
-      setFilteredData(filtered);
     }
   };
 
@@ -127,7 +138,10 @@ export default function FiscalizarView() {
           : record
       );
       
-      setPadronData(updatedPadron);
+      // Solo actualizar padronData si tiene datos
+      if (padronData.length > 0) {
+        setPadronData(updatedPadron);
+      }
       
       // Actualizar también los datos filtrados
       const updatedFiltered = filteredData.map(record => 
