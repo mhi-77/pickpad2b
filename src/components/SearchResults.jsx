@@ -12,7 +12,7 @@ const getSexoColor = (sexo) => {
   }
 };
 
-export default function SearchResults({ results, isLoading }) {
+export default function SearchResults({ results, isLoading, userRole }) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -136,16 +136,19 @@ export default function SearchResults({ results, isLoading }) {
               </div>
             )}
 
-            <div className="flex items-center justify-end space-x-2">
-              <button className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                <Eye className="w-4 h-4" />
-                <span className="text-sm">Ver Detalles</span>
-              </button>
-              <button className="flex items-center space-x-1 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
-                <span className="text-sm">Descargar</span>
-              </button>
-            </div>
+            {/* Show action buttons only for users with role < 4 (SUPERUSUARIO, ADMIN, FISCAL-GEN) */}
+            {userRole && userRole < 4 && (
+              <div className="flex items-center justify-end space-x-2">
+                <button className="flex items-center space-x-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <Eye className="w-4 h-4" />
+                  <span className="text-sm">Ver Detalles</span>
+                </button>
+                <button className="flex items-center space-x-1 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                  <Download className="w-4 h-4" />
+                  <span className="text-sm">Descargar</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

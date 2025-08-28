@@ -5,7 +5,9 @@
  * @property {string} id
  * @property {string} email
  * @property {string|null} name
- * @property {string|null} username
+ * @property {number} usuario_tipo
+ * @property {number|null} mesa_numero
+ * @property {string} roleDescription
  * @property {string|null} avatar_url
  */
 
@@ -37,7 +39,7 @@
  * @property {string} [nombre]
  * @property {string} [localidad]
  * @property {string} [circuito]
- * @property {number} [mesa]
+ * @property {number} [mesa_numero]
  * @property {number} [clase]
  */
 

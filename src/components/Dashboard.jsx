@@ -27,8 +27,8 @@ export default function Dashboard({ appVersion }) {
   }, []);
   // Auto logout después de 2 minutos de inactividad, advertencia a 1 minuto antes
   const { resetTimer, getRemainingTime, warningMinutes } = useAutoLogout({
-    timeoutMinutes: 3, // Minutos de inactividad para auto logout
-    warningMinutes: 1, // Advertencia 1 minuto antes del logout
+    timeoutMinutes: 10, // Minutos de inactividad para auto logout
+    warningMinutes: 2, // Advertencia 1 minuto antes del logout
       
       // Actualizar contador cada segundo
       // const interval = setInterval(() => {
@@ -148,7 +148,11 @@ export default function Dashboard({ appVersion }) {
           <div className="space-y-10">
             <SearchForm onSearch={handleSearch} isLoading={isSearching} />
             {hasSearched && (
-              <SearchResults results={searchResults} isLoading={isSearching} />
+              <SearchResults 
+                results={searchResults} 
+                isLoading={isSearching} 
+                userRole={user?.usuario_tipo}
+              />
             )}
           </div>
         );
@@ -208,7 +212,7 @@ export default function Dashboard({ appVersion }) {
                 <Menu className="w-6 h-6" />
               </button>
               <h1 className="text-xl font-semibold text-gray-900">
-                {user?.name}
+                {user?.roleDescription}
               </h1>
             </div>
             
