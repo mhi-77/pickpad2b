@@ -13,6 +13,7 @@ export default function FiscalizarView() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Cargar perfil del usuario y datos del padrón
   useEffect(() => {
@@ -157,6 +158,9 @@ export default function FiscalizarView() {
       
       setFilteredData(updatedFiltered);
 
+      // Mostrar modal de éxito
+      setShowSuccessModal(true);
+
     } catch (error) {
       console.error('Error marking vote:', error);
       alert('Error al registrar el voto');
@@ -257,6 +261,8 @@ export default function FiscalizarView() {
         isLoading={isLoading}
         onMarcarVoto={handleMarcarVoto}
         isUpdating={isUpdating}
+        showSuccessModal={showSuccessModal}
+        setShowSuccessModal={setShowSuccessModal}
       />
     </div>
   );
