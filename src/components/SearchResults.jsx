@@ -36,7 +36,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
           <span>
-            -> {results.length < 50 ? `Resultados (${results.length}) <-` : 'Al menos 50 resultados. Refine la búsqueda <-'}
+            {results.length < 50 ? `-> Resultados (${results.length}) <-` : '->Al menos 50 resultados. Refine la búsqueda <-'}
           </span>
         </h3>
       </div>
@@ -116,7 +116,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {record.voto_emitido ? 'Votó' : 'No votó'}
+                    {record.voto_emitido ? 'Votó' : 'No.votó'}
                   </span>
                 )}
               </div>
