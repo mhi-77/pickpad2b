@@ -13,7 +13,6 @@ import FiscalizarResults from './FiscalizarResults';
  * y estadísticas en tiempo real.
  * 
  * Funcionalidades:
- * - Verificación de permisos de usuario
  * - Carga de datos del padrón de la mesa asignada
  * - Búsqueda de votantes por documento
  * - Marcado de votos emitidos
@@ -24,7 +23,6 @@ export default function FiscalizarView() {
   const { user } = useAuth();
   
   // Estados para el manejo de datos y UI
-  const [userProfile, setUserProfile] = useState(null);
   // Datos completos del padrón de la mesa
   const [padronData, setPadronData] = useState([]);
   // Datos filtrados según la búsqueda actual
@@ -39,59 +37,14 @@ export default function FiscalizarView() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   /**
-   * Efecto para cargar el perfil del usuario al montar el componente
-   * Se ejecuta cuando cambia el usuario autenticado
-   */
-  useEffect(() => {
-    loadUserProfile();
-  }, [user]);
-
-  /**
    * Efecto para cargar los datos del padrón cuando el perfil esté disponible
    * Se ejecuta cuando se obtiene el número de mesa del usuario
    */
   useEffect(() => {
-    if (userProfile?.mesa_numero) {
+    if (user?.mesa_numero) {
       handleSearch(''); // Cargar todos los registros de la mesa asignada
     }
-  }, [userProfile?.mesa_numero]);
-
-  /**
-   * Carga el perfil del usuario desde la base de datos
-   * Verifica permisos y mesa asignada
-   */
-  const loadUserProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('Error loading profile:', error);
-        setError('Error al cargar el perfil del usuario');
-        return;
-      }
-
-      // Verificar que el usuario tenga permisos de fiscal (tipo 2 o 3)
-      if (data.usuario_tipo !== 2 && data.usuario_tipo !== 3) {
-        setError('No tiene permisos para acceder a la fiscalización');
-        return;
-      }
-
-      // Verificar que el usuario tenga una mesa asignada
-      if (!data.mesa_numero) {
-        setError('No tiene mesa asignada para fiscalizar');
-        return;
-      }
-
-      setUserProfile(data);
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-      setError('Error al cargar los datos del usuario');
-    }
-  };
+  }, [user?.mesa_numero]);
 
   /**
    * Maneja la búsqueda de votantes en el padrón de la mesa
@@ -99,7 +52,7 @@ export default function FiscalizarView() {
    * @param {string} documento - Número de documento a buscar (vacío para todos)
    */
   const handleSearch = async (documento) => {
-    if (!userProfile?.mesa_numero) {
+    if (!user?.mesa_numero) {
       setError('No se ha cargado la información de la mesa');
       return;
     }
@@ -112,7 +65,7 @@ export default function FiscalizarView() {
       let query = supabase
         .from('padron')
         .select('*')
-        .eq('mesa_numero', userProfile.mesa_numero)
+        .eq('mesa_numero', user.mesa_numero)
         .order('orden', { ascending: true });
 
       if (documento.trim()) {
@@ -164,7 +117,7 @@ export default function FiscalizarView() {
           voto_pick_user: user.id
         })
         .eq('documento', documento)
-        .eq('mesa_numero', userProfile.mesa_numero); // Seguridad: solo mesa asignada
+        .eq('mesa_numero', user.mesa_numero); // Seguridad: solo mesa asignada
 
       if (error) {
         console.error('Error updating vote:', error);
@@ -220,6 +173,32 @@ export default function FiscalizarView() {
   const pendientes = totalEmpadronados - totalVotaron;
   const porcentajeParticipacion = totalEmpadronados > 0 ? ((totalVotaron / totalEmpadronados) * 100).toFixed(1) : 0;
 
+  // Verificar permisos del usuario
+  if (!user || user.usuario_tipo > 3) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center py-12">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin permisos</h3>
+          <p className="text-red-600">No tiene permisos para acceder a la fiscalización</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Verificar que el usuario tenga una mesa asignada
+  if (!user.mesa_numero) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center py-12">
+          <AlertCircle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Mesa no asignada</h3>
+          <p className="text-yellow-600">No tiene mesa asignada para fiscalizar</p>
+        </div>
+      </div>
+    );
+  }
+
   // Renderizado condicional para errores
   if (error) {
     return (
@@ -228,20 +207,6 @@ export default function FiscalizarView() {
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
           <p className="text-red-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Renderizado condicional para carga inicial
-  if (!userProfile) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-600">Cargando datos del usuario...</p>
-          </div>
         </div>
       </div>
     );
@@ -298,7 +263,7 @@ export default function FiscalizarView() {
       <FiscalizarSearchForm
         onSearch={handleSearch}
         isLoading={isLoading}
-        mesaNumero={userProfile.mesa_numero}
+        mesaNumero={user.mesa_numero}
         totalRegistros={totalEmpadronados}
       />
 

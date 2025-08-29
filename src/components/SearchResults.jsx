@@ -50,10 +50,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
           Padrón Electoral - {results.length < 50 ? `Resultados (${results.length})` : 'Al menos 50 resultados. Refine la búsqueda'}
         </span>
         </h3>
-        <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-          <Download className="w-4 h-4" />
-          <span>Exportar</span>
-        </button>
+       
       </div>
 
       <div className="space-y-4">
