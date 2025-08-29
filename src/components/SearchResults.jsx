@@ -88,15 +88,15 @@ export default function SearchResults({ results, isLoading, userRole }) {
 
             {/* Nivel 5: da_es_nuevo / da_voto_obligatorio / voto_emitido */}
             <div className="grid grid-cols-3 gap-4 mb-3">
-              <div className="flex items-center">
+              <div className="flex items-center justify-center">
                 {record.da_es_nuevo && (
                   <span className="flex items-center space-x-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    <Sparkles className="w-3 h-3" />
-                    <span>ES NUEVO</span>
+                    {/* <Sparkles className="w-3 h-3" /> */} 
+                    <span>NUEVO</span>
                   </span>
                 )}
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center justify-center">
                 {record.da_voto_obligatorio === false ? (
                   <span className="flex items-center space-x-1 text-gray-600 text-xs font-medium">
                    {/*  <XCircle className="w-3 h-3" /> */} 
@@ -104,12 +104,12 @@ export default function SearchResults({ results, isLoading, userRole }) {
                   </span>
                 ) : record.da_voto_obligatorio === true ? (
                   <span className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                    <CheckCircle className="w-3 h-3" />
+                    {/* <CheckCircle className="w-3 h-3" /> */} 
                     <span>OBLIGATORIO</span>
                   </span>
                 ) : null}
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center justify-center">
                 {record.voto_emitido !== null && (
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                     record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -129,7 +129,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   <span className="font-medium"> </span>
-                  <p className="mt-1 text-base">{record.emopicks?.dispay || 'No asignado'}</p>
+                  <p className="mt-1 text-base">{record.emopicks?.dispay || ''}</p>
                 </div>
                 <div className="flex items-center justify-end">
                   <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
