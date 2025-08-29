@@ -159,6 +159,10 @@ export default function Dashboard({ appVersion }) {
       // Inicializar consulta base a la tabla padron
       let query = supabase.from('padron').select(`
         *,
+        emopicks(
+          id,
+          dispay
+        ),
         mesas!inner(
           numero,
           establecimientos!inner(
