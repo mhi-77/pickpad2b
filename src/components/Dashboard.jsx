@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Menu, LogOut } from 'lucide-react';
 import Sidebar from './Sidebar';
 import SearchForm from './SearchForm';
@@ -55,6 +55,9 @@ export default function Dashboard({ appVersion }) {
   // Estado para controlar la visibilidad del modal de advertencia de sesión
   const [showWarning, setShowWarning] = useState(false);
 
+  // Estado para almacenar las localidades disponibles
+  const [availableLocalities, setAvailableLocalities] = useState([]);
+
   // Estado para manejar el intervalo de advertencia de sesión
   const [warningInterval, setWarningInterval] = useState(null);
   
@@ -66,6 +69,38 @@ export default function Dashboard({ appVersion }) {
     setShowWarning(true);
   }, []);
   
+  /**
+   * Carga las localidades disponibles desde la base de datos
+   * Se ejecuta una vez al montar el componente para poblar el dropdown
+   */
+  useEffect(() => {
+    fetchLocalities();
+  }, []);
+
+  /**
+   * Obtiene la lista de localidades únicas desde la tabla circuitos
+   */
+  const fetchLocalities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('circuitos')
+        .select('localidad')
+        .not('localidad', 'is', null)
+        .order('localidad');
+
+      if (error) {
+        console.error('Error fetching localities:', error);
+        return;
+      }
+
+      // Extraer localidades únicas
+      const uniqueLocalities = [...new Set(data.map(item => item.localidad))];
+      setAvailableLocalities(uniqueLocalities);
+    } catch (error) {
+      console.error('Error loading localities:', error);
+    }
+  };
+
   /**
    * Hook personalizado para manejar el auto-logout por inactividad
    * Configuración:
@@ -122,7 +157,20 @@ export default function Dashboard({ appVersion }) {
     
     try {
       // Inicializar consulta base a la tabla padron
-      let query = supabase.from('padron').select('*');
+      let query = supabase.from('padron').select(`
+        *,
+        mesas!inner(
+          numero,
+          establecimientos!inner(
+            id,
+            nombre,
+            circuitos!inner(
+              codigo,
+              localidad
+            )
+          )
+        )
+      `);
       
       // Aplicar filtros específicos según los datos proporcionados
       if (filters.documento) {
@@ -146,13 +194,12 @@ export default function Dashboard({ appVersion }) {
         query = query.ilike('nombre', `%${filters.nombre}%`);
       }
 
-      // NOTA: Estos filtros pueden necesitar revisión según el esquema actual
       if (filters.localidad) {
-        query = query.ilike('LOCALIDAD', `%${filters.localidad}%`);
+        query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filters.localidad}%`);
       }
       
       if (filters.circuito) {
-        query = query.ilike('CIRCUITO', `%${filters.circuito}%`);
+        query = query.ilike('mesas.establecimientos.circuitos.codigo', `%${filters.circuito}%`);
       }
       
       if (filters.mesa_numero) {
@@ -199,7 +246,11 @@ export default function Dashboard({ appVersion }) {
       case 'search':
         return (
           <div className="space-y-10">
-            <SearchForm onSearch={handleSearch} isLoading={isSearching} />
+            <SearchForm 
+              onSearch={handleSearch} 
+              isLoading={isSearching}
+              availableLocalities={availableLocalities}
+            />
             {hasSearched && (
               <SearchResults 
                 results={searchResults} 
@@ -268,8 +319,8 @@ export default function Dashboard({ appVersion }) {
               </button>
               {/* Círculo con inicial del tipo de usuario y nombre */}
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                  <span className="text-white  text-xl">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-lg">
                     {getUserInitials(user?.roleDescription)}
                   </span>
                 </div>

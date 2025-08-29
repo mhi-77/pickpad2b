@@ -84,16 +84,22 @@ export default function SearchResults({ results, isLoading, userRole }) {
                       <span>Mesa: {record.mesa_numero}</span>
                     </div>
                   )}
-                  {record.LOCALIDAD && (
+                  {record.domicilio && (
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-4 h-4" />
-                      <span>{record.LOCALIDAD}</span>
+                      <span>Domicilio: {record.domicilio}</span>
                     </div>
                   )}
-                  {record.CIRCUITO && (
+                  {record.mesas?.establecimientos?.circuitos?.localidad && (
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-4 h-4" />
+                      <span>Localidad: {record.mesas.establecimientos.circuitos.localidad}</span>
+                    </div>
+                  )}
+                  {record.mesas?.establecimientos?.circuitos?.codigo && (
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4" />
-                      <span>Circuito: {record.CIRCUITO}</span>
+                      <span>Circuito: {record.mesas.establecimientos.circuitos.codigo}</span>
                     </div>
                   )}
                   {record.p_orden && (

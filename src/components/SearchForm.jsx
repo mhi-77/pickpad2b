@@ -10,8 +10,9 @@ import { Search, Filter, RefreshCw, User, MapPin, Hash } from 'lucide-react';
  * Props:
  * - onSearch: function - Callback que se ejecuta cuando se realiza una búsqueda
  * - isLoading: boolean - Indica si se está procesando una búsqueda
+ * - availableLocalities: array - Lista de localidades disponibles para el dropdown
  */
-export default function SearchForm({ onSearch, isLoading }) {
+export default function SearchForm({ onSearch, isLoading, availableLocalities = [] }) {
   // Estado para almacenar todos los filtros de búsqueda
   const [filters, setFilters] = useState({});
   // Estado para controlar si se muestra la búsqueda avanzada o simple
@@ -155,13 +156,18 @@ export default function SearchForm({ onSearch, isLoading }) {
                     <span>Localidad</span>
                   </div>
                 </label>
-                <input
-                  type="text"
+                <select
                   value={filters.localidad || ''}
                   onChange={(e) => updateFilter('localidad', e.target.value)}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  placeholder="Localidad"
-                />
+                >
+                  <option value="">Todas las localidades</option>
+                  {availableLocalities.map((localidad) => (
+                    <option key={localidad} value={localidad}>
+                      {localidad}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Campo de número de mesa */}
