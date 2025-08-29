@@ -65,11 +65,11 @@ export default function SearchResults({ results, isLoading, userRole }) {
             {/* Nivel 3: Documento / Clase */}
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div className="flex items-center space-x-2 font-medium text-gray-600">
-                <Hash className="w-4 h-4" />
+               {/* <Hash className="w-4 h-4" /> */}
                 <span>DNI: {record.documento}</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
-                <FileText className="w-4 h-4" />
+                {/* <FileText className="w-4 h-4" /> */}
                 <span>Clase: {record.clase || '---'}</span>
               </div>
             </div>
@@ -129,7 +129,15 @@ export default function SearchResults({ results, isLoading, userRole }) {
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   <span className="font-medium"> </span>
-                  <p className="mt-1 text-base">{record.emopicks?.dispay || ''}</p>
+                  <div className="mt-1">
+                    {record.emopicks?.dispay ? (
+                      <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                        {record.emopicks.dispay}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-sm">No asignado</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-end">
                   <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
