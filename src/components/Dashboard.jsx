@@ -223,7 +223,7 @@ export default function Dashboard({ appVersion }) {
       }
       
       // Limitar resultados a 50 para optimizar rendimiento y UX
-      query = query.limit(50);
+      query = query.order('apellido', { ascending: true }).order('nombre', { ascending: true }).limit(50);
       
       const { data, error } = await query;
       

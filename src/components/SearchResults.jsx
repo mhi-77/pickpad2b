@@ -36,7 +36,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
           <span>
-            Padrón Electoral - {results.length < 50 ? `Resultados (${results.length})` : 'Al menos 50 resultados. Refine la búsqueda'}
+            -> {results.length < 50 ? `Resultados (${results.length}) <-` : 'Al menos 50 resultados. Refine la búsqueda <-'}
           </span>
         </h3>
       </div>
@@ -98,20 +98,22 @@ export default function SearchResults({ results, isLoading, userRole }) {
               </div>
               <div className="flex items-center justify-center">
                 {record.da_voto_obligatorio === false ? (
-                  <span className="flex items-center space-x-1 text-gray-600 text-xs font-medium">
-                   {/*  <XCircle className="w-3 h-3" /> */} 
-                    <span>NO OBLIGADO</span>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+              {/* <span className="flex items-center space-x-1 text-gray-600 text-xs font-medium">
+                    <XCircle className="w-3 h-3" /> */} 
+                    <span>NO.OBLIGADO</span>
                   </span>
                 ) : record.da_voto_obligatorio === true ? (
-                  <span className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                    {/* <CheckCircle className="w-3 h-3" /> */} 
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                  {/* <span className="flex items-center space-x-1 text-green-600 text-sm font-medium">
+                    <CheckCircle className="w-3 h-3" /> */} 
                     <span>OBLIGATORIO</span>
                   </span>
                 ) : null}
               </div>
               <div className="flex items-center justify-center">
                 {record.voto_emitido !== null && (
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                     {record.voto_emitido ? 'Votó' : 'No votó'}
@@ -123,7 +125,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
             {/* Nivel 6: Solo visible para usuarios tipo 3 o inferior */}
             {userRole && userRole <= 3 && (
               <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-100">
-                <div className="text-sm text-gray-600 text-center">
+                <div className="text-xs text-gray-600 text-center">
                   <span className="font-medium"> </span>
                   <p className="mt-1"> {record.da_texto_libre || ''}</p>
                 </div>
@@ -131,11 +133,11 @@ export default function SearchResults({ results, isLoading, userRole }) {
                   <span className="font-medium"> </span>
                   <div className="mt-1">
                     {record.emopicks?.dispay ? (
-                      <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                      <span className="px-2 py-2 bg-yellow-100 text-yellow-800 rounded-full text-xl font-medium">
                         {record.emopicks.dispay}
                       </span>
                     ) : (
-                      <span className="text-gray-500 text-sm">No asignado</span>
+                      <span className="text-gray-500 text-sm"> </span>
                     )}
                   </div>
                 </div>
