@@ -9,6 +9,7 @@ import StatsView from './StatsView';
 import { useAuth } from '../context/AuthContext';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
+import SignupForm from './SignupForm';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
@@ -274,9 +275,20 @@ export default function Dashboard({ appVersion }) {
         );
       case 'gusers':
         return (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Usuarios</h2>
-            <p className="text-gray-600">Funcionalidad de gestión de usuarios en desarrollo.</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Usuarios</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Crear Nuevo Usuario</h3>
+                  <SignupForm />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Lista de Usuarios</h3>
+                  <p className="text-gray-600">Aquí se mostrará la lista de usuarios registrados.</p>
+                </div>
+              </div>
+            </div>
           </div>
         );
       case 'padrones':
