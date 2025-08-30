@@ -58,6 +58,8 @@ export default function Dashboard({ appVersion }) {
 
   // Estado para almacenar las localidades disponibles
   const [availableLocalities, setAvailableLocalities] = useState([]);
+  // Estado para almacenar los emopicks disponibles
+  const [availableEmopicks, setAvailableEmopicks] = useState([]);
 
   // Estado para manejar el intervalo de advertencia de sesión
   const [warningInterval, setWarningInterval] = useState(null);
@@ -76,6 +78,7 @@ export default function Dashboard({ appVersion }) {
    */
   useEffect(() => {
     fetchLocalities();
+    fetchEmopicks();
   }, []);
 
   /**
@@ -99,6 +102,27 @@ export default function Dashboard({ appVersion }) {
       setAvailableLocalities(uniqueLocalities);
     } catch (error) {
       console.error('Error loading localities:', error);
+    }
+  };
+
+  /**
+   * Obtiene la lista de emopicks disponibles desde la base de datos
+   */
+  const fetchEmopicks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emopicks')
+        .select('id, dispay')
+        .order('id');
+
+      if (error) {
+        console.error('Error fetching emopicks:', error);
+        return;
+      }
+
+      setAvailableEmopicks(data || []);
+    } catch (error) {
+      console.error('Error loading emopicks:', error);
     }
   };
 
@@ -224,7 +248,8 @@ export default function Dashboard({ appVersion }) {
       }
       
       // Limitar resultados a 50 para optimizar rendimiento y UX
-      query = query.order('apellido', { ascending: true }).order('nombre', { ascending: true }).limit(50);
+     // query = query.order('apellido', { ascending: true }).order('nombre', { ascending: true }).limit(50);
+      query = query.order('orden', { ascending: true }).limit(50);
       
       const { data, error } = await query;
       
@@ -261,6 +286,7 @@ export default function Dashboard({ appVersion }) {
                 results={searchResults} 
                 isLoading={isSearching} 
                 userRole={user?.usuario_tipo}
+                availableEmopicks={availableEmopicks}
               />
             )}
           </div>

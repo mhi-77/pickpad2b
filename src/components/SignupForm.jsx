@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
+import { User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [usuarioTipo, setUsuarioTipo] = useState(4); // Default: Fiscal
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Opciones de tipos de usuario disponibles para asignación
+  const userTypeOptions = [
+    { value: 1, label: 'SUPERUSUARIO', description: 'Acceso completo al sistema' },
+    { value: 2, label: 'ADMINISTRADOR', description: 'Gestión de usuarios y padrones' },
+    { value: 3, label: 'SUPERVISOR', description: 'Supervisión y estadísticas' },
+    { value: 4, label: 'FISCAL', description: 'Fiscalización de mesa asignada' },
+    { value: 5, label: 'COLABORADOR', description: 'Acceso básico de consulta' },
+  ];
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -19,9 +29,10 @@ export default function SignupForm() {
         options: {
           // Redirige después de confirmar email
           emailRedirectTo: `${window.location.origin}/welcome`,
-          // Opcional: datos adicionales del usuario
+          // Datos adicionales del usuario incluyendo el tipo de usuario
           data: {
             created_at: new Date().toISOString(),
+            usuario_tipo: usuarioTipo,
           }
         },
       });
@@ -29,10 +40,11 @@ export default function SignupForm() {
       if (error) {
         setMessage(`Error: ${error.message}`);
       } else {
-        setMessage('¡Cuenta creada exitosamente! Revisa tu correo para confirmar tu cuenta.');
+        setMessage(`¡Cuenta creada exitosamente como ${userTypeOptions.find(opt => opt.value === usuarioTipo)?.label}! Revisa tu correo para confirmar tu cuenta.`);
         // Limpiar formulario
         setEmail('');
         setPassword('');
+        setUsuarioTipo(4); // Reset to default
       }
     } catch (err) {
       setMessage('Error inesperado. Intenta nuevamente.');
@@ -78,11 +90,34 @@ export default function SignupForm() {
           />
         </div>
 
+        <div>
+          <label htmlFor="usuarioTipo" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>Tipo de Usuario</span>
+            </div>
+          </label>
+          <select
+            id="usuarioTipo"
+            value={usuarioTipo}
+            onChange={(e) => setUsuarioTipo(parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            {userTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            {userTypeOptions.find(opt => opt.value === usuarioTipo)?.description}
+          </p>
+        </div>
         <button
           onClick={handleSubmit}
-          disabled={loading || !email || !password}
+          disabled={loading || !email || !password || !usuarioTipo}
           className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-            loading || !email || !password
+            loading || !email || !password || !usuarioTipo
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
           } transition duration-200`}
@@ -101,12 +136,6 @@ export default function SignupForm() {
         </div>
       )}
 
-      {/* <p className="mt-6 text-center text-sm text-gray-600">
-        ¿Ya tienes cuenta?{' '}
-        <button className="text-blue-600 hover:text-blue-500 font-medium">
-          Iniciar Sesión
-        </button>
-      </p> */}
     </div>
   );
 }

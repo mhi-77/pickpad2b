@@ -13,15 +13,15 @@
 
 /**
  * @typedef {Object} PadronRecord
- * @property {string} DOCUMENTO
- * @property {string|null} APELLIDO
- * @property {string|null} NOMBRE
- * @property {string|null} SEXO
+ * @property {number} documento
+ * @property {string|null} apellido
+ * @property {string|null} nombre
+ * @property {string|null} sexo
  * @property {number|null} CLASE
  * @property {string|null} CIRCUITO
  * @property {number|null} ORDEN
  * @property {number|null} MESA
- * @property {string|null} LOCALIDAD
+ * @property {string|null} domicilio
  * @property {string|null} NUEVO
  * @property {string|null} VNO
  * @property {string|null} AM
@@ -30,6 +30,8 @@
  * @property {string|null} TEAM
  * @property {string|null} OBSERVACIONES
  * @property {boolean|null} OK
+ * @property {string|null} emopick_user
+ * @property {string|null} pick_check_user
  */
 
 /**

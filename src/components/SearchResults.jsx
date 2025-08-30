@@ -1,7 +1,121 @@
 import React from 'react';
 import { FileText, User, MapPin, Hash, Users, Sparkles, XCircle, CheckCircle } from 'lucide-react';
+import PickModal from './PickModal';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
-export default function SearchResults({ results, isLoading, userRole }) {
+export default function SearchResults({ results, isLoading, userRole, availableEmopicks = [] }) {
+  // Obtener datos del usuario autenticado para registrar quién hace las actualizaciones
+  const { user } = useAuth();
+  
+  // Estados para el modal de PICK
+  const [showPickModal, setShowPickModal] = React.useState(false);
+  const [currentRecordToPick, setCurrentRecordToPick] = React.useState(null);
+  const [lastUsedEmopickId, setLastUsedEmopickId] = React.useState(() => {
+    const saved = localStorage.getItem('lastUsedEmopickId');
+    return saved ? parseInt(saved) : null;
+  });
+  const [lastUsedPickNota, setLastUsedPickNota] = React.useState(() => {
+    return localStorage.getItem('lastUsedPickNota') || '';
+  });
+  const [localResults, setLocalResults] = React.useState(results);
+
+  // Actualizar resultados locales cuando cambien los props
+  React.useEffect(() => {
+    setLocalResults(results);
+  }, [results]);
+
+  /**
+   * Abre el modal de PICK para un registro específico
+   */
+  const handleOpenPickModal = (record) => {
+    setCurrentRecordToPick(record);
+    setShowPickModal(true);
+  };
+
+  /**
+   * Cierra el modal de PICK
+   */
+  const handleClosePickModal = () => {
+    setShowPickModal(false);
+    setCurrentRecordToPick(null);
+  };
+
+  /**
+   * Guarda la selección de emopick y anotación en la base de datos
+   */
+  const handlePickSave = async (emopickId, pickNota) => {
+    if (!currentRecordToPick) return;
+
+    // Log de datos que se van a guardar
+    console.log('=== INICIANDO ACTUALIZACIÓN DE PADRON ===');
+    console.log('Documento del votante:', currentRecordToPick.documento);
+    console.log('Emopick ID a guardar:', emopickId);
+    console.log('Pick nota a guardar:', pickNota);
+    console.log('Usuario que realiza la actualización:', user?.id);
+    console.log('Tipo de emopickId:', typeof emopickId);
+    console.log('Registro completo:', currentRecordToPick);
+    try {
+      console.log('Ejecutando update en Supabase...');
+      
+      // Actualizar en la base de datos
+      const { error } = await supabase
+        .from('padron')
+        .update({
+          emopick_id: emopickId,
+          pick_nota: pickNota || null,
+          emopick_user: user?.id || null
+        })
+        .eq('documento', currentRecordToPick.documento);
+
+      console.log('Respuesta de Supabase - Error:', error);
+      if (error) {
+        console.error('Error updating pick:', error);
+        console.error('Detalles del error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw new Error('Error al guardar la selección');
+      }
+
+      console.log('✅ Actualización exitosa en Supabase');
+      
+      // Actualizar resultados localmente
+      const updatedResults = localResults.map(record => 
+        record.documento === currentRecordToPick.documento 
+          ? { 
+              ...record, 
+              emopick_id: emopickId,
+              pick_nota: pickNota || null,
+              emopick_user: user?.id || null,
+              emopicks: availableEmopicks.find(e => e.id === emopickId) || record.emopicks
+            }
+          : record
+      );
+      
+      console.log('Actualizando resultados locales...');
+      setLocalResults(updatedResults);
+
+      // Guardar última selección en localStorage
+      setLastUsedEmopickId(emopickId);
+      setLastUsedPickNota(pickNota);
+      localStorage.setItem('lastUsedEmopickId', emopickId.toString());
+      localStorage.setItem('lastUsedPickNota', pickNota);
+
+      console.log('✅ Datos guardados en localStorage');
+      console.log('=== ACTUALIZACIÓN COMPLETADA ===');
+      // Cerrar modal
+      handleClosePickModal();
+
+    } catch (error) {
+      console.error('❌ Error en handlePickSave:', error);
+      console.error('Stack trace:', error.stack);
+      alert(error.message || 'Error al guardar la selección');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -42,7 +156,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
       </div>
 
       <div className="space-y-4">
-        {results.map((record) => (
+        {localResults.map((record) => (
           <div
             key={record.documento}
             className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
@@ -142,8 +256,11 @@ export default function SearchResults({ results, isLoading, userRole }) {
                   </div>
                 </div>
                 <div className="flex items-center justify-end">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                    MARCAR
+                  <button 
+                    onClick={() => handleOpenPickModal(record)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    PICK!
                   </button>
                 </div>
               </div>
@@ -151,6 +268,17 @@ export default function SearchResults({ results, isLoading, userRole }) {
           </div>
         ))}
       </div>
+
+      {/* Modal de PICK */}
+      <PickModal
+        isOpen={showPickModal}
+        onClose={handleClosePickModal}
+        onSave={handlePickSave}
+        emopicksList={availableEmopicks}
+        initialEmopickId={currentRecordToPick?.emopick_id || lastUsedEmopickId}
+        initialPickNota={currentRecordToPick?.pick_nota || lastUsedPickNota}
+        votanteName={currentRecordToPick ? `${currentRecordToPick.apellido}, ${currentRecordToPick.nombre}` : ''}
+      />
     </div>
   );
 }
