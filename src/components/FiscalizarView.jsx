@@ -8,7 +8,7 @@ import FiscalizarResults from './FiscalizarResults';
 /**
  * Componente FiscalizarView - Vista principal para la fiscalización electoral
  * 
- * Propósito: Permite a los fiscales (usuarios con tipo 2 o 3) gestionar el proceso
+ * Propósito: Permite a los fiscales (usuarios con tipo 3 o 4) gestionar el proceso
  * de votación en su mesa asignada. Incluye búsqueda de votantes, marcado de votos
  * y estadísticas en tiempo real.
  * 
@@ -174,7 +174,7 @@ export default function FiscalizarView() {
   const porcentajeParticipacion = totalEmpadronados > 0 ? ((totalVotaron / totalEmpadronados) * 100).toFixed(1) : 0;
 
   // Verificar permisos del usuario
-  if (!user || user.usuario_tipo > 3) {
+  if (!user || user.usuario_tipo == 3 || user.usuario_tipo == 4) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="text-center py-12">

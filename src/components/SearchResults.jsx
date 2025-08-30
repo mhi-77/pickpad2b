@@ -133,7 +133,7 @@ export default function SearchResults({ results, isLoading, userRole }) {
                   <span className="font-medium"> </span>
                   <div className="mt-1">
                     {record.emopicks?.dispay ? (
-                      <span className="px-2 py-2 bg-yellow-100 text-yellow-800 rounded-full text-xl font-medium">
+                      <span className="px-2 py-2 bg-yellow-50 rounded-full text-xl font-medium">
                         {record.emopicks.dispay}
                       </span>
                     ) : (
