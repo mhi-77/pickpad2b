@@ -74,6 +74,7 @@ export default function Dashboard({ appVersion }) {
   
   /**
    * Carga las localidades disponibles desde la base de datos
+   * Idem con los emojis de la tabla emopics
    * Se ejecuta una vez al montar el componente para poblar el dropdown
    */
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, User, MapPin, Hash, Users, Sparkles, XCircle, CheckCircle } from 'lucide-react';
+import { FileText, User, MapPin, Hash, Users, Sparkles, XCircle, CheckCircle, SquarePen } from 'lucide-react';
 import PickModal from './PickModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -247,7 +247,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
                   <span className="font-medium"> </span>
                   <div className="mt-1">
                     {record.emopicks?.dispay ? (
-                      <span className="px-2 py-2 bg-yellow-50 rounded-full text-xl font-medium">
+                    <span className="px-2 py-2 bg-yellow-50 rounded-full text-xl font-medium">
                         {record.emopicks.dispay}
                       </span>
                     ) : (
@@ -255,12 +255,13 @@ export default function SearchResults({ results, isLoading, userRole, availableE
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end space-x-3">
                   <button 
                     onClick={() => handleOpenPickModal(record)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    PICK!
+                    className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >                         
+                    <SquarePen className="w-4 h-4" />
+                    <span>PICK!</span>
                   </button>
                 </div>
               </div>
