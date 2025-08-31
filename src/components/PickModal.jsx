@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Sparkles } from 'lucide-react';
+import { X, Save, SquarePen } from 'lucide-react';
 
 /**
  * Componente PickModal - Modal para seleccionar emopick y agregar anotación
@@ -75,7 +75,7 @@ export default function PickModal({
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-blue-600" />
+              <SquarePen className="w-6 h-6 text-blue-600" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
