@@ -64,7 +64,13 @@ export default function FiscalizarView() {
       // Construir consulta base para la mesa asignada
       let query = supabase
         .from('padron')
-        .select('*')
+        .select(`
+          *,
+          emopicks(
+            id,
+            dispay
+          )
+        `)
         .eq('mesa_numero', user.mesa_numero)
         .order('orden', { ascending: true });
 

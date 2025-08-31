@@ -86,7 +86,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
               {/* Apellido y Nombre (primera fila) */}
               <div className="flex items-center space-x-2">
-                <User className="w-4 h-4 text-gray-500" />
+               {/*  <User className="w-4 h-4 text-gray-500" /> */}
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Apellido y Nombres</p>
                   <p className="font-semibold text-lg text-gray-900">
@@ -97,7 +97,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
               {/* Domicilio (segunda fila) */}
               <div className="flex items-center space-x-2">
-                <MapPin className="w-4 h-4 text-gray-500" />
+               {/*  <MapPin className="w-4 h-4 text-gray-500" /> */}
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Domicilio</p>
                   <p className="font-medium text-gray-700">
@@ -122,6 +122,13 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
               {/* Botón de votó */}
               <div className="flex items-center space-x-3">
+                {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
+                {record.emopicks?.dispay && (
+                  <div className="flex items-center ">
+                    <span className="text-xl">{record.emopicks.dispay}</span>
+                  </div>
+                )}
+                
                 {record.voto_emitido ? (
                   <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
                     <CheckCircle className="w-5 h-5" />
