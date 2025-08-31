@@ -79,8 +79,16 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 <div className="text-center">
                   <p className="text-xs text-gray-500 uppercase font-medium mb-1">ORDEN</p>
                   <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="font-bold text-2xl text-blue-800">{record.orden || '---'}</span>
+                    <span className="font-bold text-2xl text-blue-800">{record.orden || '---'}</span> 
                   </div>
+
+               {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
+                  {record.emopicks?.dispay && (
+                    <div className="flex items-center justify-center space-y-2">
+                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.dispay}</span>
+                    </div>
+                  )}
+                  
                 </div>
               </div>
 
@@ -108,7 +116,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             </div>
 
             {/* Segunda sección: Documento + Clase + Botón */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
               <div className="flex items-center space-x-6">
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Documento</p>
@@ -121,14 +129,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
               </div>
 
               {/* Botón de votó */}
-              <div className="flex items-center space-x-3">
-                {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
-                {record.emopicks?.dispay && (
-                  <div className="flex items-center ">
-                    <span className="text-xl">{record.emopicks.dispay}</span>
-                  </div>
-                )}
-                
+              <div className="flex items-center space-x-3">             
                 {record.voto_emitido ? (
                   <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
                     <CheckCircle className="w-5 h-5" />
@@ -150,18 +151,21 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             </div>
 
             {/* Información adicional si existe */}
-            {(record.pick_nota || record.voto_pick_at) && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                {record.pick_nota && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    <strong>Nota:</strong> {record.pick_nota}
-                  </p>
-                )}
+            {(record.voto_pick_user || record.voto_pick_at) && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                
                 {record.voto_pick_at && (
                   <p className="text-xs text-gray-500">
                     <strong>Registrado:</strong> {new Date(record.voto_pick_at).toLocaleString('es-AR')}
                   </p>
                 )}
+
+                {record.voto_pick_user && (
+                  <p className="text-xs text-gray-500 mb-1">
+                    <strong>Usuario:</strong> {record.voto_pick_user}
+                  </p>
+                )}
+                
               </div>
             )}
           </div>
