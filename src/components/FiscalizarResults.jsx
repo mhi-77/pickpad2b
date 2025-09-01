@@ -156,7 +156,15 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 
                 {record.voto_pick_at && (
                   <p className="text-xs text-gray-500">
-                    <strong>Registrado:</strong> {new Date(record.voto_pick_at).toLocaleString('es-AR')}
+                    <strong>Registrado:</strong> {new Date(record.voto_pick_at).toLocaleString('es-AR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false
+                      })}
                   </p>
                 )}
 
