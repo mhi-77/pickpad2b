@@ -83,9 +83,9 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                   </div>
 
                {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
-                  {record.emopicks?.dispay && (
+                  {record.emopicks?.display && (
                     <div className="flex items-center justify-center space-y-2">
-                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.dispay}</span>
+                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.display}</span>
                     </div>
                   )}
                   
@@ -162,7 +162,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
                 {record.voto_pick_user && (
                   <p className="text-xs text-gray-500 mb-1">
-                    <strong>Usuario:</strong> {record.voto_pick_user}
+                    <strong>Usuario:</strong> {record.voto_pick_user_profile?.full_name || 'N/A'}
                   </p>
                 )}
                 

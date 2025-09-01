@@ -68,7 +68,10 @@ export default function FiscalizarView() {
           *,
           emopicks(
             id,
-            dispay
+            display
+          ),
+          voto_pick_user_profile:profiles!padron_voto_pick_user_fkey(
+            full_name
           )
         `)
         .eq('mesa_numero', user.mesa_numero)
