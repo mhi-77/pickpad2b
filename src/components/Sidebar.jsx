@@ -57,7 +57,10 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <CheckCheck className="w-6 h-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">PickPad v{appVersion}</h1>
+         {/* <h1 className="text-xl font-bold text-gray-900">PickPad v{appVersion}</h1> */}
+             <h1 className="text-xl font-bold text-gray-900">
+              PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
+             </h1>
           </div>
           {/* Botón de cierre solo visible en dispositivos móviles */}
           <button
