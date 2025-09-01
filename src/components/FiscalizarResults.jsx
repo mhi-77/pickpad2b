@@ -68,12 +68,12 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
         {results.map((record) => (
           <div
             key={record.documento}
-            className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 ${
+            className={`border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow duration-200 ${
               record.voto_emitido ? 'bg-green-50' : ''
             }`}
           >
             {/* Primera sección: Orden + Apellido/Nombre + Domicilio */}
-            <div className="grid grid-cols-[auto_1fr] gap-2 mb-3">
+            <div className="grid grid-cols-[auto_1fr] gap-2 mb-2">
               {/* Número de orden (ocupa 2 filas) */}
               <div className="row-span-2 flex items-center justify-center">
                 <div className="text-center">
@@ -116,7 +116,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             </div>
 
             {/* Segunda sección: Documento + Clase + Botón */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
               <div className="flex items-center space-x-6">
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Documento</p>
@@ -152,7 +152,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
             {/* Información adicional si existe */}
             {(record.voto_pick_user || record.voto_pick_at) && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="mt-2 pt-2 border-t border-gray-200">
                 
                 {record.voto_pick_at && (
                   <p className="text-xs text-gray-500">
