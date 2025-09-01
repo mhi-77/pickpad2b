@@ -180,7 +180,7 @@ export default function FiscalizarView() {
   const porcentajeParticipacion = totalEmpadronados > 0 ? ((totalVotaron / totalEmpadronados) * 100).toFixed(1) : 0;
 
   // Verificar permisos del usuario
-  if (!user || user.usuario_tipo == 3 || user.usuario_tipo == 4) {
+  if (!user || user.usuario_tipo == 5) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="text-center py-12">
