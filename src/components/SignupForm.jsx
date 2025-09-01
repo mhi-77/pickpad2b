@@ -1,38 +1,33 @@
 import React, { useState } from 'react';
-import { User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [usuarioTipo, setUsuarioTipo] = useState(4); // Default: Fiscal
+  const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [dni, setDni] = useState('');
+  const [userType, setUserType] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Opciones de tipos de usuario disponibles para asignación
-  const userTypeOptions = [
-    { value: 1, label: 'SUPERUSUARIO', description: 'Acceso completo al sistema' },
-    { value: 2, label: 'ADMINISTRADOR', description: 'Gestión de usuarios y padrones' },
-    { value: 3, label: 'SUPERVISOR', description: 'Supervisión y estadísticas' },
-    { value: 4, label: 'FISCAL', description: 'Fiscalización de mesa asignada' },
-    { value: 5, label: 'COLABORADOR', description: 'Acceso básico de consulta' },
-  ];
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
     try {
+      // El trigger se encarga de crear el perfil automáticamente
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // Redirige después de confirmar email
           emailRedirectTo: `${window.location.origin}/welcome`,
-          // Datos adicionales del usuario incluyendo el tipo de usuario
           data: {
-            created_at: new Date().toISOString(),
-            usuario_tipo: usuarioTipo,
+            full_name: fullName,
+            dni: dni || null, // Si está vacío, enviar null
+            usuario_tipo: parseInt(userType)
           }
         },
       });
@@ -40,11 +35,13 @@ export default function SignupForm() {
       if (error) {
         setMessage(`Error: ${error.message}`);
       } else {
-        setMessage(`¡Cuenta creada exitosamente como ${userTypeOptions.find(opt => opt.value === usuarioTipo)?.label}! Revisa tu correo para confirmar tu cuenta.`);
+        setMessage('¡Usuario creado exitosamente! Revisa tu correo para confirmar tu cuenta.');
         // Limpiar formulario
         setEmail('');
         setPassword('');
-        setUsuarioTipo(4); // Reset to default
+        setFullName('');
+        setDni('');
+        setUserType('');
       }
     } catch (err) {
       setMessage('Error inesperado. Intenta nuevamente.');
@@ -61,6 +58,52 @@ export default function SignupForm() {
       </h2>
       
       <div className="space-y-4">
+        <div>
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            Nombre Completo
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            placeholder="Juan Pérez"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">
+            DNI <span className="text-sm text-gray-500">(opcional)</span>
+          </label>
+          <input
+            id="dni"
+            type="number"
+            placeholder="12345678"
+            value={dni}
+            onChange={(e) => setDni(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
+            Tipo de Usuario
+          </label>
+          <select
+            id="userType"
+            value={userType}
+            onChange={(e) => setUserType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Seleccionar tipo...</option>
+            <option value="1">Administrador</option>
+            <option value="2">Fiscal</option>
+            <option value="3">Operador</option>
+            <option value="4">Consultor</option>
+          </select>
+        </div>
+
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Correo Electrónico
@@ -79,50 +122,40 @@ export default function SignupForm() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Contraseña
           </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Mínimo 6 caracteres"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Mínimo 6 caracteres"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
-        <div>
-          <label htmlFor="usuarioTipo" className="block text-sm font-medium text-gray-700 mb-1">
-            <div className="flex items-center space-x-2">
-              <User className="w-4 h-4" />
-              <span>Tipo de Usuario</span>
-            </div>
-          </label>
-          <select
-            id="usuarioTipo"
-            value={usuarioTipo}
-            onChange={(e) => setUsuarioTipo(parseInt(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {userTypeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            {userTypeOptions.find(opt => opt.value === usuarioTipo)?.description}
-          </p>
-        </div>
         <button
           onClick={handleSubmit}
-          disabled={loading || !email || !password || !usuarioTipo}
+          disabled={loading || !email || !password || !fullName || !userType}
           className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-            loading || !email || !password || !usuarioTipo
+            loading || !email || !password || !fullName || !userType
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
           } transition duration-200`}
         >
-          {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
+          {loading ? 'Creando usuario...' : 'Crear Usuario'}
         </button>
       </div>
 
@@ -136,6 +169,7 @@ export default function SignupForm() {
         </div>
       )}
 
+     
     </div>
   );
 }
