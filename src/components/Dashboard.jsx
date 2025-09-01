@@ -368,7 +368,7 @@ export default function Dashboard({ appVersion }) {
                     {getUserInitials(user?.roleDescription)}
                   </span>
                 </div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xm font-semibold text-gray-900">
                   {user?.name}
                 </h1>
               </div>
