@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, AlertCircle, CheckCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import logoImage from '../pblanca.png';
 
 /**
  * Componente LoginForm - Formulario de inicio de sesión
@@ -56,10 +57,17 @@ export default function LoginForm({ appVersion }) {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Header del formulario con logo y título */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <LogIn className="w-8 h-8 text-white" /> 
+         {/*   <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4"> */}
+            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+              <img 
+                src={logoImage} 
+                alt="Logo de la aplicación" 
+                className="w-11 h-11 object-cover"
+              />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">PickPad v{appVersion}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
+          </h1>
           <p className="text-gray-600">Ingresa tus credenciales para continuar</p>
         </div>
 
@@ -135,10 +143,10 @@ export default function LoginForm({ appVersion }) {
 
         {/* Sección de credenciales de prueba para desarrollo */}
         <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Credenciales de prueba:</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Credenciales temporales</h3>
           <div className="text-xs text-gray-600 space-y-1">
-            <p><strong>Admin:</strong> admin@padrones.gov / admin123</p>
-            <p><strong>Usuario:</strong> usuario@padrones.gov / admin123</p>
+            <p><strong>Colaborador:</strong> colabor@dor.pp / solover2025</p>
+            {/* <p><strong>Usuario:</strong> usuario@padrones.gov / admin123</p> */}
           </div>
         </div>
       </div>

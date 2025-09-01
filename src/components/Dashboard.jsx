@@ -326,7 +326,7 @@ export default function Dashboard({ appVersion }) {
             <p className="text-gray-600">Funcionalidad de gestión de padrones en desarrollo.</p>
           </div>
         );
-      case 'settings':
+      case 'settings': /* PERMITE MODIFICAR SUS PROPIOS PERFILES -ADMIN Y F GEN ADEMAS SU PROPIO NRO DE MESA ASIGNADA */
         return (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Configuración</h2>
