@@ -141,7 +141,10 @@ export default function FiscalizarView() {
               ...record, 
               voto_emitido: true, 
               voto_pick_at: new Date().toISOString(),
-              voto_pick_user: user.id
+              voto_pick_user: user.id,
+              voto_pick_user_profile: {
+                full_name: user.name
+              }
             }
           : record
       );
@@ -158,7 +161,10 @@ export default function FiscalizarView() {
               ...record, 
               voto_emitido: true, 
               voto_pick_at: new Date().toISOString(),
-              voto_pick_user: user.id
+              voto_pick_user: user.id,
+              voto_pick_user_profile: {
+                full_name: user.name
+              }
             }
           : record
       );
