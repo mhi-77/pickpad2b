@@ -109,7 +109,7 @@ export default function PickModal({
               <option value="">Selecciona una opción</option>
               {emopicksList.map((emopick) => (
                 <option key={emopick.id} value={emopick.id}>
-                  {emopick.dispay}
+                  {emopick.display}
                 </option>
               ))}
             </select>

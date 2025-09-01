@@ -114,7 +114,7 @@ export default function Dashboard({ appVersion }) {
     try {
       const { data, error } = await supabase
         .from('emopicks')
-        .select('id, dispay')
+        .select('id, display')
         .order('id');
 
       if (error) {
@@ -188,7 +188,7 @@ export default function Dashboard({ appVersion }) {
         *,
         emopicks(
           id,
-          dispay
+          display
         ),
         mesas!inner(
           numero,

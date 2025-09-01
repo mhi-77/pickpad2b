@@ -48,15 +48,16 @@ export default function SearchResults({ results, isLoading, userRole, availableE
     if (!currentRecordToPick) return;
 
     // Log de datos que se van a guardar
-    console.log('=== INICIANDO ACTUALIZACIÓN DE PADRON ===');
+   /* console.log('=== INICIANDO ACTUALIZACIÓN DE PADRON ===');
     console.log('Documento del votante:', currentRecordToPick.documento);
     console.log('Emopick ID a guardar:', emopickId);
     console.log('Pick nota a guardar:', pickNota);
     console.log('Usuario que realiza la actualización:', user?.id);
     console.log('Tipo de emopickId:', typeof emopickId);
-    console.log('Registro completo:', currentRecordToPick);
+    console.log('Registro completo:', currentRecordToPick); */
+    
     try {
-      console.log('Ejecutando update en Supabase...');
+    //  console.log('Ejecutando update en Supabase...');
       
       // Actualizar en la base de datos
       const { error } = await supabase
@@ -68,7 +69,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
         })
         .eq('documento', currentRecordToPick.documento);
 
-      console.log('Respuesta de Supabase - Error:', error);
+     /* console.log('Respuesta de Supabase - Error:', error);
       if (error) {
         console.error('Error updating pick:', error);
         console.error('Detalles del error:', {
@@ -79,8 +80,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
         });
         throw new Error('Error al guardar la selección');
       }
-
-      console.log('✅ Actualización exitosa en Supabase');
+      console.log('✅ Actualización exitosa en Supabase'); */
       
       // Actualizar resultados localmente
       const updatedResults = localResults.map(record => 
@@ -95,7 +95,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
           : record
       );
       
-      console.log('Actualizando resultados locales...');
+     // console.log('Actualizando resultados locales...');
       setLocalResults(updatedResults);
 
       // Guardar última selección en localStorage
@@ -104,14 +104,15 @@ export default function SearchResults({ results, isLoading, userRole, availableE
       localStorage.setItem('lastUsedEmopickId', emopickId.toString());
       localStorage.setItem('lastUsedPickNota', pickNota);
 
-      console.log('✅ Datos guardados en localStorage');
-      console.log('=== ACTUALIZACIÓN COMPLETADA ===');
-      // Cerrar modal
+     // console.log('✅ Datos guardados en localStorage');
+     // console.log('=== ACTUALIZACIÓN COMPLETADA ===');
+      
+    // Cerrar modal
       handleClosePickModal();
 
     } catch (error) {
-      console.error('❌ Error en handlePickSave:', error);
-      console.error('Stack trace:', error.stack);
+    //  console.error('❌ Error en handlePickSave:', error);
+    //  console.error('Stack trace:', error.stack);
       alert(error.message || 'Error al guardar la selección');
     }
   };
@@ -246,9 +247,9 @@ export default function SearchResults({ results, isLoading, userRole, availableE
                 <div className="text-sm text-gray-600 text-center">
                   <span className="font-medium"> </span>
                   <div className="mt-1">
-                    {record.emopicks?.dispay ? (
+                    {record.emopicks?.display ? (
                     <span className="px-2 py-2 bg-yellow-50 rounded-full text-xl font-medium">
-                        {record.emopicks.dispay}
+                        {record.emopicks.display}
                       </span>
                     ) : (
                       <span className="text-gray-500 text-sm"> </span>
