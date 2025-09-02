@@ -185,4 +185,4 @@ export default function SignupForm({ userTypes = [] }) {
       
     </div>
   );
-}}
+}
