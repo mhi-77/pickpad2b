@@ -248,7 +248,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
                   <span className="font-medium"> </span>
                   <div className="mt-1">
                     {record.emopicks?.display ? (
-                    <span className="px-2 py-2 bg-yellow-50 rounded-full text-xl font-medium">
+                    <span className="px-2 py-2 bg-yellow-100 rounded-full text-xl font-medium">
                         {record.emopicks.display}
                       </span>
                     ) : (

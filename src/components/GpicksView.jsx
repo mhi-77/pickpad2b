@@ -248,29 +248,29 @@ export default function GpicksView() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Votante
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Localidad
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Domicilio
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Documento
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {picksData.map((record) => (
-                  <tr key={record.documento} className="hover:bg-gray-50">
+                  <tr key={record.documento} className={` ${record.pick_check ? 'bg-gray-200' : ''}`}>
                     <td colSpan={5} className="px-4 py-2">
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-x-2 gap-y-1 items-center text-sm"
-                           style={{gridTemplateColumns: '85px 1fr 150px 1fr 90px'}}>
+                           style={{gridTemplateColumns: '85px 1fr 1fr 1fr 90px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
                           <span className="px-2 py-2 bg-yellow-100 rounded-full text-2xl font-medium">
@@ -305,7 +305,7 @@ export default function GpicksView() {
                             checked={record.pick_check || false}
                             onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked)}
                             disabled={isUpdating}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                            className="w-4 h-4 accent-green-200 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                           />
                           <span className="text-ms font-medium text-gray-600">Cerrado</span>
                         </div>
