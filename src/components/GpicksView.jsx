@@ -310,13 +310,13 @@ export default function GpicksView() {
                           <span className="text-ms font-medium text-gray-600">Cerrado</span>
                         </div>
                         <div>
-                          <span className="italic text-blue-900">
+                          <span className="italic text-gray-900">
                             {record.pick_nota || '-'}
                           </span>
                         </div>
                         <div>
                           <span className="justify-center text-xs text-gray-700">
-                            {record.emopick_user_profile?.full_name || 'N/A'}
+                           ({record.emopick_user_profile?.full_name || 'N/A'})
                           </span>
                         </div>
                         <div>
