@@ -30,8 +30,13 @@
  * @property {string|null} TEAM
  * @property {string|null} OBSERVACIONES
  * @property {boolean|null} OK
+ * @property {boolean|null} voto_emitido
+ * @property {string|null} voto_pick_at
+ * @property {string|null} voto_pick_user
  * @property {string|null} emopick_user
  * @property {string|null} pick_check_user
+ * @property {Object|null} profiles - Perfil del usuario que marcó el voto
+ * @property {string|null} profiles.full_name - Nombre completo del usuario
  */
 
 /**

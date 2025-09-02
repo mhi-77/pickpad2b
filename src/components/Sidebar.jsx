@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User } from 'lucide-react';
+import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Configuración de elementos del menú con permisos por rol
@@ -8,6 +8,7 @@ const menuItems = [
   { id: 'search', label: 'Búsqueda', icon: Search, maxRole: 5 },
   { id: 'fiscalizar', label: 'Fiscalizar', icon: ListChecks, maxRole: 4 },
   { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4 },
+  { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3 },
   { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3 },
   { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2 },
   { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2 },

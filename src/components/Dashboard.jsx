@@ -11,6 +11,7 @@ import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
 import SignupForm from './SignupForm';
 import UsersList from './UsersList';
+import GpicksView from './GpicksView';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
@@ -300,6 +301,10 @@ export default function Dashboard({ appVersion }) {
       case 'stats':
         return (
           <StatsView />
+        );
+      case 'gpicks':
+        return (
+          <GpicksView />
         );
       case 'gusers':
         return (

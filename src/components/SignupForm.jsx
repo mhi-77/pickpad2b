@@ -168,8 +168,7 @@ export default function SignupForm() {
           {message}
         </div>
       )}
-
-     
+      
     </div>
   );
 }
