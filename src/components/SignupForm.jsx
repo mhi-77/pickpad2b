@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function SignupForm() {
+/**
+ * Componente SignupForm - Formulario para crear nuevos usuarios
+ * 
+ * Props:
+ * - userTypes: array - Lista de tipos de usuario disponibles desde usuariost
+ */
+export default function SignupForm({ userTypes = [] }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +24,7 @@ export default function SignupForm() {
     setMessage('');
 
     try {
-      // El trigger se encarga de crear el perfil automáticamente
+      // El trigger de la base de datos se encarga de crear el perfil automáticamente
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -36,7 +42,7 @@ export default function SignupForm() {
         setMessage(`Error: ${error.message}`);
       } else {
         setMessage('¡Usuario creado exitosamente! Revisa tu correo para confirmar tu cuenta.');
-        // Limpiar formulario
+        // Limpiar formulario después del éxito
         setEmail('');
         setPassword('');
         setFullName('');
@@ -97,10 +103,11 @@ export default function SignupForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Seleccionar tipo...</option>
-            <option value="1">Administrador</option>
-            <option value="2">Fiscal</option>
-            <option value="3">Operador</option>
-            <option value="4">Consultor</option>
+            {userTypes.map((type) => (
+              <option key={type.tipo} value={type.tipo}>
+                {type.descripcion}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -148,9 +155,9 @@ export default function SignupForm() {
 
         <button
           onClick={handleSubmit}
-          disabled={loading || !email || !password || !fullName || !userType}
+          disabled={loading || !email || !password || !fullName || !userType || userTypes.length === 0}
           className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-            loading || !email || !password || !fullName || !userType
+            loading || !email || !password || !fullName || !userType || userTypes.length === 0
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
           } transition duration-200`}
@@ -158,6 +165,13 @@ export default function SignupForm() {
           {loading ? 'Creando usuario...' : 'Crear Usuario'}
         </button>
       </div>
+
+      {/* Mensaje de error si no hay tipos de usuario disponibles */}
+      {userTypes.length === 0 && (
+        <div className="mt-4 p-3 rounded-md bg-yellow-50 text-yellow-700 border border-yellow-200">
+          ⚠️ No se pudieron cargar los tipos de usuario. El formulario está deshabilitado.
+        </div>
+      )}
 
       {message && (
         <div className={`mt-4 p-3 rounded-md ${
@@ -171,4 +185,4 @@ export default function SignupForm() {
       
     </div>
   );
-}
+}}
