@@ -124,8 +124,15 @@ export default function GusersView() {
             
             {/* Contenedor principal para la lista de usuarios */}
             <div className="bg-white border border-gray-200 rounded-lg">
-              {/* Componente UsersList para mostrar y gestionar usuarios existentes */}
-              <UsersList />
+              {/* AQUÍ ESTÁ EL CAMBIO IMPORTANTE - Pasar userTypes como prop */}
+              {loadingUserTypes ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600">Cargando tipos de usuario...</p>
+                </div>
+              ) : (
+                <UsersList userTypes={userTypes} />
+              )}
             </div>
           </div>
         );

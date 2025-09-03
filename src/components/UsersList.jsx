@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Edit3, Trash2, Mail, User, Hash, UserCheck } from 'lucide-react';
+import { Edit3, Trash2, Mail, User, Hash, UserCheck, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import EditUserForm from './EditUserForm';
 
-export default function UsersList() {
+export default function UsersList({ userTypes = [] }) {
   const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -17,20 +18,35 @@ export default function UsersList() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users_status') // Ahora usamos la vista
         .select('*')
-        .order('created_at', { ascending: false, nullsLast: true }); // Cambié de vuelta a created_at con nullsLast
+        .order('created_at', { ascending: false, nullsLast: true });
 
       if (error) {
         console.error('Error fetching users:', error);
       } else {
         setUsers(data || []);
+        calculateStats(data || []);
       }
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateStats = (userData) => {
+    const stats = userData.reduce((acc, user) => {
+      acc[user.status] = (acc[user.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    setStats({
+      total: userData.length,
+      active: stats.active || 0,
+      invited: stats.invited || 0,
+      pending: stats.pending || 0
+    });
   };
 
   const handleEditUser = (user) => {
@@ -73,12 +89,43 @@ export default function UsersList() {
       1: { name: 'Admin', color: 'bg-red-100 text-red-800' },
       2: { name: 'Fiscal', color: 'bg-blue-100 text-blue-800' },
       3: { name: 'Operador', color: 'bg-green-100 text-green-800' },
-      4: { name: 'Consultor', color: 'bg-yellow-100 text-yellow-800' }
+      4: { name: 'Consultor', color: 'bg-yellow-100 text-yellow-800' },
+      5: { name: 'Usuario', color: 'bg-gray-100 text-gray-800' }
     };
     return typeMap[tipo] || { name: 'Sin tipo', color: 'bg-gray-100 text-gray-800' };
   };
 
+  const getStatusConfig = (status) => {
+    const statusMap = {
+      'active': { 
+        name: 'Operativo', 
+        color: 'bg-green-100 text-green-800', 
+        icon: CheckCircle,
+        description: 'Usuario activo y operativo' 
+      },
+      'invited': { 
+        name: 'Invitado', 
+        color: 'bg-yellow-100 text-yellow-800', 
+        icon: Clock,
+        description: 'Invitación enviada, pendiente de activación' 
+      },
+      'pending': { 
+        name: 'Pendiente', 
+        color: 'bg-gray-100 text-gray-800', 
+        icon: AlertCircle,
+        description: 'Usuario creado pero sin invitar' 
+      }
+    };
+    return statusMap[status] || { 
+      name: 'Desconocido', 
+      color: 'bg-red-100 text-red-800', 
+      icon: XCircle,
+      description: 'Estado desconocido' 
+    };
+  };
+
   const formatDate = (dateString) => {
+    if (!dateString) return 'Sin fecha';
     return new Date(dateString).toLocaleDateString('es-AR', {
       year: 'numeric',
       month: 'short',
@@ -100,116 +147,189 @@ export default function UsersList() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg">
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Lista de Usuarios ({users.length})
-        </h3>
-      </div>
-
-      {users.length === 0 ? (
-        <div className="p-6 text-center text-gray-500">
-          <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p>No hay usuarios registrados</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usuario
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  DNI
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Creado
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {user.full_name ? user.full_name.charAt(0).toUpperCase() : '?'}
-                        </span>
-                      </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.full_name || 'Sin nombre'}
-                        </div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          {user.email}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-900">
-                      <Hash className="w-3 h-3 mr-1 text-gray-400" />
-                      {user.dni || 'Sin DNI'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const userType = getUserTypeColor(user.usuario_tipo);
-                      return (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${userType.color}`}>
-                          <UserCheck className="w-3 h-3 mr-1" />
-                          {userType.name}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.created_at ? formatDate(user.created_at) : 'Sin fecha'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
-                        title="Editar usuario"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user.id, user.full_name)}
-                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                        title="Eliminar usuario"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="space-y-6">
+      {/* Estadísticas */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <User className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Total</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Operativos</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.active}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <Clock className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Invitados</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.invited}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-gray-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Pendientes</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.pending}</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Modal de edición */}
-      <EditUserForm
-        userId={editingUser}
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingUser(null);
-        }}
-        onUserUpdated={handleUserUpdated}
-      />
+      {/* Lista de usuarios */}
+      <div className="bg-white rounded-xl shadow-lg">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Lista de Usuarios ({users.length})
+          </h3>
+        </div>
+
+        {users.length === 0 ? (
+          <div className="text-center text-gray-500 py-12">
+            <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <p>No hay usuarios registrados</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Usuario
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    DNI
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tipo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Creado
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Última Conexión
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.map((user) => {
+                  const statusConfig = getStatusConfig(user.status);
+                  const StatusIcon = statusConfig.icon;
+                  
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-medium">
+                              {user.full_name ? user.full_name.charAt(0).toUpperCase() : '?'}
+                            </span>
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.full_name || 'Sin nombre'}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center">
+                              <Mail className="w-3 h-3 mr-1" />
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Hash className="w-3 h-3 mr-1 text-gray-400" />
+                          {user.dni || 'Sin DNI'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          const userType = getUserTypeColor(user.usuario_tipo);
+                          return (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${userType.color}`}>
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              {userType.name}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span 
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}`}
+                          title={statusConfig.description}
+                        >
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusConfig.name}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(user.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Nunca'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
+                            title="Editar usuario"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.full_name)}
+                            className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                            title="Eliminar usuario"
+                            disabled={user.status === 'active'} // Opcional: deshabilitar eliminación de usuarios activos
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Modal de edición */}
+        <EditUserForm
+          userId={editingUser}
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingUser(null);
+          }}
+          onUserUpdated={handleUserUpdated}
+          userTypes={userTypes}
+        />
+      </div>
     </div>
   );
 }
