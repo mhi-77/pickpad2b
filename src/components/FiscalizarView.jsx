@@ -290,6 +290,7 @@ export default function FiscalizarView() {
         isUpdating={isUpdating}
         showSuccessModal={showSuccessModal}
         setShowSuccessModal={setShowSuccessModal}
+        userRole={user?.usuario_tipo}
       />
     </div>
   );

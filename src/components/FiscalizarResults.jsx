@@ -1,10 +1,14 @@
 import React from 'react';
 import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X, MapPin } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
-export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating, showSuccessModal, setShowSuccessModal }) {
+export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating, showSuccessModal, setShowSuccessModal, userRole }) {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [selectedDocumento, setSelectedDocumento] = React.useState(null);
   const [selectedVotante, setSelectedVotante] = React.useState(null);
+
+  // Obtener datos del usuario autenticado para otras funcionalidades
+  const { user } = useAuth();
 
   const handleOpenConfirmModal = (documento, votante) => {
     setSelectedDocumento(documento);
@@ -82,13 +86,14 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                     <span className="font-bold text-2xl text-blue-800">{record.orden || '---'}</span> 
                   </div>
 
-               {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
-                  {record.emopicks?.display && (
-                    <div className="flex items-center justify-center space-y-2">
-                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.display}</span>
-                    </div>
-                  )}
-                  
+                  {/* Mostrar emopick display si existe space-x-2 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg */}
+                  {/* Solo visible para usuarios tipo 3 o inferior */}
+                  {userRole && userRole <= 3 && ( 
+                    <div className="flex items-center justify-center space-y-2"> {record.emopicks?.display && (
+                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.display}</span> )
+                    }    </div>
+                   )}
+                   
                 </div>
               </div>
 
