@@ -33,7 +33,8 @@ export default function SignupForm({ userTypes = [] }) {
           data: {
             full_name: fullName,
             dni: dni || null, // Si está vacío, enviar null
-            usuario_tipo: parseInt(userType)
+            usuario_tipo: parseInt(userType),
+            pass_ini: password
           }
         },
       });
@@ -118,7 +119,7 @@ export default function SignupForm({ userTypes = [] }) {
           <input
             id="email"
             type="email"
-            placeholder="tu@correo.com"
+            placeholder="direccionde@correo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
