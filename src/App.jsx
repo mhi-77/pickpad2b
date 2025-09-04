@@ -49,19 +49,7 @@ function AppContent({ appVersion }) {
               >
                 Cancelar
               </button>
-              <button 
-                onClick={handleConfirmExit & logout()}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#e74c3c',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                Salir 
-              </button>
+     
             </div>
           </div> 
         </div> 
