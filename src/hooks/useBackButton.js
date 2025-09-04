@@ -5,24 +5,40 @@ La solución implica manipular el historial del navegador para evitar que el bot
 - Escuchar el evento popstate
 - Mostrar una confirmación antes de salir
 - Manejar adecuadamente la navegación
-
 */
-import { useEffect } from 'react';
 
-const useBackButtonHandler = (callback) => {
+// hooks/useBackButton.js
+import { useState, useEffect, useRef } from 'react';
+
+const useBackButton = (customHandler) => {
+  const [showModal, setShowModal] = useState(false);
+  const historyCount = useRef(1);
+
   useEffect(() => {
-    window.history.pushState({ backButtonPressed: false, from: 'react-app' }, "");
+    // Agregar estado inicial al historial
+    window.history.pushState({ id: 1, custom: true }, "");
 
     const handlePopState = (event) => {
-      if (callback && typeof callback === 'function') {
-        callback();
+      if (customHandler && typeof customHandler === 'function') {
+        const shouldPreventDefault = customHandler();
+        if (shouldPreventDefault === false) {
+          window.history.pushState({ id: Date.now(), custom: true }, "");
+          historyCount.current++;
+        }
       } else {
-        const confirmExit = window.confirm("¿Estás seguro de que quieres salir?");
-        
-        if (confirmExit) {
-          window.history.back();
+        // Comportamiento por defecto
+        if (event.state && event.state.custom) {
+          historyCount.current--;
+          
+          if (historyCount.current === 0) {
+            setShowModal(true);
+            window.history.pushState({ id: Date.now(), custom: true }, "");
+            historyCount.current = 1;
+          }
         } else {
-          window.history.pushState({ backButtonPressed: true, from: 'react-app' }, "");
+          setShowModal(true);
+          window.history.pushState({ id: Date.now(), custom: true }, "");
+          historyCount.current = 1;
         }
       }
     };
@@ -32,7 +48,22 @@ const useBackButtonHandler = (callback) => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [callback]);
+  }, [customHandler]);
+
+  const handleConfirmExit = () => {
+    window.history.go(-historyCount.current);
+    window.location.href = 'about:blank';
+  };
+
+  const handleCancelExit = () => {
+    setShowModal(false);
+  };
+
+  return {
+    showModal,
+    handleConfirmExit,
+    handleCancelExit
+  };
 };
 
-export default useBackButtonHandler;
+export default useBackButton;
