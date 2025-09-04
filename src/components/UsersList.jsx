@@ -85,14 +85,26 @@ export default function UsersList({ userTypes = [] }) {
   };
 
   const getUserTypeColor = (tipo) => {
-    const typeMap = {
-      1: { name: 'Admin', color: 'bg-red-100 text-red-800' },
-      2: { name: 'Fiscal', color: 'bg-blue-100 text-blue-800' },
-      3: { name: 'Operador', color: 'bg-green-100 text-green-800' },
-      4: { name: 'Consultor', color: 'bg-yellow-100 text-yellow-800' },
-      5: { name: 'Usuario', color: 'bg-gray-100 text-gray-800' }
-    };
-    return typeMap[tipo] || { name: 'Sin tipo', color: 'bg-gray-100 text-gray-800' };
+    // Buscar el tipo en userTypes
+    const userType = userTypes.find(ut => ut.tipo === tipo);
+    const name = userType ? userType.descripcion : 'Tipo desconocido';
+    
+    // Determinar color según las reglas especificadas
+    let color = 'bg-gray-100 text-gray-800'; // Sin color por defecto
+    
+    if (tipo === 1 || tipo === 2) {
+      color = 'bg-yellow-100 text-yellow-800'; // Amarillo para tipos 1 y 2
+    } else if (tipo === 3 || tipo === 4) {
+      color = 'bg-blue-100 text-blue-800'; // Azul para tipos 3 y 4
+    } else if (userTypes.length > 0) {
+      // El mayor valor siempre rojo
+      const maxTipo = Math.max(...userTypes.map(ut => ut.tipo));
+      if (tipo === maxTipo) {
+        color = 'bg-red-100 text-red-800';
+      }
+    }
+    
+    return { name, color };
   };
 
   const getStatusConfig = (status) => {
@@ -134,7 +146,25 @@ export default function UsersList({ userTypes = [] }) {
       minute: '2-digit'
     });
   };
-
+  // Solo fecha (mmm-dd-yyyy)
+  const formatDateOnly = (dateString) => {
+    if (!dateString) return 'Sin fecha';
+    return new Date(dateString).toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+  // Solo hora (24h)
+  const formatTimeOnly = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true // pasar a false para 24 h
+    });
+  };
+  
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -215,17 +245,21 @@ export default function UsersList({ userTypes = [] }) {
                     Usuario
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* 
                     DNI
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  */}
                     Tipo
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estado
                   </th>
+                  {/*
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Creado
                   </th>
+                  */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Última Conexión
                   </th>
@@ -241,13 +275,13 @@ export default function UsersList({ userTypes = [] }) {
                   
                   return (
                     <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                          {/*}  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                             <span className="text-white text-sm font-medium">
                               {user.full_name ? user.full_name.charAt(0).toUpperCase() : '?'}
                             </span>
-                          </div>
+                          </div> */}
                           <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900">
                               {user.full_name || 'Sin nombre'}
@@ -259,12 +293,13 @@ export default function UsersList({ userTypes = [] }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {/*   <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center text-sm text-gray-900">
                           <Hash className="w-3 h-3 mr-1 text-gray-400" />
                           {user.dni || 'Sin DNI'}
                         </div>
                       </td>
+                      */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         {(() => {
                           const userType = getUserTypeColor(user.usuario_tipo);
@@ -285,11 +320,17 @@ export default function UsersList({ userTypes = [] }) {
                           {statusConfig.name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {/*  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(user.created_at)}
                       </td>
+                      */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Nunca'}
+                        <div> 
+                          {user.last_sign_in_at ? formatDateOnly(user.last_sign_in_at) : 'Nunca'}
+                        </div>
+                        <div> 
+                          {user.last_sign_in_at ? formatTimeOnly(user.last_sign_in_at) : '--:--'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
