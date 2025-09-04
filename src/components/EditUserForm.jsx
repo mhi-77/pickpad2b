@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { X, Save, User } from 'lucide-react';
 
-export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated }) {
+export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, userTypes = [] }) {
   const [formData, setFormData] = useState({
     full_name: '',
     dni: '',
@@ -165,13 +165,18 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated })
                   required
                 >
                   <option value="">Seleccionar tipo...</option>
-                  <option value="1">Administrador</option>
-                  <option value="2">Fiscal</option>
-                  <option value="3">Operador</option>
-                  <option value="4">Consultor</option>
+                  {userTypes.length === 0 ? (
+                    <option disabled>Cargando tipos de usuario...</option>
+                  ) : (
+                    userTypes.map((type) => (
+                      <option key={type.tipo} value={type.tipo}>
+                        {type.descripcion}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
-
+              
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email <span className="text-sm text-gray-500">(solo lectura)</span>
