@@ -77,10 +77,10 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
             {/* Sección de información del usuario */}
             <div className="mb-8">
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                {/* Avatar del usuario con inicial */}
+                {/* Avatar del usuario con inicial {user?.name?.charAt(0).toUpperCase()} */}
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium">
-                   {user?.name?.charAt(0).toUpperCase()}
+                    <CheckCheck className="w-6 h-6 text-white-600" />
                   </span>
                 </div>
                 {/* Información del usuario */}

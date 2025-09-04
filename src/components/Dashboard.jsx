@@ -131,12 +131,12 @@ export default function Dashboard({ appVersion }) {
   /**
    * Hook personalizado para manejar el auto-logout por inactividad
    * Configuración:
-   * - 10 minutos de inactividad total antes del logout
-   * - Advertencia 2 minutos antes del logout
+   * - 15 minutos de inactividad total antes del logout
+   * - Advertencia 1 minutos antes del logout
    */
   const { resetTimer, getRemainingTime, warningMinutes } = useAutoLogout({
-    timeoutMinutes: 10,
-    warningMinutes: 2,
+    timeoutMinutes: 15,
+    warningMinutes: 1,
     onWarning: handleWarningCallback
   });
 
