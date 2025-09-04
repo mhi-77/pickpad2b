@@ -34,8 +34,8 @@ function AppContent({ appVersion }) {
             width: '90%',
             textAlign: 'center'
           }}>
-            <h2>¿Salir de la aplicación?</h2>
-            <p>¿Estás seguro de que quieres salir? Se perderán los datos no guardados.</p>
+            <h2>Salir de la aplicación</h2>
+            <p>Vuelva a presionar ATRAS para salir</p>
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
               <button 
                 onClick={handleCancelExit}
@@ -62,7 +62,7 @@ function AppContent({ appVersion }) {
               >
                 Salir 
               </button>
-               logout();
+              {logout()}
             </div>
           </div> 
         </div> 
