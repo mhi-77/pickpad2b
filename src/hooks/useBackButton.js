@@ -5,12 +5,12 @@ La solución implica manipular el historial del navegador para evitar que el bot
 - Escuchar el evento popstate
 - Mostrar una confirmación antes de salir
 - Manejar adecuadamente la navegación
+
 */
 
-// hooks/useBackButton.js
 import { useState, useEffect, useRef } from 'react';
 
-const useBackButton = (customHandler) => {
+const useBackButton = () => {
   const [showModal, setShowModal] = useState(false);
   const historyCount = useRef(1);
 
@@ -19,27 +19,18 @@ const useBackButton = (customHandler) => {
     window.history.pushState({ id: 1, custom: true }, "");
 
     const handlePopState = (event) => {
-      if (customHandler && typeof customHandler === 'function') {
-        const shouldPreventDefault = customHandler();
-        if (shouldPreventDefault === false) {
-          window.history.pushState({ id: Date.now(), custom: true }, "");
-          historyCount.current++;
-        }
-      } else {
-        // Comportamiento por defecto
-        if (event.state && event.state.custom) {
-          historyCount.current--;
-          
-          if (historyCount.current === 0) {
-            setShowModal(true);
-            window.history.pushState({ id: Date.now(), custom: true }, "");
-            historyCount.current = 1;
-          }
-        } else {
+      if (event.state && event.state.custom) {
+        historyCount.current--;
+        
+        if (historyCount.current === 0) {
           setShowModal(true);
           window.history.pushState({ id: Date.now(), custom: true }, "");
           historyCount.current = 1;
         }
+      } else {
+        setShowModal(true);
+        window.history.pushState({ id: Date.now(), custom: true }, "");
+        historyCount.current = 1;
       }
     };
 
@@ -48,7 +39,7 @@ const useBackButton = (customHandler) => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [customHandler]);
+  }, []);
 
   const handleConfirmExit = () => {
     window.history.go(-historyCount.current);
@@ -59,6 +50,7 @@ const useBackButton = (customHandler) => {
     setShowModal(false);
   };
 
+  // Retornar siempre un objeto con las propiedades esperadas
   return {
     showModal,
     handleConfirmExit,
