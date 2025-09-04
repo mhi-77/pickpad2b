@@ -60,11 +60,12 @@ function AppContent({ appVersion }) {
                   cursor: 'pointer'
                 }}
               >
-                Salir
+                Salir 
               </button>
             </div>
           </div>
-        </div>
+            logout();
+        </div> 
       )}
     </>
   );
