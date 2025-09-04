@@ -29,7 +29,7 @@ export default function SignupForm({ userTypes = [] }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}`,
+          //emailRedirectTo: `${window.location.origin}`,
           data: {
             full_name: fullName,
             dni: dni || null, // Si está vacío, enviar null
