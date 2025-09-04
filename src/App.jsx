@@ -62,9 +62,9 @@ function AppContent({ appVersion }) {
               >
                 Salir 
               </button>
+               logout();
             </div>
-          </div>
-            logout();
+          </div> 
         </div> 
       )}
     </>
