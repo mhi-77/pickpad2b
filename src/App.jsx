@@ -41,7 +41,7 @@ function AppContent({ appVersion }) {
                 onClick={handleCancelExit}
                 style={{
                   padding: '10px 20px',
-                  backgroundColor: 'blue-600',
+                  backgroundColor: '#1a75ff',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
