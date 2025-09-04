@@ -34,14 +34,15 @@ function AppContent({ appVersion }) {
             width: '90%',
             textAlign: 'center'
           }}>
-            <h2>Salir de la aplicación</h2>
-            <p>Vuelva a presionar ATRAS para cerrar sesión y SALIR</p>
+            <h2><strong>SALIR DE LA APLICACIÓN</strong></h2>
+            <p>Vuelva a presionar ATRAS para cerrar sesión y salir</p>
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
               <button 
                 onClick={handleCancelExit}
                 style={{
                   padding: '10px 20px',
                   backgroundColor: 'blue',
+                  color: 'white',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer'
