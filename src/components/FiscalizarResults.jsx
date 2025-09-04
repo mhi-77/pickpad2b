@@ -90,8 +90,8 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                   {/* Solo visible para usuarios tipo 3 o inferior */}
                   {userRole && userRole <= 3 && ( 
                     <div className="flex items-center justify-center space-y-2"> {record.emopicks?.display && (
-                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.display}</span> )
-                    }    </div>
+                      <span className="space-x-2 px-2 py-1 text-m">{record.emopicks.display}</span> ) }
+                    </div>
                    )}
                    
                 </div>
@@ -192,7 +192,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-6 h-6 text-yellow-600" />
+                  <AlertCircle className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -210,7 +210,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
             <div className="mb-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-medium mb-2">
+                <p className="text-red-700 font-medium mb-2">
                   ⚠️ Esta acción no se puede deshacer
                 </p>
                
