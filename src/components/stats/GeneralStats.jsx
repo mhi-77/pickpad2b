@@ -22,141 +22,181 @@ export default function GeneralStats() {
     fetchGeneralStats();
   }, []);
 
-  const fetchGeneralStats = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      // Fetch basic stats
-      const { data: padronData, error: padronError } = await supabase
-        .from('padron')
-        .select(`
-          documento,
-          sexo,
-          clase,
-          da_es_nuevo,
-          da_voto_obligatorio,
-          voto_emitido,
-          voto_pick_at,
-          mesa_numero,
-          mesas!inner(
-            numero,
-            establecimientos!inner(
-              circuitos!inner(
-                localidad
-              )
-            )
-          )
-        `);
+const fetchGeneralStats = async () => {
+  setIsLoading(true);
+  setError('');
+  try {
+    // 1. Total empadronados (ya lo tienes bien)
+    const { count: totalEmpadronados, error: countError } = await supabase
+      .from('padron')
+      .select('*', { count: 'exact', head: true });
 
-      if (padronError) {
-        throw padronError;
+    if (countError) throw countError;
+
+    // 2. Total votos emitidos
+    const { count: totalVotosEmitidos, error: votosError } = await supabase
+      .from('padron')
+      .select('documento', { count: 'exact', head: true })
+      .eq('voto_emitido', true);
+
+    if (votosError) throw votosError;
+
+    // 3. Participación por sexo
+    const { data: sexoData, error: sexoError } = await supabase
+      .from('padron')
+      .select('sexo')
+      .eq('voto_emitido', true)
+      .not('sexo', 'is', null);
+
+    if (sexoError) throw sexoError;
+
+    const participacionPorSexo = sexoData.reduce(
+      (acc, curr) => {
+        if (curr.sexo === 'M') acc.M++;
+        if (curr.sexo === 'F') acc.F++;
+        return acc;
+      },
+      { M: 0, F: 0 }
+    );
+
+    // 4. Participación por edad (clase = año de nacimiento)
+    const currentYear = new Date().getFullYear();
+    const { data: edadData, error: edadError } = await supabase
+      .from('padron')
+      .select('clase')
+      .eq('voto_emitido', true)
+      .not('clase', 'is', null);
+
+    if (edadError) throw edadError;
+
+    const ageRanges = [
+      { range: '18-30', min: currentYear - 30, max: currentYear - 18 },
+      { range: '31-50', min: currentYear - 50, max: currentYear - 31 },
+      { range: '51-70', min: currentYear - 70, max: currentYear - 51 },
+      { range: '71+', max: currentYear - 71 }
+    ];
+
+    const participacionPorEdad = ageRanges.map(ageRange => {
+      let count = 0;
+      for (const row of edadData) {
+        const birthYear = row.clase;
+        if (ageRange.range === '71+') {
+          if (birthYear <= ageRange.max) count++;
+        } else {
+          if (birthYear >= ageRange.min && birthYear <= ageRange.max) count++;
+        }
       }
+      return { range: ageRange.range, count };
+    });
 
-      // Calculate basic metrics
-      const totalEmpadronados = padronData?.length || 0;
-      const votedData = padronData?.filter(record => record.voto_emitido === true) || [];
-      const totalVotosEmitidos = votedData.length;
-      const porcentajeParticipacion = totalEmpadronados > 0 ? 
-        ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) : 0;
+    // 5. Nuevos votantes
+    const { count: nuevosTotal, error: nuevosTotalError } = await supabase
+      .from('padron')
+      .select('documento', { count: 'exact', head: true })
+      .eq('da_es_nuevo', true);
 
-      // Participation by sex
-      const participacionPorSexo = {
-        M: votedData.filter(record => record.sexo === 'M').length,
-        F: votedData.filter(record => record.sexo === 'F').length
-      };
+    const { count: nuevosVotaron, error: nuevosVotaronError } = await supabase
+      .from('padron')
+      .select('documento', { count: 'exact', head: true })
+      .eq('da_es_nuevo', true)
+      .eq('voto_emitido', true);
 
-      // Participation by age ranges
-      const currentYear = new Date().getFullYear();
-      const ageRanges = [
-        { range: '18-30', min: currentYear - 30, max: currentYear - 18 },
-        { range: '31-50', min: currentYear - 50, max: currentYear - 31 },
-        { range: '51-70', min: currentYear - 70, max: currentYear - 51 },
-        { range: '71+', min: 0, max: currentYear - 71 }
-      ];
+    if (nuevosTotalError || nuevosVotaronError) throw nuevosTotalError || nuevosVotaronError;
 
-      const participacionPorEdad = ageRanges.map(ageRange => {
-        const count = votedData.filter(record => {
-          if (!record.clase) return false;
-          if (ageRange.range === '71+') {
-            return record.clase <= ageRange.max;
-          }
-          return record.clase >= ageRange.min && record.clase <= ageRange.max;
-        }).length;
-        return { range: ageRange.range, count };
-      });
+    const participacionNuevos = { voted: nuevosVotaron, total: nuevosTotal };
 
-      // New voters participation
-      const nuevosVotantes = padronData?.filter(record => record.da_es_nuevo === true) || [];
-      const nuevosQueVotaron = nuevosVotantes.filter(record => record.voto_emitido === true);
-      const participacionNuevos = {
-        voted: nuevosQueVotaron.length,
-        total: nuevosVotantes.length
-      };
+    // 6. Votantes obligatorios
+    const { count: obligatoriosTotal, error: obligatoriosTotalError } = await supabase
+      .from('padron')
+      .select('documento', { count: 'exact', head: true })
+      .eq('da_voto_obligatorio', true);
 
-      // Obligatory voters participation
-      const votantesObligatorios = padronData?.filter(record => record.da_voto_obligatorio === true) || [];
-      const obligatoriosQueVotaron = votantesObligatorios.filter(record => record.voto_emitido === true);
-      const participacionObligatorios = {
-        voted: obligatoriosQueVotaron.length,
-        total: votantesObligatorios.length
-      };
+    const { count: obligatoriosVotaron, error: obligatoriosVotaronError } = await supabase
+      .from('padron')
+      .select('documento', { count: 'exact', head: true })
+      .eq('da_voto_obligatorio', true)
+      .eq('voto_emitido', true);
 
-      // Participation by hour (based on voto_pick_at)
-      const participacionPorHora = [];
-      for (let hour = 8; hour <= 18; hour++) {
-        const hourString = `${hour.toString().padStart(2, '0')}:00`;
-        const count = votedData.filter(record => {
-          if (!record.voto_pick_at) return false;
-          const voteHour = new Date(record.voto_pick_at).getHours();
-          return voteHour === hour;
-        }).length;
-        participacionPorHora.push({ hour: hourString, count });
-      }
+    if (obligatoriosTotalError || obligatoriosVotaronError) throw obligatoriosTotalError || obligatoriosVotaronError;
 
-      // Get unique mesas count
-      const uniqueMesas = new Set(padronData?.map(record => record.mesa_numero).filter(Boolean));
-      const mesasActivas = uniqueMesas.size;
+    const participacionObligatorios = { voted: obligatoriosVotaron, total: obligatoriosTotal };
 
-      // Mesa participation breakdown
-      const mesasPorParticipacion = [];
-      uniqueMesas.forEach(mesaNum => {
-        const mesaVoters = padronData?.filter(record => record.mesa_numero === mesaNum) || [];
-        const mesaVoted = mesaVoters.filter(record => record.voto_emitido === true);
-        const participation = mesaVoters.length > 0 ? 
-          ((mesaVoted.length / mesaVoters.length) * 100).toFixed(1) : 0;
-        
-        mesasPorParticipacion.push({
-          mesa: mesaNum,
-          empadronados: mesaVoters.length,
-          votaron: mesaVoted.length,
-          participacion: parseFloat(participation)
-        });
-      });
+    // 7. Participación por hora
+    const { data: horaData, error: horaError } = await supabase
+      .from('padron')
+      .select('voto_pick_at')
+      .eq('voto_emitido', true)
+      .not('voto_pick_at', 'is', null);
 
-      // Sort mesas by participation
-      mesasPorParticipacion.sort((a, b) => b.participacion - a.participacion);
+    if (horaError) throw horaError;
 
-      setStats({
-        totalEmpadronados,
-        totalVotosEmitidos,
-        porcentajeParticipacion: parseFloat(porcentajeParticipacion),
-        mesasActivas,
-        participacionPorSexo,
-        participacionPorEdad,
-        participacionNuevos,
-        participacionObligatorios,
-        participacionPorHora,
-        mesasPorParticipacion: mesasPorParticipacion.slice(0, 10) // Top 10 mesas
-      });
-
-    } catch (err) {
-      setError('Error loading general statistics.');
-      console.error('Error fetching general stats:', err);
-    } finally {
-      setIsLoading(false);
+    const participacionPorHora = [];
+    for (let hour = 8; hour <= 18; hour++) {
+      const count = horaData.filter(row => {
+        const date = new Date(row.voto_pick_at);
+        return date.getHours() === hour;
+      }).length;
+      participacionPorHora.push({ hour: `${hour.toString().padStart(2, '0')}:00`, count });
     }
-  };
 
+    // 8. Mesas activas y participación
+    const { data: mesasData, error: mesasError } = await supabase
+      .from('padron')
+      .select('mesa_numero, voto_emitido')
+      .not('mesa_numero', 'is', null);
+
+    if (mesasError) throw mesasError;
+
+    const mesaMap = new Map();
+    for (const row of mesasData) {
+      const num = row.mesa_numero;
+      if (!mesaMap.has(num)) {
+        mesaMap.set(num, { total: 0, votaron: 0 });
+      }
+      const mesa = mesaMap.get(num);
+      mesa.total += 1;
+      if (row.voto_emitido) mesa.votaron += 1;
+    }
+
+    const mesasActivas = mesaMap.size;
+
+    const mesasPorParticipacion = Array.from(mesaMap.entries())
+      .map(([mesa, data]) => ({
+        mesa,
+        empadronados: data.total,
+        votaron: data.votaron,
+        participacion: ((data.votaron / data.total) * 100).toFixed(1)
+      }))
+      .sort((a, b) => b.participacion - a.participacion)
+      .slice(0, 10);
+
+    // 9. Calcular porcentaje general
+    const porcentajeParticipacion = totalEmpadronados > 0 
+      ? ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) 
+      : 0;
+
+    // 10. Actualizar estado
+    setStats({
+      totalEmpadronados,
+      totalVotosEmitidos,
+      porcentajeParticipacion: parseFloat(porcentajeParticipacion),
+      mesasActivas,
+      participacionPorSexo,
+      participacionPorEdad,
+      participacionNuevos,
+      participacionObligatorios,
+      participacionPorHora,
+      mesasPorParticipacion
+    });
+
+  } catch (err) {
+    setError('Error loading general statistics.');
+    console.error('Error fetching general stats:', err);
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -219,28 +259,36 @@ export default function GeneralStats() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Sexo</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Masculino:</span>
-                    <span className="font-medium">{stats.participacionPorSexo.M.toLocaleString()} votos</span>
+                {stats.participacionPorSexo.M === 0 && stats.participacionPorSexo.F === 0 ? (
+                  <p className="text-gray-500 text-sm">No hay datos de sexo registrados</p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Masculino:</span>
+                      <span className="font-medium">{stats.participacionPorSexo.M.toLocaleString()} votos</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Femenino:</span>
+                      <span className="font-medium">{stats.participacionPorSexo.F.toLocaleString()} votos</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Femenino:</span>
-                    <span className="font-medium">{stats.participacionPorSexo.F.toLocaleString()} votos</span>
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango de Edad</h3>
-                <div className="space-y-2">
-                  {stats.participacionPorEdad.map((item, index) => (
-                    <div key={index} className="flex justify-between">
-                      <span className="text-gray-600">{item.range} años:</span>
-                      <span className="font-medium">{item.count.toLocaleString()} votos</span>
-                    </div>
-                  ))}
-                </div>
+                {stats.participacionPorEdad.every(item => item.count === 0) ? (
+                  <p className="text-gray-500 text-sm">No hay datos de edad registrados</p>
+                ) : (
+                  <div className="space-y-2">
+                    {stats.participacionPorEdad.map((item, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="text-gray-600">{item.range} años:</span>
+                        <span className="font-medium">{item.count.toLocaleString()} votos</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -289,55 +337,63 @@ export default function GeneralStats() {
             {/* Hourly Participation */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango Horario</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {stats.participacionPorHora.map((item, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-sm text-gray-600">{item.hour}</div>
-                    <div className="text-lg font-bold text-blue-600">{item.count}</div>
-                  </div>
-                ))}
-              </div>
+              {stats.participacionPorHora.every(item => item.count === 0) ? (
+                <p className="text-gray-500 text-sm">No hay datos de horario registrados</p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {stats.participacionPorHora.map((item, index) => (
+                    <div key={index} className="text-center">
+                      <div className="text-sm text-gray-600">{item.hour}</div>
+                      <div className="text-lg font-bold text-blue-600">{item.count}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Top Mesas by Participation */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 10 Mesas por Participación</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {stats.mesasPorParticipacion.map((mesa, index) => (
-                      <tr key={mesa.mesa}>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Mesa {mesa.mesa}
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {mesa.empadronados}
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {mesa.votaron}
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            mesa.participacion >= 80 ? 'bg-green-100 text-green-800' :
-                            mesa.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {mesa.participacion}%
-                          </span>
-                        </td>
+              {stats.mesasPorParticipacion.length === 0 ? (
+                <p className="text-gray-500 text-sm">No hay mesas con participación registrada</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {stats.mesasPorParticipacion.map((mesa, index) => (
+                        <tr key={mesa.mesa}>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                            Mesa {mesa.mesa}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                            {mesa.empadronados}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                            {mesa.votaron}
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              mesa.participacion >= 80 ? 'bg-green-100 text-green-800' :
+                              mesa.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {mesa.participacion}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
