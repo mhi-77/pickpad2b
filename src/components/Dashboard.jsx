@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
 import GpicksView from './GpicksView';
+import TestigoView from './TestigoView';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
@@ -304,6 +305,10 @@ export default function Dashboard({ appVersion }) {
       case 'gpicks':
         return (
           <GpicksView />
+        );
+      case 'testigo':
+        return (
+          <TestigoView />
         );
       case 'gusers':
         return (

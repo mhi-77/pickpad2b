@@ -37,7 +37,29 @@
  * @property {string|null} pick_check_user
  * @property {Object|null} profiles - Perfil del usuario que marcó el voto
  * @property {string|null} profiles.full_name - Nombre completo del usuario
+/**
+ * @typedef {Object} TestigoRecord
+ * @property {number} id
+ * @property {number|null} mesa_numero
+ * @property {number|null} pila_inicio
+ * @property {number|null} votos_inicio
+ * @property {number|null} pila_retirada
+ * @property {number|null} pila_faltante
+ * @property {string|null} user_id
+ * @property {string|null} user_at
+ * @property {number|null} votos_diferencia
+ * @property {boolean|null} muestra_valida
+ * @property {Object|null} profiles
+ * @property {string|null} profiles.full_name
+ * @property {Object|null} mesas
+ * @property {number|null} mesas.numero
+ * @property {Object|null} mesas.establecimientos
+ * @property {string|null} mesas.establecimientos.nombre
+ * @property {Object|null} mesas.establecimientos.circuitos
+ * @property {string|null} mesas.establecimientos.circuitos.localidad
  */
+
+
 
 /**
  * @typedef {Object} SearchFilters
