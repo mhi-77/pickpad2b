@@ -31,7 +31,7 @@ export default function GusersView() {
     { id: 'gestion', label: 'Gestión', icon: Users },
     { id: 'fiscales', label: 'Fiscales', icon: Settings },
   ];
-
+  
   /**
    * Efecto para cargar los tipos de usuario al montar el componente
    */
@@ -137,7 +137,7 @@ export default function GusersView() {
           </div>
         );
       
-      case 'fiscales':
+     case 'fiscales':
         return (
           <div className="space-y-6">
             {/* Panel informativo para la sección de fiscales */}
@@ -156,7 +156,7 @@ export default function GusersView() {
             {/* Contenedor para la lista de fiscales */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               {/* Componente FiscalesList para gestionar fiscales */}
-              <FiscalesList />
+              <FiscalesList userTypes={userTypes} />
             </div>
           </div>
         );
