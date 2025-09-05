@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, AlertCircle, CheckCircle, X, Hash, Download } from 'lucide-react';
+import { User, AlertCircle, CheckCircle, X, Hash, Download, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function FiscalesList({ userTypes = [] }) {
@@ -19,6 +19,7 @@ export default function FiscalesList({ userTypes = [] }) {
   const [mesaStats, setMesaStats] = useState({ total: 0, asignadas: 0, sinAsignar: 0 });
   const [showMesasModal, setShowMesasModal] = useState(false);
   const [fiscalesPorMesa, setFiscalesPorMesa] = useState(new Map());
+  const [uploadResult, setUploadResult] = useState(null); // Para feedback de carga
 
   useEffect(() => {
     fetchFiscales();
@@ -233,6 +234,86 @@ export default function FiscalesList({ userTypes = [] }) {
     return tipo === 3 ? 'bg-green-600' : 'bg-blue-600';
   };
 
+  // --- Función de carga masiva desde CSV ---
+  const handleCsvUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const csv = e.target.result;
+      const lines = csv.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+      if (!headers.includes('fiscal_id') || !headers.includes('mesa')) {
+        alert('❌ El CSV debe tener las columnas: fiscal_id, mesa');
+        return;
+      }
+
+      const mesaIndex = headers.indexOf('mesa');
+      const idIndex = headers.indexOf('fiscal_id');
+
+      const updates = [];
+      const errors = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+        const fiscalId = cols[idIndex];
+        const mesaStr = cols[mesaIndex];
+
+        if (!fiscalId) continue;
+
+        let mesaNumero = null;
+        if (mesaStr && !isNaN(mesaStr) && parseInt(mesaStr) > 0) {
+          mesaNumero = parseInt(mesaStr);
+        } else if (mesaStr && mesaStr !== '') {
+          errors.push(`Mesa inválida: ${mesaStr} para fiscal ${fiscalId}`);
+          continue;
+        }
+
+        if (mesaNumero !== null && !validMesas.has(mesaNumero)) {
+          errors.push(`La mesa ${mesaNumero} no existe`);
+          continue;
+        }
+
+        updates.push({ fiscalId, mesaNumero });
+      }
+
+      const confirmMsg = `¿Actualizar ${updates.length} asignaciones?\n\n${updates.slice(0, 10).map(u => `ID: ${u.fiscalId} → Mesa ${u.mesaNumero || 'Sin asignar'}`).join('\n')}${updates.length > 10 ? '\n...' : ''}`;
+      if (!window.confirm(confirmMsg)) return;
+
+      let updatedCount = 0;
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ 
+            mesa_numero: update.mesaNumero,
+            asignada_por: user?.id || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', update.fiscalId);
+
+        if (error) {
+          errors.push(`Error al actualizar ${update.fiscalId}: ${error.message}`);
+        } else {
+          updatedCount++;
+        }
+      }
+
+      setUploadResult({
+        updated: updatedCount,
+        errors: errors.length
+      });
+
+      await fetchFiscales();
+      event.target.value = null;
+    };
+    reader.readAsText(file);
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-2">
@@ -264,30 +345,51 @@ export default function FiscalesList({ userTypes = [] }) {
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-2">
-      {/* Encabezado con botón CSV */}
-      <div className="px-0 pt-0 pb-2 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          {/*   <h3 className="text-lg font-semibold text-gray-900">Gestión de Fiscales</h3> */}
-          <button
-            type="button"
-            onClick={() => {
-              const headers = ['fiscal_id', 'full_name', 'mesa'];
-              const rows = fiscales.map(f => [f.id, f.full_name, f.mesa_numero || '']);
-              const csv = [headers.join(','), ...rows.map(r => r.map(field => `"${field}"`).join(','))].join('\n');
-              const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.setAttribute('href', url);
-              link.setAttribute('download', `plantilla_asignacion_mesas.csv`);
-              link.click();
-            }}
-            className="flex items-center space-x-2 px-2 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Descargar Plantilla CSV</span>
-          </button>
-        </div>
-      </div>
+{/* Encabezado con botones de CSV */}
+<div className="px-0 pt-0 pb-2 border-b border-gray-200">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    {/* Botón Descargar */}
+    <button
+      type="button"
+      onClick={() => {
+        const headers = ['fiscal_id', 'full_name', 'mesa'];
+        const rows = fiscales.map(f => [f.id, f.full_name, f.mesa_numero || '']);
+        const csv = [
+          headers.join(','),
+          ...rows.map(r => r.map(field => `"${field}"`).join(','))
+        ].join('\n');
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `plantilla_asignacion_mesas.csv`);
+        link.click();
+      }}
+      className="flex items-center justify-center sm:justify-start space-x-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+    >
+      <Download className="w-4 h-4" />
+      <span>Descargar CSV</span>
+    </button>
+
+    {/* Botón Cargar */}
+    <button
+      type="button"
+      onClick={() => document.getElementById('csv-upload').click()}
+      className="flex items-center justify-center sm:justify-start space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+    >
+      <Upload className="w-4 h-4" />
+      <span>Cargar Asignaciones</span>
+    </button>
+
+    <input id="csv-upload" type="file" accept=".csv" onChange={handleCsvUpload} className="hidden" />
+  </div>
+
+  {uploadResult && (
+    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 text-center">
+      ✅ {uploadResult.updated} actualizados • ❌ {uploadResult.errors} errores
+    </div>
+  )}
+</div>
 
       {/* Botones de Fiscales */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 px-0 pt-2 pb-4">
@@ -318,7 +420,7 @@ export default function FiscalesList({ userTypes = [] }) {
                 activeFilter === 'tipo3' ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
               }`}
             >
-              <div className="text-xs font-medium  text-gray-700 text-center">{tipo3Data.descripcion}</div>  
+              <div className="text-xs font-medium text-gray-700 text-center">{tipo3Data.descripcion}</div>  
               <div className="flex items-center justify-center mt-1 space-x-1">
                 <span className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">G</span>
@@ -502,9 +604,62 @@ export default function FiscalesList({ userTypes = [] }) {
 
       {/* Modal Confirmación */}
       {showConfirmModal && pendingUpdate && (
-        <div onKeyDown={(e) => { if (e.key === 'Escape') handleCancelUpdate(); if (e.key === 'Enter') handleConfirmUpdate(); }} tabIndex={-1} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') handleCancelUpdate();
+            if (e.key === 'Enter') handleConfirmUpdate();
+          }}
+          tabIndex={-1}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-            {/* ... igual que antes ... */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Confirmar Asignación</h3>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelUpdate}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-blue-800 font-medium mb-2">{pendingUpdate.fiscalName}</p>
+                <p className="text-blue-700 text-sm">Mesa actual: {pendingUpdate.currentMesa || 'Sin asignar'}</p>
+                <p className="text-blue-700 text-sm">Nueva mesa: {pendingUpdate.newMesaDisplay}</p>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelUpdate}
+                disabled={updating}
+                className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              
+              <button
+                onClick={handleConfirmUpdate}
+                disabled={updating}
+                className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {updating ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <CheckCircle className="w-5 h-5" />
+                )}
+                <span>Confirmar</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
