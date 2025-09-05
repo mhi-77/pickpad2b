@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, AlertCircle, CheckCircle, X, Hash } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -6,9 +6,11 @@ import { useAuth } from '../context/AuthContext';
 /**
  * Componente FiscalesList - Lista compacta de usuarios tipo 3 y 4 (fiscales)
  * 
- * Propósito: Mostrar una lista de fiscales con capacidad de asignar/editar mesa
- * Permite actualizar el campo mesa_numero con validación y confirmación
- * Incluye filtros por tipo, descarga de CSV y estadísticas de mesas.
+ * Funcionalidades:
+ * - Filtros exclusivos por tipo o estado de mesa
+ * - Modal con detalle de mesas (incluye localidad)
+ * - Confirmación con Enter/Escape
+ * - Orden dinámico según filtro
  */
 export default function FiscalesList({ userTypes = [] }) {
   // Estados para el manejo de datos
@@ -26,16 +28,21 @@ export default function FiscalesList({ userTypes = [] }) {
   
   // Estados para validación de mesas
   const [validMesas, setValidMesas] = useState(new Set());
+  const [mesasData, setMesasData] = useState([]); // Con establecimiento y localidad
   
   // Usuario actual para registrar quién hace las asignaciones
   const { user } = useAuth();
 
-  // Estado para filtro por tipo de fiscal
-  const [filterTipo, setFilterTipo] = useState(null); // null = todos, 3 o 4
+  // Filtro exclusivo (solo uno activo)
+  const [activeFilter, setActiveFilter] = useState(null);
   const [stats, setStats] = useState({ total: 0, tipo3: 0, tipo4: 0 });
-
-  // Estado para estadísticas de mesas
   const [mesaStats, setMesaStats] = useState({ total: 0, asignadas: 0, sinAsignar: 0 });
+
+  // Estado para modal de mesas
+  const [showMesasModal, setShowMesasModal] = useState(false);
+
+  // Conteo de fiscales por mesa
+  const [fiscalesPorMesa, setFiscalesPorMesa] = useState(new Map());
 
   useEffect(() => {
     fetchFiscales();
@@ -43,17 +50,28 @@ export default function FiscalesList({ userTypes = [] }) {
   }, []);
 
   /**
-   * Obtiene la lista de mesas válidas para validación
+   * Obtiene la lista de mesas con establecimiento y localidad
    */
   const fetchValidMesas = async () => {
     try {
       const { data, error } = await supabase
         .from('mesas')
-        .select('numero');
+        .select(`
+          numero,
+          total_fiscales_asignados,
+          establecimientos (
+            nombre,
+            circuitos (
+              localidad
+            )
+          )
+        `)
+        .order('numero', { ascending: true });
 
       if (!error && data) {
         const mesasSet = new Set(data.map(mesa => mesa.numero));
         setValidMesas(mesasSet);
+        setMesasData(data);
       }
     } catch (error) {
       console.error('Error fetching valid mesas:', error);
@@ -61,7 +79,7 @@ export default function FiscalesList({ userTypes = [] }) {
   };
 
   /**
-   * Obtiene la lista de fiscales (usuarios tipo 3 y 4) con sus datos relacionados
+   * Obtiene la lista de fiscales (usuarios tipo 3 y 4)
    */
   const fetchFiscales = async () => {
     setLoading(true);
@@ -110,14 +128,15 @@ export default function FiscalesList({ userTypes = [] }) {
     }
   }, [fiscales]);
 
-  // Calcular estadísticas de mesas
+  // Calcular estadísticas de mesas y conteo por mesa
   useEffect(() => {
     if (validMesas.size > 0 && fiscales.length > 0) {
-      // Mesas asignadas: conjunto único de mesa_numero que existen en validMesas
+      // Mesas asignadas: mesa válida > 0
       const mesasAsignadasSet = new Set(
         fiscales
           .map(f => f.mesa_numero)
-          .filter(numero => numero !== null && numero !== undefined && validMesas.has(parseInt(numero)))
+          .filter(num => num != null && num !== '' && parseInt(num) > 0)
+          .map(num => parseInt(num))
       );
 
       const total = validMesas.size;
@@ -125,13 +144,49 @@ export default function FiscalesList({ userTypes = [] }) {
       const sinAsignar = total - asignadas;
 
       setMesaStats({ total, asignadas, sinAsignar });
+
+      // Conteo real de fiscales por mesa
+      const conteo = new Map();
+      fiscales.forEach(f => {
+        const num = f.mesa_numero;
+        if (num != null && num !== '' && parseInt(num) > 0) {
+          const numInt = parseInt(num);
+          conteo.set(numInt, (conteo.get(numInt) || 0) + 1);
+        }
+      });
+      setFiscalesPorMesa(conteo);
     }
   }, [fiscales, validMesas]);
 
-  // Aplicar filtro
-  const filteredFiscales = filterTipo 
-    ? fiscales.filter(f => f.usuario_tipo === filterTipo) 
-    : fiscales;
+  // Aplicar filtro exclusivo
+  const filteredFiscales = useMemo(() => {
+    let result = [...fiscales];
+
+    switch (activeFilter) {
+      case 'tipo3':
+        return result
+          .filter(f => f.usuario_tipo === 3)
+          .sort((a, b) => a.full_name.localeCompare(b.full_name));
+      
+      case 'tipo4':
+        return result
+          .filter(f => f.usuario_tipo === 4)
+          .sort((a, b) => a.full_name.localeCompare(b.full_name));
+      
+      case 'asignadas':
+        return result
+          .filter(f => f.mesa_numero != null && f.mesa_numero !== '' && parseInt(f.mesa_numero) > 0)
+          .sort((a, b) => parseInt(a.mesa_numero) - parseInt(b.mesa_numero));
+      
+      case 'sinAsignar':
+        return result
+          .filter(f => f.mesa_numero == null || f.mesa_numero === '' || parseInt(f.mesa_numero) <= 0)
+          .sort((a, b) => a.full_name.localeCompare(b.full_name));
+      
+      default:
+        return result;
+    }
+  }, [fiscales, activeFilter]);
 
   /**
    * Obtiene el nombre descriptivo del tipo de usuario
@@ -156,23 +211,24 @@ export default function FiscalesList({ userTypes = [] }) {
       return;
     }
 
-    // Validar si la nueva mesa es válida (si no está vacía)
-    if (newMesa && !validMesas.has(parseInt(newMesa))) {
-      alert(`❌ La mesa ${newMesa} no existe en el sistema`);
-      // Revertir el valor en el input
+    // Validar si la nueva mesa es válida (debe ser número > 0)
+    const newMesaNum = parseInt(newMesa);
+    if (newMesa && (!isNaN(newMesaNum) && newMesaNum > 0) && validMesas.has(newMesaNum)) {
+      // Válido
+    } else if (newMesa === '') {
+      // Permitir vacío (sin asignar)
+    } else {
+      alert(`❌ La mesa ${newMesa} no es válida`);
       const input = document.querySelector(`input[data-fiscal-id="${fiscalId}"]`);
-      if (input) {
-        input.value = currentMesa || '';
-      }
+      if (input) input.value = currentMesa || '';
       return;
     }
 
-    // Preparar la actualización pendiente
     setPendingUpdate({
       fiscalId,
       fiscalName: fiscal.full_name,
       currentMesa,
-      newMesa: newMesa || null,
+      newMesa: newMesa ? newMesaNum : null,
       newMesaDisplay: newMesa || 'Sin asignar'
     });
     
@@ -200,18 +256,12 @@ export default function FiscalesList({ userTypes = [] }) {
       if (error) {
         console.error('Error updating mesa:', error);
         alert('❌ Error al actualizar la asignación de mesa');
-        
-        // Revertir el valor en el input
         const input = document.querySelector(`input[data-fiscal-id="${pendingUpdate.fiscalId}"]`);
-        if (input) {
-          input.value = pendingUpdate.currentMesa || '';
-        }
+        if (input) input.value = pendingUpdate.currentMesa || '';
       } else {
-        // Actualizar los datos localmente
         await fetchFiscales();
-        // ✅ Feedback inmediato en pantalla
         setSuccessMessage(`✅ Mesa ${pendingUpdate.newMesaDisplay} asignada a ${pendingUpdate.fiscalName}`);
-        setTimeout(() => setSuccessMessage(''), 3000); // desaparece a los 3s
+        setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -228,11 +278,8 @@ export default function FiscalesList({ userTypes = [] }) {
    */
   const handleCancelUpdate = () => {
     if (pendingUpdate) {
-      // Revertir el valor en el input
       const input = document.querySelector(`input[data-fiscal-id="${pendingUpdate.fiscalId}"]`);
-      if (input) {
-        input.value = pendingUpdate.currentMesa || '';
-      }
+      if (input) input.value = pendingUpdate.currentMesa || '';
     }
     
     setShowConfirmModal(false);
@@ -243,7 +290,7 @@ export default function FiscalesList({ userTypes = [] }) {
    * Obtiene la letra para mostrar en el círculo según el tipo de usuario
    */
   const getUserTypeLetter = (tipo) => {
-    return tipo === 3 ? 'G' : 'F'; // G para tipo 3, F para tipo 4
+    return tipo === 3 ? 'G' : 'F';
   };
 
   /**
@@ -284,25 +331,15 @@ export default function FiscalesList({ userTypes = [] }) {
 
   return (
     <div className="bg-white rounded-xl shadow-lg">
-      {/* Encabezado */}
-      <div className="p-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Lista de Fiscales ({fiscales.length})
-        </h3>
-        <p className="text-sm text-gray-600 mt-1">
-          Usuarios tipo 3 y tipo 4 con asignación de mesa
-        </p>
-      </div>
-
       {/* Estadísticas de fiscales */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 px-6 pt-4 pb-2">
         {/* Total */}
         <button
           type="button"
-          onClick={() => setFilterTipo(null)}
+          onClick={() => setActiveFilter(null)}
           title="Mostrar todos los fiscales"
           className={`bg-white rounded-lg shadow p-3 text-left transition-all duration-200 ${
-            filterTipo === null
+            activeFilter === null
               ? 'ring-2 ring-blue-500 bg-blue-50'
               : 'hover:shadow-md hover:bg-gray-50'
           }`}
@@ -324,10 +361,10 @@ export default function FiscalesList({ userTypes = [] }) {
           return (
             <button
               type="button"
-              onClick={() => setFilterTipo(3)}
+              onClick={() => setActiveFilter('tipo3')}
               title={`Mostrar solo ${tipo3Data.descripcion}`}
               className={`bg-white rounded-lg shadow p-3 text-left transition-all duration-200 ${
-                filterTipo === 3
+                activeFilter === 'tipo3'
                   ? 'ring-2 ring-green-500 bg-green-50'
                   : 'hover:shadow-md hover:bg-gray-50'
               }`}
@@ -355,10 +392,10 @@ export default function FiscalesList({ userTypes = [] }) {
           return (
             <button
               type="button"
-              onClick={() => setFilterTipo(4)}
+              onClick={() => setActiveFilter('tipo4')}
               title={`Mostrar solo ${tipo4Data.descripcion}`}
               className={`bg-white rounded-lg shadow p-3 text-left transition-all duration-200 ${
-                filterTipo === 4
+                activeFilter === 'tipo4'
                   ? 'ring-2 ring-blue-500 bg-blue-50'
                   : 'hover:shadow-md hover:bg-gray-50'
               }`}
@@ -382,7 +419,11 @@ export default function FiscalesList({ userTypes = [] }) {
       {/* Estadísticas de mesas */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3 px-6 pt-2 pb-4">
         {/* Total mesas */}
-        <div className="bg-white rounded-lg shadow p-3 text-left">
+        <button
+          type="button"
+          onClick={() => setShowMesasModal(true)}
+          className="bg-white rounded-lg shadow p-3 text-left hover:shadow-md transition-all duration-200"
+        >
           <div className="flex items-center">
             <Hash className="h-5 w-5 text-gray-600" />
             <div className="ml-2">
@@ -390,10 +431,18 @@ export default function FiscalesList({ userTypes = [] }) {
               <p className="text-base font-semibold text-gray-900">{mesaStats.total}</p>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Mesas asignadas */}
-        <div className="bg-white rounded-lg shadow p-3 text-left">
+        <button
+          type="button"
+          onClick={() => setActiveFilter('asignadas')}
+          className={`bg-white rounded-lg shadow p-3 text-left transition-all duration-200 ${
+            activeFilter === 'asignadas'
+              ? 'ring-2 ring-green-500 bg-green-50'
+              : 'hover:shadow-md hover:bg-gray-50'
+          }`}
+        >
           <div className="flex items-center">
             <CheckCircle className="h-5 w-5 text-green-600" />
             <div className="ml-2">
@@ -401,10 +450,18 @@ export default function FiscalesList({ userTypes = [] }) {
               <p className="text-base font-semibold text-gray-900">{mesaStats.asignadas}</p>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Mesas sin asignar */}
-        <div className="bg-white rounded-lg shadow p-3 text-left">
+        <button
+          type="button"
+          onClick={() => setActiveFilter('sinAsignar')}
+          className={`bg-white rounded-lg shadow p-3 text-left transition-all duration-200 ${
+            activeFilter === 'sinAsignar'
+              ? 'ring-2 ring-yellow-500 bg-yellow-50'
+              : 'hover:shadow-md hover:bg-gray-50'
+          }`}
+        >
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-yellow-600" />
             <div className="ml-2">
@@ -412,7 +469,7 @@ export default function FiscalesList({ userTypes = [] }) {
               <p className="text-base font-semibold text-gray-900">{mesaStats.sinAsignar}</p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Botón Descargar CSV */}
@@ -515,9 +572,71 @@ export default function FiscalesList({ userTypes = [] }) {
         </div>
       )}
 
+      {/* Modal: Detalle de mesas */}
+      {showMesasModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Detalle de Mesas</h3>
+              <button
+                onClick={() => setShowMesasModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Mesa</th>
+                    <th className="px-4 py-2 text-left">Establecimiento</th>
+                    <th className="px-4 py-2 text-left">Localidad</th>
+                    <th className="px-4 py-2 text-left">Fiscales Asignados</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {mesasData.map(mesa => {
+                    const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
+                    const establecimiento = mesa.establecimientos?.nombre || 'Sin establecimiento';
+                    const asignados = fiscalesPorMesa.get(mesa.numero) || 0;
+
+                    return (
+                      <tr key={mesa.numero} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium">{mesa.numero}</td>
+                        <td className="px-4 py-2">{establecimiento}</td>
+                        <td className="px-4 py-2">{localidad}</td>
+                        <td className="px-4 py-2">{asignados}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowMesasModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de confirmación */}
       {showConfirmModal && pendingUpdate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') handleCancelUpdate();
+            if (e.key === 'Enter') handleConfirmUpdate();
+          }}
+          tabIndex={-1}
+        >
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
