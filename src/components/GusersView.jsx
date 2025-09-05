@@ -139,7 +139,7 @@ export default function GusersView() {
       
      case 'fiscales':
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Panel informativo para la sección de fiscales */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
@@ -147,14 +147,14 @@ export default function GusersView() {
                 <div>
                   <h3 className="font-semibold text-orange-800">Gestión de Fiscales</h3>
                   <p className="text-sm text-orange-700">
-                    Administra la asignación de mesas para fiscales y gestores
+                    Administra la asignación de mesas para fiscales
                   </p>
                 </div>
               </div>
             </div>
             
             {/* Contenedor para la lista de fiscales */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-2">
               {/* Componente FiscalesList para gestionar fiscales */}
               <FiscalesList userTypes={userTypes} />
             </div>
