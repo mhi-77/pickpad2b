@@ -154,7 +154,7 @@ export default function GusersView() {
             </div>
             
             {/* Contenedor para la lista de fiscales */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
               {/* Componente FiscalesList para gestionar fiscales */}
               <FiscalesList userTypes={userTypes} />
             </div>
