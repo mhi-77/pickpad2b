@@ -3,6 +3,7 @@ import { ScanEye, BarChart3, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import MuestreoTestigo from './MuestreoTestigo';
 import ResultadosTestigo from './ResultadosTestigo';
+import TestigoDashboard from './TestigoDashboard';
 
 /**
  * Componente TestigoView - Vista principal para Mesa Testigo
@@ -31,7 +32,14 @@ export default function TestigoView() {
       minRole: 1, // Usuarios tipo 1 y 2
       maxRole: 2 
     },
-  ];
+    {
+        id: 'dashboard',
+        label: 'Análisis',
+        icon: Activity,
+        minRole: 1,
+        maxRole: 2
+    }
+    ];
 
   // Verificar permisos generales
   if (!user || user.usuario_tipo > 4) {
@@ -80,6 +88,8 @@ export default function TestigoView() {
         return <MuestreoTestigo />;
       case 'resultados':
         return <ResultadosTestigo />;
+      case 'dashboard':
+        return <TestigoDashboard />;
       default:
         return null;
     }
