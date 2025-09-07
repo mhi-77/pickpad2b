@@ -66,37 +66,38 @@ export default function GeneralStats() {
         .not('total_empadronados', 'eq', 0);
 
       if (mesasError) throw mesasError;
-      if (!mesasData) {
-        throw new Error('No se recibieron datos de mesas');
+      if (!mesasData || !Array.isArray(mesasData)) {
+        console.warn('No se recibieron datos válidos de mesas:', mesasData);
       }
+      const data = mesasData || [];
 
       // Calcular métricas globales
-      const totalEmpadronados = mesasData.reduce((sum, m) => sum + m.total_empadronados, 0);
-      const totalVotosEmitidos = mesasData.reduce((sum, m) => sum + (m.total_votaron || 0), 0);
+      const totalEmpadronados = data.reduce((sum, m) => sum + m.total_empadronados, 0);
+      const totalVotosEmitidos = data.reduce((sum, m) => sum + (m.total_votaron || 0), 0);
+      const mesasActivas = data.length;
+
+      // ✅ ¡FALTABA ESTA LÍNEA! Ahora está
       const porcentajeParticipacion = totalEmpadronados > 0 
         ? ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) 
         : 0;
-      const mesasActivas = mesasData.length;
 
       // 2. Todas las mesas (ordenadas por número)
-      const mesasPorParticipacion = mesasData
-        .map(mesa => {
-          const participacion = mesa.total_empadronados > 0 
-            ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100 
-            : 0;
-          return {
-            mesa: mesa.numero,
-            empadronados: mesa.total_empadronados,
-            votaron: mesa.total_votaron || 0,
-            participacion: participacion.toFixed(1),
-            establecimiento: mesa.establecimientos?.nombre || 'Sin establecimiento'
-          };
-        })
-        .sort((a, b) => a.mesa - b.mesa);
+      const mesasPorParticipacion = data.map(mesa => {
+        const participacion = mesa.total_empadronados > 0 
+          ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100 
+          : 0;
+        return {
+          mesa: mesa.numero,
+          empadronados: mesa.total_empadronados,
+          votaron: mesa.total_votaron || 0,
+          participacion: participacion.toFixed(1),
+          establecimiento: mesa.establecimientos?.nombre || 'Sin establecimiento'
+        };
+      }).sort((a, b) => a.mesa - b.mesa);
 
       // 3. Resumen por localidad
       const localidadesMap = new Map();
-      for (const mesa of mesasData) {
+      for (const mesa of mesasData || []) {
         const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
         if (!localidadesMap.has(localidad)) {
           localidadesMap.set(localidad, { empadronados: 0, votaron: 0 });
@@ -107,12 +108,17 @@ export default function GeneralStats() {
       }
 
       const localidades = Array.from(localidadesMap.entries())
-        .map(([localidad, data]) => ({
-          localidad,
-          empadronados: data.empadronados,
-          votaron: data.votaron,
-          participacion: ((data.votaron / data.empadronados) * 100).toFixed(1)
-        }))
+        .map(([localidad, data]) => {
+          const participacion = data.empadronados > 0 
+            ? ((data.votaron / data.empadronados) * 100).toFixed(1) 
+            : 0;
+          return {
+            localidad,
+            empadronados: data.empadronados,
+            votaron: data.votaron,
+            participacion
+          };
+        })
         .sort((a, b) => a.localidad.localeCompare(b.localidad));
 
       // 4. Participación por sexo
@@ -461,9 +467,9 @@ export default function GeneralStats() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">part.</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -473,19 +479,21 @@ export default function GeneralStats() {
                           {loc.localidad}
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            loc.participacion >= stats.porcentajeParticipacion * 0.95
+                              ? 'bg-green-100 text-green-800' :
+                            loc.participacion >= stats.porcentajeParticipacion * 0.65
+                              ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                          }`}>
+                            {loc.participacion}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                           {loc.empadronados}
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                           {loc.votaron}
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            loc.participacion >= 80 ? 'bg-green-100 text-green-800' :
-                            loc.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {loc.participacion}%
-                          </span>
                         </td>
                       </tr>
                     ))}
@@ -527,10 +535,10 @@ export default function GeneralStats() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">part.</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Establecimiento</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -540,6 +548,17 @@ export default function GeneralStats() {
                         Mesa {mesa.mesa}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          mesa.participacion >= stats.porcentajeParticipacion * 0.95
+                            ? 'bg-green-100 text-green-800' :
+                          mesa.participacion >= stats.porcentajeParticipacion * 0.65
+                            ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
+                          {mesa.participacion}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                         {mesa.establecimiento}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
@@ -547,15 +566,6 @@ export default function GeneralStats() {
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                         {mesa.votaron}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          mesa.participacion >= 80 ? 'bg-green-100 text-green-800' :
-                          mesa.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {mesa.participacion}%
-                        </span>
                       </td>
                     </tr>
                   ))}
