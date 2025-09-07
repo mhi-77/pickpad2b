@@ -1,4 +1,8 @@
 // src/components/stats/GeneralStats.jsx
+// Dashboard de estadísticas generales del proceso electoral
+// Usa Supabase para cargar datos en tiempo real
+// Muestra métricas clave: participación, mesas, sexo, edad, etc.
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { 
@@ -15,7 +19,8 @@ import {
   X
 } from 'lucide-react';
 
-// Función de debounce
+// Función de debounce para evitar múltiples llamadas rápidas
+// Útil si hay muchos cambios en tiempo real
 const debounce = (func, wait) => {
   let timeout;
   return (...args) => {
@@ -25,31 +30,37 @@ const debounce = (func, wait) => {
 };
 
 export default function GeneralStats() {
+  // Estado principal del componente
   const [stats, setStats] = useState({
     totalEmpadronados: 0,
     totalVotosEmitidos: 0,
     porcentajeParticipacion: 0,
     mesasActivas: 0,
-    participacionPorSexo: { M: 0, F: 0 },
+    participacionPorSexo: { M: 0, F: 0, X: 0 }, // Incluye no binario
     participacionPorEdad: [],
     participacionNuevos: { voted: 0, total: 0 },
     participacionObligatorios: { voted: 0, total: 0 },
     participacionPorHora: [],
-    mesasPorParticipacion: [],
-    localidades: []
+    mesasPorParticipacion: [], // Todas las mesas
+    localidades: [] // Participación por localidad
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isRealtime, setIsRealtime] = useState(false);
-  const [showMesasModal, setShowMesasModal] = useState(false);
+  const [isRealtime, setIsRealtime] = useState(false); // Modo manual por defecto
+  const [showMesasModal, setShowMesasModal] = useState(false); // Modal de mesas
 
+  // Función principal para cargar todas las estadísticas
   const fetchGeneralStats = async () => {
     setIsLoading(true);
     setError('');
+    
     try {
       const currentYear = new Date().getFullYear();
 
-      // 1. Obtener mesas con establecimientos y circuitos
+      // --- 1. DATOS DE MESAS ---
+      // Obtenemos mesas con sus establecimientos y localidades
+      // Usamos esta tabla porque ya tiene totales precalculados
       const { data: mesasData, error: mesasError } = await supabase
         .from('mesas')
         .select(`
@@ -63,7 +74,7 @@ export default function GeneralStats() {
             )
           )
         `)
-        .not('total_empadronados', 'eq', 0);
+        .not('total_empadronados', 'eq', 0); // Evita mesas sin empadronados
 
       if (mesasError) throw mesasError;
       if (!mesasData || !Array.isArray(mesasData)) {
@@ -71,17 +82,18 @@ export default function GeneralStats() {
       }
       const data = mesasData || [];
 
-      // Calcular métricas globales
+      // --- 2. MÉTRICAS GLOBALES ---
       const totalEmpadronados = data.reduce((sum, m) => sum + m.total_empadronados, 0);
       const totalVotosEmitidos = data.reduce((sum, m) => sum + (m.total_votaron || 0), 0);
       const mesasActivas = data.length;
 
-      // ✅ ¡FALTABA ESTA LÍNEA! Ahora está
+      // Porcentaje general de participación
       const porcentajeParticipacion = totalEmpadronados > 0 
         ? ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) 
         : 0;
 
-      // 2. Todas las mesas (ordenadas por número)
+      // --- 3. TODAS LAS MESAS ---
+      // Calculamos participación individual y ordenamos por número
       const mesasPorParticipacion = data.map(mesa => {
         const participacion = mesa.total_empadronados > 0 
           ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100 
@@ -93,9 +105,10 @@ export default function GeneralStats() {
           participacion: participacion.toFixed(1),
           establecimiento: mesa.establecimientos?.nombre || 'Sin establecimiento'
         };
-      }).sort((a, b) => a.mesa - b.mesa);
+      }).sort((a, b) => a.mesa - b.mesa); // Orden ascendente por número
 
-      // 3. Resumen por localidad
+      // --- 4. RESUMEN POR LOCALIDAD ---
+      // Agrupamos mesas por localidad (desde circuitos)
       const localidadesMap = new Map();
       for (const mesa of mesasData || []) {
         const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
@@ -121,47 +134,49 @@ export default function GeneralStats() {
         })
         .sort((a, b) => a.localidad.localeCompare(b.localidad));
 
-      // 4. Participación por sexo
-      const { data: sexoData } = await supabase
-        .from('padron')
-        .select('sexo')
-        .eq('voto_emitido', true)
-        .not('sexo', 'is', null);
+      // --- 5. PARTICIPACIÓN POR SEXO ---
+      // Usamos una función RPC para contar eficientemente
+      // Asegurarse de que la función devuelve "sexo" y "count"
+      let participacionPorSexo = { M: 0, F: 0, X: 0 };
+      try {
+        const { data: sexoData, error: sexoError } = await supabase
+          .rpc('get_participacion_por_sexo');
 
-      const participacionPorSexo = (sexoData || []).reduce((acc, curr) => {
-        if (curr.sexo === 'M') acc.M++;
-        if (curr.sexo === 'F') acc.F++;
-        return acc;
-      }, { M: 0, F: 0 });
+        if (sexoError) throw sexoError;
 
-      // 5. Participación por edad
-      const { data: edadData } = await supabase
-        .from('padron')
-        .select('clase')
-        .eq('voto_emitido', true)
-        .not('clase', 'is', null);
-
-      const ageRanges = [
-        { range: '18-30', min: currentYear - 30, max: currentYear - 18 },
-        { range: '31-50', min: currentYear - 50, max: currentYear - 31 },
-        { range: '51-70', min: currentYear - 70, max: currentYear - 51 },
-        { range: '71+', max: currentYear - 71 }
-      ];
-
-      const participacionPorEdad = ageRanges.map(ageRange => {
-        let count = 0;
-        for (const row of edadData || []) {
-          const birthYear = row.clase;
-          if (ageRange.range === '71+') {
-            if (birthYear <= ageRange.max) count++;
-          } else {
-            if (birthYear >= ageRange.min && birthYear <= ageRange.max) count++;
-          }
+        if (sexoData && Array.isArray(sexoData)) {
+          sexoData.forEach(row => {
+            if (row.sexo === 'M') participacionPorSexo.M = row.count;
+            if (row.sexo === 'F') participacionPorSexo.F = row.count;
+            if (row.sexo === 'X') participacionPorSexo.X = row.count;
+          });
         }
-        return { range: ageRange.range, count };
-      });
+      } catch (err) {
+        console.error('RPC get_participacion_por_sexo falló:', err);
+        // No detenemos todo, solo dejamos en 0
+      }
 
-      // 6. Nuevos y obligatorios
+      // --- 6. PARTICIPACIÓN POR EDAD ---
+      // Usamos RPC para evitar traer miles de filas
+      let participacionPorEdad = [];
+      try {
+        const { data: edadData, error: edadError } = await supabase
+          .rpc('get_participacion_por_edad');
+
+        if (edadError) throw edadError;
+
+        participacionPorEdad = (edadData && Array.isArray(edadData))
+          ? edadData.map(row => ({
+              range: row.rango,
+              count: row.count
+            }))
+          : [];
+      } catch (err) {
+        console.error('RPC get_participacion_por_edad falló:', err);
+      }
+
+      // --- 7. NUEVOS VOTANTES ---
+      // Consulta directa al padrón
       const { count: nuevosTotal } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
@@ -173,6 +188,9 @@ export default function GeneralStats() {
         .eq('da_es_nuevo', true)
         .eq('voto_emitido', true);
 
+      const participacionNuevos = { voted: nuevosVotaron || 0, total: nuevosTotal || 0 };
+
+      // --- 8. VOTANTES OBLIGATORIOS ---
       const { count: obligatoriosTotal } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
@@ -184,29 +202,34 @@ export default function GeneralStats() {
         .eq('da_voto_obligatorio', true)
         .eq('voto_emitido', true);
 
-      const participacionNuevos = { voted: nuevosVotaron || 0, total: nuevosTotal || 0 };
       const participacionObligatorios = { voted: obligatoriosVotaron || 0, total: obligatoriosTotal || 0 };
 
-      // 7. Participación por hora
-      const { data: horaData } = await supabase.rpc('get_votos_por_hora_art');
-      const ajustado = (horaData || []).map(row => {
-        if (row.hora < 8) return { ...row, hora: 8 };
-        if (row.hora > 18) return { ...row, hora: 18 };
-        return row;
-      });
-      const grouped = ajustado.reduce((acc, row) => {
-        acc[row.hora] = (acc[row.hora] || 0) + row.count;
-        return acc;
-      }, {});
-      const participacionPorHora = [];
-      for (let hour = 8; hour <= 18; hour++) {
-        participacionPorHora.push({
-          hour: `${hour.toString().padStart(2, '0')}:00`,
-          count: grouped[hour] || 0
+      // --- 9. PARTICIPACIÓN POR HORA ---
+      // Usamos RPC que agrupa votos por hora
+      let participacionPorHora = [];
+      try {
+        const { data: horaData } = await supabase.rpc('get_votos_por_hora_art');
+        const ajustado = (horaData || []).map(row => {
+          if (row.hora < 8) return { ...row, hora: 8 };
+          if (row.hora > 18) return { ...row, hora: 18 };
+          return row;
         });
+        const grouped = ajustado.reduce((acc, row) => {
+          acc[row.hora] = (acc[row.hora] || 0) + row.count;
+          return acc;
+        }, {});
+        for (let hour = 8; hour <= 18; hour++) {
+          participacionPorHora.push({
+            hour: `${hour.toString().padStart(2, '0')}:00`,
+            count: grouped[hour] || 0
+          });
+        }
+      } catch (err) {
+        console.error('RPC get_votos_por_hora_art falló:', err);
       }
 
-      // Actualizar estado
+      // --- 10. ACTUALIZAR ESTADO ---
+      // Todo listo, actualizamos el estado
       setStats({
         totalEmpadronados,
         totalVotosEmitidos,
@@ -222,6 +245,7 @@ export default function GeneralStats() {
       });
 
     } catch (err) {
+      // Si falla algo crítico (mesas, etc.), mostramos error
       setError('Error loading general statistics: ' + err.message);
       console.error('Error fetching general stats:', err);
     } finally {
@@ -229,11 +253,12 @@ export default function GeneralStats() {
     }
   };
 
+  // Cargar datos al montar
   useEffect(() => {
     fetchGeneralStats();
   }, []);
 
-  // Efecto para Realtime (opcional)
+  // Escuchar cambios en tiempo real (opcional)
   useEffect(() => {
     let channel = null;
 
@@ -284,7 +309,7 @@ export default function GeneralStats() {
             <p className="text-gray-600">Resumen y métricas clave del proceso electoral.</p>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Botón de modo Realtime */}
+            {/* Botón para activar/desactivar modo en tiempo real */}
             <button
               type="button"
               onClick={() => setIsRealtime(!isRealtime)}
@@ -298,7 +323,7 @@ export default function GeneralStats() {
               <span>{isRealtime ? 'En tiempo real' : 'Manual'}</span>
             </button>
 
-            {/* Botón de actualización */}
+            {/* Botón de actualización manual */}
             <button
               type="button"
               onClick={fetchGeneralStats}
@@ -311,6 +336,7 @@ export default function GeneralStats() {
           </div>
         </div>
 
+        {/* Estado de carga */}
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -323,7 +349,7 @@ export default function GeneralStats() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Main Metrics */}
+            {/* Métricas principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center space-x-3">
@@ -363,24 +389,30 @@ export default function GeneralStats() {
               </div>
             </div>
 
-            {/* Detailed Metrics */}
+            {/* Detalles por categoría */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Sexo</h3>
-                {stats.participacionPorSexo.M === 0 && stats.participacionPorSexo.F === 0 ? (
-                  <p className="text-gray-500 text-sm">No hay datos de sexo registrados</p>
-                ) : (
-                  <div className="space-y-2">
+                <div className="space-y-2">
+                  {stats.participacionPorSexo.M > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Masculino:</span>
                       <span className="font-medium">{stats.participacionPorSexo.M.toLocaleString()} votos</span>
                     </div>
+                  )}
+                  {stats.participacionPorSexo.F > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Femenino:</span>
                       <span className="font-medium">{stats.participacionPorSexo.F.toLocaleString()} votos</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {stats.participacionPorSexo.X > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Otro / No binario:</span>
+                      <span className="font-medium">{stats.participacionPorSexo.X.toLocaleString()} votos</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -442,7 +474,7 @@ export default function GeneralStats() {
               </div>
             </div>
 
-            {/* Hourly Participation */}
+            {/* Participación por hora */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango Horario</h3>
               {stats.participacionPorHora.every(item => item.count === 0) ? (
@@ -459,7 +491,7 @@ export default function GeneralStats() {
               )}
             </div>
 
-            {/* Resumen por Localidad */}
+            {/* Resumen por localidad */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Localidad</h3>
               <div className="overflow-x-auto">
