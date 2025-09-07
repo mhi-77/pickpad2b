@@ -9,4 +9,13 @@ const supabaseAnonKey = typeof import.meta !== 'undefined' && import.meta.env
   ? import.meta.env.VITE_SUPABASE_ANON_KEY 
   : process.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// lo agregue para probar el realtime .. original era la linea de arriba
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
