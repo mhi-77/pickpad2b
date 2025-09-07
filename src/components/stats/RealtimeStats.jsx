@@ -295,29 +295,31 @@ export default function RealtimeStats() {
             <table className="min-w-full bg-white border border-gray-200 rounded-lg">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido, Nombre</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido, Nombre</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>  
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
+
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {unvotedVoters.map(voter => (
                   <tr key={voter.documento}>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{voter.documento}</td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{voter.apellido}, {voter.nombre}</td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{voter.mesa_numero}</td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {voter.mesas?.establecimientos?.circuitos?.localidad || 'N/A'}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{voter.documento}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{voter.apellido}, {voter.nombre}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {voter.emopicks?.display || 'N/A'}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {voter.pick_nota || '-'}
                     </td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{voter.mesa_numero}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                      {voter.mesas?.establecimientos?.circuitos?.localidad || 'N/A'}
+                    </td>
+
                   </tr>
                 ))}
               </tbody>
