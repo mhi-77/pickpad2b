@@ -1,3 +1,4 @@
+// Bolt
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Filter, RefreshCw, User, MapPin, Hash, SquarePen, AlertCircle } from 'lucide-react';
@@ -58,10 +59,11 @@ export default function RealtimeStats() {
         setAvailableLocalities(uniqueLocalities);
       }
 
-      // Load emopicks
+      // Cargar emopicks - solo aquellos con count > 0
       const { data: emopicks, error: emopicksError } = await supabase
         .from('emopicks')
         .select('id, display')
+        .gt('count', 0)
         .order('id');
 
       if (!emopicksError) {
@@ -184,7 +186,7 @@ export default function RealtimeStats() {
             <span>Filtros</span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
+ {/*          <div>
               <label htmlFor="filterLocality" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
               <select
                 id="filterLocality"
@@ -197,7 +199,7 @@ export default function RealtimeStats() {
                   <option key={loc} value={loc}>{loc}</option>
                 ))}
               </select>
-            </div>
+            </div> */}
             <div>
               <label htmlFor="filterMesa" className="block text-sm font-medium text-gray-700 mb-1">Mesa</label>
               <input
@@ -209,7 +211,7 @@ export default function RealtimeStats() {
                 placeholder="Ej: 123"
               />
             </div>
-            <div>
+    {/*       <div>
               <label htmlFor="filterApellido" className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
               <input
                 id="filterApellido"
@@ -219,9 +221,9 @@ export default function RealtimeStats() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Ej: García"
               />
-            </div>
+            </div> */}
             <div>
-              <label htmlFor="filterEmopick" className="block text-sm font-medium text-gray-700 mb-1">Emopick</label>
+              <label htmlFor="filterEmopick" className="block text-sm font-medium text-gray-700 mb-1">Pick</label>
               <select
                 id="filterEmopick"
                 value={filterEmopick}
@@ -237,14 +239,6 @@ export default function RealtimeStats() {
           </div>
           <div className="mt-6 flex space-x-3">
             <button
-              onClick={handleApplyFilters}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={isLoading}
-            >
-              <Filter className="w-4 h-4" />
-              <span>Aplicar Filtros</span>
-            </button>
-            <button
               onClick={handleClearFilters}
               className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
               disabled={isLoading}
@@ -252,23 +246,32 @@ export default function RealtimeStats() {
               <RefreshCw className="w-4 h-4" />
               <span>Limpiar Filtros</span>
             </button>
+            <button
+              onClick={handleApplyFilters}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              disabled={isLoading}
+            >
+              <Filter className="w-4 h-4" />
+              <span>Aplicar Filtros</span>
+            </button>
+ 
           </div>
         </div>
 
         {/* Metrics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-blue-900">Total Pendientes</h3>
-            <p className="text-3xl font-bold text-blue-800">{metrics.totalPendientes}</p>
+        <div className="grid grid-cols-2 gap-4 mb-6 max-w-md mx-auto">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h3 className="text-sm font-semibold text-blue-900">Total Pendientes</h3>
+            <p className="text-xl font-bold text-blue-800">{metrics.totalPendientes}</p>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-yellow-900">Pendientes con Emopick</h3>
-            <p className="text-3xl font-bold text-yellow-800">{metrics.pendientesConEmopick}</p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <h3 className="text-sm font-semibold text-yellow-900">Pendientes con picks</h3>
+            <p className="text-xl font-bold text-yellow-800">{metrics.pendientesConEmopick}</p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-red-900">Pendientes sin Emopick</h3>
+          {/*         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-red-900">Pendientes sin picks</h3>
             <p className="text-3xl font-bold text-red-800">{metrics.pendientesSinEmopick}</p>
-          </div>
+          </div> */}
         </div>
 
         {/* List Section */}
@@ -296,7 +299,7 @@ export default function RealtimeStats() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido, Nombre</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Emopick</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
                 </tr>
               </thead>
