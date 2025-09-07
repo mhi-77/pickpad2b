@@ -1,9 +1,21 @@
 // src/components/stats/GeneralStats.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { BarChart3, Users, CheckCircle, PieChart, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { 
+  Users, 
+  CheckCircle, 
+  PieChart, 
+  Clock, 
+  AlertCircle, 
+  TrendingUp,
+  RefreshCw,
+  TableProperties,
+  ToggleLeft,
+  ToggleRight,
+  X
+} from 'lucide-react';
 
-// Función de debounce reutilizable
+// Función de debounce
 const debounce = (func, wait) => {
   let timeout;
   return (...args) => {
@@ -23,90 +35,92 @@ export default function GeneralStats() {
     participacionNuevos: { voted: 0, total: 0 },
     participacionObligatorios: { voted: 0, total: 0 },
     participacionPorHora: [],
-    mesasPorParticipacion: []
+    mesasPorParticipacion: [],
+    localidades: []
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isRealtime, setIsRealtime] = useState(false);
+  const [showMesasModal, setShowMesasModal] = useState(false);
 
-  // Referencia para debounce
-  const debouncedFetch = useRef(debounce(fetchGeneralStats, 2000)).current;
-
-  useEffect(() => {
-    fetchGeneralStats();
-
-    // Configurar escucha en tiempo real
-    const channel = supabase
-      .channel('stats-changes-general')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'padron',
-          filter: 'voto_emitido=eq.true'
-        },
-        (payload) => {
-          // Solo si voto_emitido cambió a true
-          if (payload.new.voto_emitido === true && payload.old.voto_emitido !== true) {
-            setIsSyncing(true);
-            debouncedFetch();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'padron'
-        },
-        (payload) => {
-          // Si se insertó con voto_emitido = true
-          if (payload.new.voto_emitido === true) {
-            setIsSyncing(true);
-            debouncedFetch();
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Canal de estadísticas conectado');
-        }
-      });
-
-    // Limpiar al desmontar
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  async function fetchGeneralStats() {
+  const fetchGeneralStats = async () => {
     setIsLoading(true);
     setError('');
     try {
       const currentYear = new Date().getFullYear();
 
-      // 1. Total empadronados
-      const { count: totalEmpadronados, error: countError } = await supabase
-        .from('padron')
-        .select('*', { count: 'exact', head: true });
-      if (countError) throw countError;
+      // 1. Obtener mesas con establecimientos y circuitos
+      const { data: mesasData, error: mesasError } = await supabase
+        .from('mesas')
+        .select(`
+          numero,
+          total_empadronados,
+          total_votaron,
+          establecimientos (
+            nombre,
+            circuitos (
+              localidad
+            )
+          )
+        `)
+        .not('total_empadronados', 'eq', 0);
 
-      // 2. Total votos emitidos
-      const { count: totalVotosEmitidos, error: votosError } = await supabase
-        .from('padron')
-        .select('documento', { count: 'exact', head: true })
-        .eq('voto_emitido', true);
-      if (votosError) throw votosError;
+      if (mesasError) throw mesasError;
+      if (!mesasData) {
+        throw new Error('No se recibieron datos de mesas');
+      }
 
-      // 3. Participación por sexo
-      const { data: sexoData, error: sexoError } = await supabase
+      // Calcular métricas globales
+      const totalEmpadronados = mesasData.reduce((sum, m) => sum + m.total_empadronados, 0);
+      const totalVotosEmitidos = mesasData.reduce((sum, m) => sum + (m.total_votaron || 0), 0);
+      const porcentajeParticipacion = totalEmpadronados > 0 
+        ? ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) 
+        : 0;
+      const mesasActivas = mesasData.length;
+
+      // 2. Todas las mesas (ordenadas por número)
+      const mesasPorParticipacion = mesasData
+        .map(mesa => {
+          const participacion = mesa.total_empadronados > 0 
+            ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100 
+            : 0;
+          return {
+            mesa: mesa.numero,
+            empadronados: mesa.total_empadronados,
+            votaron: mesa.total_votaron || 0,
+            participacion: participacion.toFixed(1),
+            establecimiento: mesa.establecimientos?.nombre || 'Sin establecimiento'
+          };
+        })
+        .sort((a, b) => a.mesa - b.mesa);
+
+      // 3. Resumen por localidad
+      const localidadesMap = new Map();
+      for (const mesa of mesasData) {
+        const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
+        if (!localidadesMap.has(localidad)) {
+          localidadesMap.set(localidad, { empadronados: 0, votaron: 0 });
+        }
+        const loc = localidadesMap.get(localidad);
+        loc.empadronados += mesa.total_empadronados;
+        loc.votaron += (mesa.total_votaron || 0);
+      }
+
+      const localidades = Array.from(localidadesMap.entries())
+        .map(([localidad, data]) => ({
+          localidad,
+          empadronados: data.empadronados,
+          votaron: data.votaron,
+          participacion: ((data.votaron / data.empadronados) * 100).toFixed(1)
+        }))
+        .sort((a, b) => a.localidad.localeCompare(b.localidad));
+
+      // 4. Participación por sexo
+      const { data: sexoData } = await supabase
         .from('padron')
         .select('sexo')
         .eq('voto_emitido', true)
         .not('sexo', 'is', null);
-      if (sexoError) throw sexoError;
 
       const participacionPorSexo = (sexoData || []).reduce((acc, curr) => {
         if (curr.sexo === 'M') acc.M++;
@@ -114,13 +128,12 @@ export default function GeneralStats() {
         return acc;
       }, { M: 0, F: 0 });
 
-      // 4. Participación por edad
-      const { data: edadData, error: edadError } = await supabase
+      // 5. Participación por edad
+      const { data: edadData } = await supabase
         .from('padron')
         .select('clase')
         .eq('voto_emitido', true)
         .not('clase', 'is', null);
-      if (edadError) throw edadError;
 
       const ageRanges = [
         { range: '18-30', min: currentYear - 30, max: currentYear - 18 },
@@ -142,56 +155,43 @@ export default function GeneralStats() {
         return { range: ageRange.range, count };
       });
 
-      // 5. Nuevos votantes
-      const { count: nuevosTotal, error: nuevosTotalError } = await supabase
+      // 6. Nuevos y obligatorios
+      const { count: nuevosTotal } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
         .eq('da_es_nuevo', true);
-      if (nuevosTotalError) throw nuevosTotalError;
 
-      const { count: nuevosVotaron, error: nuevosVotaronError } = await supabase
+      const { count: nuevosVotaron } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
         .eq('da_es_nuevo', true)
         .eq('voto_emitido', true);
-      if (nuevosVotaronError) throw nuevosVotaronError;
 
-      const participacionNuevos = { voted: nuevosVotaron || 0, total: nuevosTotal || 0 };
-
-      // 6. Votantes obligatorios
-      const { count: obligatoriosTotal, error: obligatoriosTotalError } = await supabase
+      const { count: obligatoriosTotal } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
         .eq('da_voto_obligatorio', true);
-      if (obligatoriosTotalError) throw obligatoriosTotalError;
 
-      const { count: obligatoriosVotaron, error: obligatoriosVotaronError } = await supabase
+      const { count: obligatoriosVotaron } = await supabase
         .from('padron')
         .select('documento', { count: 'exact', head: true })
         .eq('da_voto_obligatorio', true)
         .eq('voto_emitido', true);
-      if (obligatoriosVotaronError) throw obligatoriosVotaronError;
 
+      const participacionNuevos = { voted: nuevosVotaron || 0, total: nuevosTotal || 0 };
       const participacionObligatorios = { voted: obligatoriosVotaron || 0, total: obligatoriosTotal || 0 };
 
-      // 7. Participación por hora (ajustada a 8-18)
-      const { data: horaData, error: horaError } = await supabase.rpc('get_votos_por_hora_art');
-      if (horaError) throw horaError;
-
-      // Ajustar horas extremas
-      const ajustado = horaData.map(row => {
+      // 7. Participación por hora
+      const { data: horaData } = await supabase.rpc('get_votos_por_hora_art');
+      const ajustado = (horaData || []).map(row => {
         if (row.hora < 8) return { ...row, hora: 8 };
         if (row.hora > 18) return { ...row, hora: 18 };
         return row;
       });
-
-      // Agrupar nuevamente por hora
       const grouped = ajustado.reduce((acc, row) => {
         acc[row.hora] = (acc[row.hora] || 0) + row.count;
         return acc;
       }, {});
-
-      // Generar array de 8 a 18
       const participacionPorHora = [];
       for (let hour = 8; hour <= 18; hour++) {
         participacionPorHora.push({
@@ -200,41 +200,7 @@ export default function GeneralStats() {
         });
       }
 
-      // 8. Mesas activas y participación
-      const { data: mesasData, error: mesasError } = await supabase
-        .from('padron')
-        .select('mesa_numero, voto_emitido')
-        .not('mesa_numero', 'is', null);
-      if (mesasError) throw mesasError;
-
-      const mesaMap = new Map();
-      for (const row of mesasData || []) {
-        const num = row.mesa_numero;
-        if (!mesaMap.has(num)) {
-          mesaMap.set(num, { total: 0, votaron: 0 });
-        }
-        const mesa = mesaMap.get(num);
-        mesa.total += 1;
-        if (row.voto_emitido) mesa.votaron += 1;
-      }
-
-      const mesasActivas = mesaMap.size;
-
-      const mesasPorParticipacion = Array.from(mesaMap.entries())
-        .map(([mesa, data]) => ({
-          mesa,
-          empadronados: data.total,
-          votaron: data.votaron,
-          participacion: ((data.votaron / data.total) * 100).toFixed(1)
-        }))
-        .sort((a, b) => b.participacion - a.participacion)
-        .slice(0, 10);
-
-      // 9. Calcular porcentaje general
-      const porcentajeParticipacion = totalEmpadronados > 0 
-        ? ((totalVotosEmitidos / totalEmpadronados) * 100).toFixed(1) 
-        : 0;
-
+      // Actualizar estado
       setStats({
         totalEmpadronados,
         totalVotosEmitidos,
@@ -245,29 +211,97 @@ export default function GeneralStats() {
         participacionNuevos,
         participacionObligatorios,
         participacionPorHora,
-        mesasPorParticipacion
+        mesasPorParticipacion,
+        localidades
       });
 
     } catch (err) {
-      setError('Error loading general statistics.');
+      setError('Error loading general statistics: ' + err.message);
       console.error('Error fetching general stats:', err);
     } finally {
       setIsLoading(false);
-      setIsSyncing(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchGeneralStats();
+  }, []);
+
+  // Efecto para Realtime (opcional)
+  useEffect(() => {
+    let channel = null;
+
+    if (isRealtime) {
+      channel = supabase
+        .channel('stats-changes-padron')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'padron'
+          },
+          (payload) => {
+            if (payload.new.voto_emitido === true) {
+              fetchGeneralStats();
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'padron',
+            filter: 'voto_emitido=eq.true'
+          },
+          (payload) => {
+            if (payload.new.voto_emitido === true && payload.old.voto_emitido !== true) {
+              fetchGeneralStats();
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [isRealtime]);
 
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2>
             <p className="text-gray-600">Resumen y métricas clave del proceso electoral.</p>
           </div>
-          <div className={`flex items-center space-x-2 text-sm ${isSyncing ? 'text-blue-600' : 'text-green-600'}`}>
-            <div className={`w-2 h-2 rounded-full ${isSyncing ? 'bg-blue-400 animate-pulse' : 'bg-green-400'}`}></div>
-            <span>{isSyncing ? 'Actualizando...' : 'En tiempo real'}</span>
+          <div className="flex items-center space-x-4">
+            {/* Botón de modo Realtime */}
+            <button
+              type="button"
+              onClick={() => setIsRealtime(!isRealtime)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                isRealtime 
+                  ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+            >
+              {isRealtime ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+              <span>{isRealtime ? 'En tiempo real' : 'Manual'}</span>
+            </button>
+
+            {/* Botón de actualización */}
+            <button
+              type="button"
+              onClick={fetchGeneralStats}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Actualizando...' : 'Actualizar ahora'}</span>
+            </button>
           </div>
         </div>
 
@@ -419,53 +453,126 @@ export default function GeneralStats() {
               )}
             </div>
 
-            {/* Top Mesas by Participation */}
+            {/* Resumen por Localidad */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 10 Mesas por Participación</h3>
-              {stats.mesasPorParticipacion.length === 0 ? (
-                <p className="text-gray-500 text-sm">No hay mesas con participación registrada</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Localidad</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {stats.localidades.map((loc) => (
+                      <tr key={loc.localidad}>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {loc.localidad}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {loc.empadronados}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {loc.votaron}
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            loc.participacion >= 80 ? 'bg-green-100 text-green-800' :
+                            loc.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {loc.participacion}%
+                          </span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {stats.mesasPorParticipacion.map((mesa, index) => (
-                        <tr key={mesa.mesa}>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                            Mesa {mesa.mesa}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                            {mesa.empadronados}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                            {mesa.votaron}
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              mesa.participacion >= 80 ? 'bg-green-100 text-green-800' :
-                              mesa.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {mesa.participacion}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Botón para ver todas las mesas */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowMesasModal(true)}
+                className="flex items-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+              >
+                <TableProperties className="w-5 h-5" />
+                <span>Ver todas las mesas</span>
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal: Todas las mesas */}
+      {showMesasModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Todas las Mesas</h3>
+              <button
+                onClick={() => setShowMesasModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Establecimiento</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Participación</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {stats.mesasPorParticipacion.map((mesa) => (
+                    <tr key={mesa.mesa}>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Mesa {mesa.mesa}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {mesa.establecimiento}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {mesa.empadronados}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {mesa.votaron}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          mesa.participacion >= 80 ? 'bg-green-100 text-green-800' :
+                          mesa.participacion >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {mesa.participacion}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowMesasModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
