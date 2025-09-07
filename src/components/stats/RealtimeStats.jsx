@@ -128,7 +128,7 @@ export default function RealtimeStats() {
       query = query
         .order('apellido', { ascending: true })
         .order('nombre', { ascending: true })
-        .limit(100); // Limit for performance
+        .limit(350); // Limit for performance
 
       const { data, error } = await query;
 
@@ -319,9 +319,9 @@ export default function RealtimeStats() {
                 ))}
               </tbody>
             </table>
-            {unvotedVoters.length === 100 && (
+            {unvotedVoters.length === 350 && (
               <div className="text-center py-2 text-sm text-yellow-600">
-                ⚠️ Mostrando los primeros 100 resultados. Use filtros para refinar la búsqueda.
+                ⚠️ Mostrando los primeros 350 resultados. Use filtros para refinar la búsqueda.
               </div>
             )}
           </div>
