@@ -39,15 +39,17 @@ export default function StatsView() {
               Análisis y métricas del proceso electoral
             </p>
           </div>
+          { /*
           <div className="flex items-center space-x-2">
             <BarChart3 className="w-6 h-6 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">Dashboard</span>
           </div>
+          */ }
         </div>
 
         {/* Tabs */}
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+          <nav className="-mb-px flex space-x-5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;

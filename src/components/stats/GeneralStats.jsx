@@ -313,8 +313,8 @@ const formatNumber = (num) => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2>
-            <p className="text-gray-600">Resumen y métricas clave del proceso electoral.</p>
+            {/* <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2> */}
+            <p className="text-sm text-gray-600">Activar tiempo real para actualización automática</p>
           </div>
           <div className="flex items-center space-x-4">
             {/* Botón para activar/desactivar modo en tiempo real */}
