@@ -506,19 +506,19 @@ const formatNumber = (num) => {
                 <table className="min-w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part.</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Padrón</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part.</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Padrón</th>
+                      <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {stats.localidades.map((loc) => (
                       <tr key={loc.localidad}>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-2 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                           {loc.localidad}
                         </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             loc.participacion >= stats.porcentajeParticipacion * 0.95
                               ? 'bg-green-100 text-green-800' :
