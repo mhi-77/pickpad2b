@@ -49,6 +49,14 @@ export default function GeneralStats() {
   const [error, setError] = useState('');
   const [isRealtime, setIsRealtime] = useState(false); // Modo manual por defecto
   const [showMesasModal, setShowMesasModal] = useState(false); // Modal de mesas
+  
+  // Formatea números con punto como separador de miles y coma como decimal
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(num);
+};
 
   // Función principal para cargar todas las estadísticas
   const fetchGeneralStats = async () => {
@@ -364,7 +372,7 @@ export default function GeneralStats() {
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
-                    <p className="text-2xl font-bold text-green-900">{stats.totalVotosEmitidos.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-green-900">{formatNumber(stats.totalVotosEmitidos.toLocaleString())}</p>
                     <p className="text-sm text-green-700">Votos Emitidos</p>
                   </div>
                 </div>
@@ -373,7 +381,7 @@ export default function GeneralStats() {
                 <div className="flex items-center space-x-3">
                   <TrendingUp className="w-8 h-8 text-yellow-600" />
                   <div>
-                    <p className="text-2xl font-bold text-yellow-900">{stats.porcentajeParticipacion}%</p>
+                    <p className="text-2xl font-bold text-yellow-900">{stats.porcentajeParticipacion.toLocaleString()}%</p>
                     <p className="text-sm text-yellow-700">Participación General</p>
                   </div>
                 </div>
@@ -382,7 +390,7 @@ export default function GeneralStats() {
                 <div className="flex items-center space-x-3">
                   <PieChart className="w-8 h-8 text-purple-600" />
                   <div>
-                    <p className="text-2xl font-bold text-purple-900">{stats.mesasActivas}</p>
+                    <p className="text-2xl font-bold text-purple-900">{formatNumber(stats.mesasActivas)}</p>
                     <p className="text-sm text-purple-700">Mesas Activas</p>
                   </div>
                 </div>
@@ -397,19 +405,19 @@ export default function GeneralStats() {
                   {stats.participacionPorSexo.M > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Masculino:</span>
-                      <span className="font-medium">{stats.participacionPorSexo.M.toLocaleString()} votos</span>
+                      <span className="font-medium">{formatNumber(stats.participacionPorSexo.M)} votos</span>
                     </div>
                   )}
                   {stats.participacionPorSexo.F > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Femenino:</span>
-                      <span className="font-medium">{stats.participacionPorSexo.F.toLocaleString()} votos</span>
+                      <span className="font-medium">{formatNumber(stats.participacionPorSexo.F)}votos</span>
                     </div>
                   )}
                   {stats.participacionPorSexo.X > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Otro / No binario:</span>
-                      <span className="font-medium">{stats.participacionPorSexo.X.toLocaleString()} votos</span>
+                      <span className="font-medium">{formatNumber(stats.participacionPorSexo.X)} votos</span>
                     </div>
                   )}
                 </div>
@@ -424,7 +432,7 @@ export default function GeneralStats() {
                     {stats.participacionPorEdad.map((item, index) => (
                       <div key={index} className="flex justify-between">
                         <span className="text-gray-600">{item.range} años:</span>
-                        <span className="font-medium">{item.count.toLocaleString()} votos</span>
+                        <span className="font-medium">{formatNumber(item.count)} votos</span>
                       </div>
                     ))}
                   </div>
@@ -436,17 +444,17 @@ export default function GeneralStats() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Votaron:</span>
-                    <span className="font-medium">{stats.participacionNuevos.voted.toLocaleString()}</span>
+                    <span className="font-medium">{formatNumber(stats.participacionNuevos.voted.toLocaleString())}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total:</span>
-                    <span className="font-medium">{stats.participacionNuevos.total.toLocaleString()}</span>
+                    <span className="font-medium">{formatNumber(stats.participacionNuevos.total.toLocaleString())}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-gray-600">Porcentaje:</span>
                     <span className="font-bold text-blue-600">
                       {stats.participacionNuevos.total > 0 ? 
-                        ((stats.participacionNuevos.voted / stats.participacionNuevos.total) * 100).toFixed(1) : 0}%
+                        formatNumber(((stats.participacionNuevos.voted / stats.participacionNuevos.total) * 100).toFixed(1)) : 0}%
                     </span>
                   </div>
                 </div>
@@ -467,7 +475,7 @@ export default function GeneralStats() {
                     <span className="text-gray-600">Porcentaje:</span>
                     <span className="font-bold text-green-600">
                       {stats.participacionObligatorios.total > 0 ? 
-                        ((stats.participacionObligatorios.voted / stats.participacionObligatorios.total) * 100).toFixed(1) : 0}%
+                        formatNumber(((stats.participacionObligatorios.voted / stats.participacionObligatorios.total) * 100).toFixed(1)) : 0}%
                     </span>
                   </div>
                 </div>
@@ -484,7 +492,7 @@ export default function GeneralStats() {
                   {stats.participacionPorHora.map((item, index) => (
                     <div key={index} className="text-center">
                       <div className="text-sm text-gray-600">{item.hour}</div>
-                      <div className="text-lg font-bold text-blue-600">{item.count}</div>
+                      <div className="text-lg font-bold text-blue-600">{formatNumber(item.count)}</div>
                     </div>
                   ))}
                 </div>
@@ -499,8 +507,8 @@ export default function GeneralStats() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">part.</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part.</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Padrón</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
                     </tr>
                   </thead>
@@ -518,14 +526,14 @@ export default function GeneralStats() {
                               ? 'bg-yellow-100 text-yellow-800' :
                               'bg-red-100 text-red-800'
                           }`}>
-                            {loc.participacion}%
+                            {formatNumber(loc.participacion)}%
                           </span>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {loc.empadronados}
+                          {formatNumber(loc.empadronados)}
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {loc.votaron}
+                          {formatNumber(loc.votaron)}
                         </td>
                       </tr>
                     ))}
@@ -549,7 +557,7 @@ export default function GeneralStats() {
         )}
       </div>
 
-      {/* Modal: Todas las mesas */}
+     {/* Modal: Todas las mesas */}
       {showMesasModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -559,28 +567,28 @@ export default function GeneralStats() {
                 onClick={() => setShowMesasModal(false)}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">part.</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Establecimiento</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Empadronados</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part.</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Establecimiento</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Padrón</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {stats.mesasPorParticipacion.map((mesa) => (
                     <tr key={mesa.mesa}>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-1 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                         Mesa {mesa.mesa}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-900">
+                        <span className={`px-1 py-1 rounded-full text-xs font-medium ${
                           mesa.participacion >= stats.porcentajeParticipacion * 0.95
                             ? 'bg-green-100 text-green-800' :
                           mesa.participacion >= stats.porcentajeParticipacion * 0.65
@@ -590,24 +598,24 @@ export default function GeneralStats() {
                           {mesa.participacion}%
                         </span>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                         {mesa.establecimiento}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {mesa.empadronados}
+                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {formatNumber(mesa.empadronados)}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {mesa.votaron}
+                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                        {formatNumber(mesa.votaron)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-end mt-4">
+            <div className="flex justify-end mt-2">
               <button
                 onClick={() => setShowMesasModal(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Cerrar
               </button>
