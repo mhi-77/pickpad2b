@@ -372,7 +372,7 @@ const formatNumber = (num) => {
                 <div className="flex items-center space-x-3">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
-                    <p className="text-2xl font-bold text-green-900">{formatNumber(stats.totalVotosEmitidos.toLocaleString())}</p>
+                    <p className="text-2xl font-bold text-green-900">{formatNumber(stats.totalVotosEmitidos)}</p>
                     <p className="text-sm text-green-700">Votos Emitidos</p>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ const formatNumber = (num) => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total:</span>
-                    <span className="font-medium">{formatNumber(stats.participacionNuevos.total.toLocaleString())}</span>
+                    <span className="font-medium">{formatNumber(stats.participacionNuevos.total)}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-gray-600">Porcentaje:</span>
@@ -483,12 +483,12 @@ const formatNumber = (num) => {
             </div>
 
             {/* Participación por hora */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango Horario</h3>
               {stats.participacionPorHora.every(item => item.count === 0) ? (
                 <p className="text-gray-500 text-sm">No hay datos de horario registrados</p>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {stats.participacionPorHora.map((item, index) => (
                     <div key={index} className="text-center">
                       <div className="text-sm text-gray-600">{item.hour}</div>
@@ -500,7 +500,7 @@ const formatNumber = (num) => {
             </div>
 
             {/* Resumen por localidad */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Localidad</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full">
