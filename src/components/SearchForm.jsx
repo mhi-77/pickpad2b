@@ -79,7 +79,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
         <h2 className="text-xl font-bold text-gray-900">Buscar en Padrón</h2>
         <button
           onClick={toggleAdvanced}
-          className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+          className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
         >
           <Filter className="w-5 h-5" />
           <span className="text-sm font-medium">
