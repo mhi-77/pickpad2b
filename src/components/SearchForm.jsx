@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, RefreshCw, User, MapPin, Hash } from 'lucide-react';
+import { Search, Filter, RefreshCw, User, Users, MapPin, Hash } from 'lucide-react';
 
 /**
  * Componente SearchForm - Formulario de búsqueda en el padrón electoral
@@ -73,10 +73,10 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white rounded-xl shadow-lg p-5">
       {/* Header del formulario con título y botón para alternar modo de búsqueda */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Búsqueda en Padrón Electoral</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-bold text-gray-900">Buscar en Padrón</h2>
         <button
           onClick={toggleAdvanced}
           className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
@@ -173,7 +173,10 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
               {/* Campo de número de mesa */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mesa
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4" />
+                    <span>Mesa</span>
+                  </div>
                 </label>
                 <input
                   type="number"

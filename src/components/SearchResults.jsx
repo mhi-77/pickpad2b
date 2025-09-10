@@ -7,6 +7,14 @@ import { useAuth } from '../context/AuthContext';
 export default function SearchResults({ results, isLoading, userRole, availableEmopicks = [] }) {
   // Obtener datos del usuario autenticado para registrar quién hace las actualizaciones
   const { user } = useAuth();
+
+// Formatea números con punto como separador de miles y coma como decimal
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('es-AR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(num);
+  };
   
   // Estados para el modal de PICK
   const [showPickModal, setShowPickModal] = React.useState(false);
@@ -147,8 +155,8 @@ export default function SearchResults({ results, isLoading, userRole, availableE
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-xl shadow-lg p-5">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold text-gray-900">
           <span>
             {results.length < 50 ? `-> Resultados (${results.length}) <-` : '->Al menos 50 resultados. Refine la búsqueda <-'}
@@ -179,13 +187,13 @@ export default function SearchResults({ results, isLoading, userRole, availableE
 
             {/* Nivel 3: Documento / Clase */}
             <div className="grid grid-cols-2 gap-4 mb-3">
-              <div className="flex items-center space-x-2 font-medium text-gray-600">
-               {/* <Hash className="w-4 h-4" /> */}
-                <span>DNI: {record.documento}</span>
+              <div className="flex items-center space-x-1 font-medium text-gray-600">
+                <Hash className="w-4 h-4" /> 
+                <span>DNI: {record.documento.toLocaleString()}</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
                 {/* <FileText className="w-4 h-4" /> */}
-                <span>Clase: {record.clase || '---'}</span>
+                <span>Clase: {formatNumber(record.clase) || '---'}</span>
               </div>
             </div>
 
