@@ -73,7 +73,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4">
+    <div className="bg-white rounded-xl shadow-lg p-3">
       {/* Header del formulario con título y botón para alternar modo de búsqueda */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-xl font-bold text-gray-900">Buscar en Padrón</h2>
