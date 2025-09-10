@@ -189,7 +189,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div className="flex items-center space-x-1 font-medium text-gray-600">
                 <Hash className="w-4 h-4" /> 
-                <span>DNI: {record.documento.toLocaleString()}</span>
+                <span>{formatNumber(record.documento)}</span>
               </div>
               <div className="flex items-center space-x-2 text-gray-600">
                 {/* <FileText className="w-4 h-4" /> */}
