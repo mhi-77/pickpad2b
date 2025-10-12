@@ -64,28 +64,26 @@ export default function MuestreoTestigo() {
   /**
    * Obtiene el conteo actual de votos emitidos en la mesa
    */
-  const fetchCurrentVoteCount = async () => {
-    if (!user?.mesa_numero) return 0;
+const fetchCurrentVoteCount = async () => {
+  if (!user?.mesa_numero) return 0;
 
-    try {
-      const { count, error } = await supabase
-        .from('padron')
-        .select('documento', { count: 'exact', head: true })
-        .eq('mesa_numero', user.mesa_numero)
-        .eq('voto_emitido', true);
+  try {
+    const { data, error } = await supabase
+      .from('mesas')
+      .select('total_votaron', { head: true })
+      .eq('numero', user.mesa_numero);
 
-      if (error) {
-        console.error('Error fetching vote count:', error);
-        return 0;
-      }
-
-      return count || 0;
-    } catch (error) {
-      console.error('Error:', error);
+    if (error) {
+      console.error('Error fetching vote count from mesas:', error);
       return 0;
     }
-  };
 
+    return data?.length ? data[0].total_votaron || 0 : 0;
+  } catch (error) {
+    console.error('Error:', error);
+    return 0;
+  }
+};
   /**
    * Obtiene los registros de testigos de la mesa del usuario
    */
@@ -122,128 +120,139 @@ export default function MuestreoTestigo() {
   /**
    * Inicia un nuevo control de mesa
    */
-  const handleIniciarControl = async () => {
-    if (!user?.mesa_numero || !pilaInicio) {
-      alert('Por favor, ingrese la cantidad de pila inicial');
+const handleIniciarControl = async () => {
+  if (!user?.mesa_numero) {
+    setError('No tiene mesa asignada');
+    return;
+  }
+
+  const pilaInicioNum = parseInt(pilaInicio);
+  if (isNaN(pilaInicioNum) || pilaInicioNum <= 0) {
+    setError('La pila inicial debe ser un número mayor a 0');
+    return;
+  }
+
+  if (pilaInicioNum > 1000) {
+    setError('La pila inicial parece demasiado alta (máx 1000)');
+    return;
+  }
+
+  setIsLoading(true);
+  setError('');
+
+  try {
+    const currentVotes = await fetchCurrentVoteCount();
+    setVotosInicio(currentVotes);
+
+    const now = new Date();
+    const { data, error } = await supabase
+      .from('testigos')
+      .insert({
+        mesa_numero: user.mesa_numero,
+        pila_inicio: pilaInicioNum,
+        votos_inicio: currentVotes,
+        user_id: user.id,
+        user_at: now.toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating testigo record:', error);
+      // Mejor mensaje según error
+      if (error.code === '23505') {
+        setError('Ya existe un registro de inicio para esta medición');
+      } else if (error.message.includes('new row violates row-level security')) {
+        setError('No tiene permisos para registrar en esta mesa');
+      } else {
+        setError('Error al iniciar el control: ' + (error.message || 'Desconocido'));
+      }
       return;
     }
 
-    setIsLoading(true);
+    setCurrentTestigoId(data.id);
+    setUserAt(now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+    setIsMeasuring(true);
+    setVotosInicio(currentVotes);
+
+    // Resetear error y refrescar
     setError('');
+    fetchTestigosRecords();
 
-    try {
-      // Obtener conteo actual de votos
-      const currentVotes = await fetchCurrentVoteCount();
-      setVotosInicio(currentVotes);
-
-      // Crear nuevo registro en testigos
-      const now = new Date();
-      const timeOnly = now.toTimeString().split(' ')[0] + '+00:00'; // Format: HH:MM:SS+00:00
-      const { data, error } = await supabase
-        .from('testigos')
-        .insert({
-          mesa_numero: user.mesa_numero,
-          pila_inicio: parseInt(pilaInicio),
-          votos_inicio: currentVotes,
-          user_id: user.id,
-          user_at: timeOnly
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating testigo record:', error);
-        setError('Error al iniciar el control');
-        return;
-      }
-
-      // Actualizar estados
-      setCurrentTestigoId(data.id);
-      setUserAt(now.toLocaleTimeString('es-AR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }));
-      setIsMeasuring(true);
-
-      // Refrescar lista de registros
-      fetchTestigosRecords();
-
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Error al iniciar el control');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  } catch (err) {
+    console.error('Error inesperado:', err);
+    setError('Error inesperado al iniciar: ' + err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
   /**
    * Finaliza el control actual
    */
-  const handleFinalizarControl = async () => {
-    if (!currentTestigoId || !pilaRetirada) {
-      alert('Por favor, ingrese la cantidad de pila retirada');
+const handleFinalizarControl = async () => {
+  if (!currentTestigoId) {
+    setError('No hay un control en curso para finalizar');
+    return;
+  }
+
+  const pilaRetiradaNum = parseInt(pilaRetirada);
+  if (isNaN(pilaRetiradaNum) || pilaRetiradaNum < 0) {
+    setError('La pila retirada debe ser un número válido (0 o más)');
+    return;
+  }
+
+  const pilaInicioNum = parseInt(pilaInicio);
+  if (pilaRetiradaNum > pilaInicioNum) {
+    setError('La pila retirada no puede ser mayor que la pila inicial');
+    return;
+  }
+
+  setIsLoading(true);
+  setError('');
+
+  try {
+    const currentVotes = await fetchCurrentVoteCount();
+    const diferencia = currentVotes - votosInicio;
+
+    const faltante = pilaInicioNum - pilaRetiradaNum;
+
+    const { error } = await supabase
+      .from('testigos')
+      .update({
+        pila_inicio: pilaInicioNum,
+        pila_faltante: faltante,
+        votos_diferencia: diferencia,
+        muestra_valida: true
+      })
+      .eq('id', currentTestigoId);
+
+    if (error) {
+      console.error('Error updating testigo record:', error);
+      setError('Error al finalizar el control: ' + error.message);
       return;
     }
 
-    setIsLoading(true);
-    setError('');
+    // Resetear todo
+    setIsMeasuring(false);
+    setCurrentTestigoId(null);
+    setShowConfirmModal(false);
+    setPilaInicio('');
+    setPilaRetirada('');
+    setUserAt('');
+    setVotosDiferencia(0);
+    setPorcentajePilaFaltante(0);
 
-    try {
-      // Obtener conteo actual de votos
-      const currentVotes = await fetchCurrentVoteCount();
-      setVotosActuales(currentVotes);
-      
-      const diferencia = currentVotes - votosInicio;
-      setVotosDiferencia(diferencia);
+    fetchTestigosRecords();
 
-      const faltante = parseInt(pilaInicio) - parseInt(pilaRetirada);
-
-      // Actualizar registro en testigos:
-      //   mesa_numero
-      //   user_id
-      //   user_at
-      //   pila_inicio
-      //   votos_inicio
-      //   pila_faltante
-      //   votos_diferencia
-      //   muestra_valida
-      const { error } = await supabase
-        .from('testigos')
-        .update({
-          pila_inicio: parseInt(pilaInicio),
-          pila_faltante: faltante,
-          votos_diferencia: diferencia,
-          muestra_valida: true
-        })
-        .eq('id', currentTestigoId);
-
-      if (error) {
-        console.error('Error updating testigo record:', error);
-        setError('Error al finalizar el control');
-        return;
-      }
-
-      // Resetear estados
-      setIsMeasuring(false);
-      setCurrentTestigoId(null);
-      setShowConfirmModal(false);
-      
-      // Limpiar campos
-      setPilaInicio('');
-      setPilaRetirada('');
-      setUserAt('');
-
-      // Refrescar lista de registros
-      fetchTestigosRecords();
-
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Error al finalizar el control');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  } catch (err) {
+    console.error('Error:', err);
+    setError('Error al finalizar el control');
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
   /**
    * Actualiza el estado de muestra_valida de un registro
    */
@@ -286,7 +295,7 @@ export default function MuestreoTestigo() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      //second: '2-digit'
     });
   };
 

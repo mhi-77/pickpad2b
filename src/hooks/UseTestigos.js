@@ -1,4 +1,3 @@
-// hooks/useTestigos.js
 import { useState, useEffect, useCallback, useReducer } from 'react';
 import { supabase } from '../lib/supabase';
 

@@ -60,7 +60,6 @@
  */
 
 
-
 /**
  * @typedef {Object} SearchFilters
  * @property {string} [documento]

@@ -50,7 +50,7 @@ export default function GeneralStats() {
   const [isRealtime, setIsRealtime] = useState(false); // Modo manual por defecto
   const [showMesasModal, setShowMesasModal] = useState(false); // Modal de mesas
   
-  // Formatea números con punto como separador de miles y coma como decimal
+// Formatea números con punto como separador de miles y coma como decimal
 const formatNumber = (num) => {
   return new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 0,

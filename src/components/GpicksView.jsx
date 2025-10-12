@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle } from 'lucide-react';
+import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -25,24 +25,79 @@ export default function GpicksView() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
 
+  // Estados para filtros
+  const [filterVerified, setFilterVerified] = useState(null); // null = todos, true = verificados, false = no verificados
+  const [filterEmopickId, setFilterEmopickId] = useState('');
+  const [filterAssignedByUserId, setFilterAssignedByUserId] = useState('');
+  const [filterLocality, setFilterLocality] = useState('');
+  
+  // Estados para datos de los selectores
+  const [availableEmopicks, setAvailableEmopicks] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [availableLocalities, setAvailableLocalities] = useState([]);
+
   /**
    * Efecto para cargar los datos cuando el componente se monta
    */
   useEffect(() => {
     if (user?.id) {
+      loadFilterData();
       fetchGpicks();
     }
   }, [user?.id]);
 
   /**
-   * Obtiene los votantes con emopicks asignados por el usuario actual
+   * Carga los datos necesarios para poblar los selectores de filtros
    */
-  const fetchGpicks = async () => {
+  const loadFilterData = async () => {
+    try {
+      // Cargar emopicks
+      const { data: emopicks, error: emopicksError } = await supabase
+        .from('emopicks')
+        .select('id, display')
+        .order('id');
+
+      if (!emopicksError) {
+        setAvailableEmopicks(emopicks || []);
+      }
+
+      // Cargar usuarios que han asignado emopicks
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .not('full_name', 'is', null)
+        .order('full_name');
+
+      if (!usersError) {
+        setAvailableUsers(users || []);
+      }
+
+      // Cargar localidades únicas
+      const { data: localities, error: localitiesError } = await supabase
+        .from('circuitos')
+        .select('localidad')
+        .not('localidad', 'is', null)
+        .order('localidad');
+
+      if (!localitiesError) {
+        const uniqueLocalities = [...new Set(localities.map(l => l.localidad))];
+        setAvailableLocalities(uniqueLocalities);
+      }
+
+    } catch (error) {
+      console.error('Error loading filter data:', error);
+    }
+  };
+
+  /**
+   * Obtiene los votantes con emopicks asignados aplicando los filtros seleccionados
+   */
+  const fetchGpicks = async (applyFilters = true) => {
     setIsLoading(true);
     setError('');
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('padron')
         .select(`
           *,
@@ -70,10 +125,33 @@ export default function GpicksView() {
           )
         `)
         .not('emopick_id', 'is', null)
-        .eq('emopick_user', user.id)
+        .eq('emopick_user', user.id);
+
+      // Aplicar filtros si están activos
+      if (applyFilters) {
+        if (filterVerified !== null) {
+          query = query.eq('pick_check', filterVerified);
+        }
+        
+        if (filterEmopickId) {
+          query = query.eq('emopick_id', parseInt(filterEmopickId));
+        }
+        
+        if (filterAssignedByUserId) {
+          query = query.eq('emopick_user', filterAssignedByUserId);
+        }
+        
+        if (filterLocality) {
+          query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
+        }
+      }
+
+      query = query
         .order('emopick_id', { ascending: true })
         .order('apellido', { ascending: true })
-        .limit(500); // OJO!!! ESTO RESTRINGE. VER DE PAGINAR O PONER XX DE TANTOS ENCONTRADOS
+        .limit(500);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching picks:', error);
@@ -88,6 +166,24 @@ export default function GpicksView() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Aplica los filtros seleccionados
+   */
+  const handleApplyFilters = () => {
+    fetchGpicks(true);
+  };
+
+  /**
+   * Limpia todos los filtros y recarga los datos
+   */
+  const handleClearFilters = () => {
+    setFilterVerified(null);
+    setFilterEmopickId('');
+    setFilterAssignedByUserId('');
+    setFilterLocality('');
+    fetchGpicks(false);
   };
 
   /**
@@ -169,8 +265,8 @@ export default function GpicksView() {
         </div>
 
         {/* Estadísticas rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="flex space-x-4 mb-3">
+          <div className="w-48 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <SquarePen className="w-8 h-8 text-blue-600" />
               <div>
@@ -180,14 +276,14 @@ export default function GpicksView() {
             </div>
           </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="w-48 bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-8 h-8 text-green-600" />
               <div>
                 <p className="text-2xl font-bold text-green-900">
                   {picksData.filter(p => p.pick_check).length}
                 </p>
-                <p className="text-sm text-green-700">Cerrados</p>
+                <p className="text-sm text-green-700">Checks</p>
               </div>
             </div>
           </div>
@@ -206,6 +302,110 @@ export default function GpicksView() {
         </div>
       </div>
       
+      {/* Panel de filtros */}
+      <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="flex items-center space-x-2 mb-4">
+          <Filter className="w-5 h-5 text-gray-600" />
+          <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* Filtro por estado de verificación */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Estado
+            </label>
+            <select
+              value={filterVerified === null ? '' : filterVerified.toString()}
+              onChange={(e) => setFilterVerified(e.target.value === '' ? null : e.target.value === 'true')}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="">Todos</option>
+              <option value="true">Verificados</option>
+              <option value="false">Sin verificar</option>
+            </select>
+          </div>
+
+          {/* Filtro por tipo de emopick */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Pick
+            </label>
+            <select
+              value={filterEmopickId}
+              onChange={(e) => setFilterEmopickId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="">Todos los picks</option>
+              {availableEmopicks.map((emopick) => (
+                <option key={emopick.id} value={emopick.id}>
+                  {emopick.display}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro por usuario que asignó */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Asignado por
+            </label>
+            <select
+              value={filterAssignedByUserId}
+              onChange={(e) => setFilterAssignedByUserId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="">Todos los usuarios</option>
+              {availableUsers.map((userOption) => (
+                <option key={userOption.id} value={userOption.id}>
+                  {userOption.full_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro por localidad */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Localidad
+            </label>
+            <select
+              value={filterLocality}
+              onChange={(e) => setFilterLocality(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="">Todas las localidades</option>
+              {availableLocalities.map((locality) => (
+                <option key={locality} value={locality}>
+                  {locality}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Botones de acción para filtros */}
+        <div className="flex space-x-3">
+          <button
+            onClick={handleApplyFilters}
+            disabled={isLoading}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Aplicar Filtros</span>
+          </button>
+          
+          <button
+            onClick={handleClearFilters}
+            disabled={isLoading}
+            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Limpiar Filtros</span>
+          </button>
+        </div>
+      </div>
+
       {/* Contenido principal */}
       {isLoading ? (
         <div className="bg-white rounded-xl shadow-lg p-2">
@@ -273,7 +473,7 @@ export default function GpicksView() {
                            style={{gridTemplateColumns: '85px 1fr 1fr 1fr 90px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
-                          <span className="px-2 py-2 bg-yellow-100 rounded-full text-2xl font-medium">
+                          <span className="px-1 py-1 bg-yellow-100 rounded-full text-xl">
                             {record.emopicks?.display || '❓'}
                           </span>
                         </div>
@@ -307,7 +507,7 @@ export default function GpicksView() {
                             disabled={isUpdating}
                             className="w-4 h-4 accent-green-200 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                           />
-                          <span className="text-ms font-medium text-gray-600">Cerrado</span>
+                          <span className="text-ms text-gray-800">Check</span>
                         </div>
                         <div>
                           <span className="italic text-gray-900">

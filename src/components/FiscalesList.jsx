@@ -231,7 +231,7 @@ export default function FiscalesList({ userTypes = [] }) {
   };
 
   const getUserTypeColor = (tipo) => {
-    return tipo === 3 ? 'bg-green-600' : 'bg-blue-600';
+    return tipo === 3 ? 'bg-orange-500' : 'bg-blue-600';
   };
 
   // --- Función de carga masiva desde CSV ---
