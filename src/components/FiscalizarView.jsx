@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Users, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import FiscalizarSearchForm from './FiscalizarSearchForm';
-import FiscalizarResults from './FiscalizarResults';
+import FiscalizarSearchForm from './fiscalizar/FiscalizarSearchForm';
+import FiscalizarResults from './fiscalizar/FiscalizarResults';
 
 /**
  * Componente FiscalizarView - Vista principal para la fiscalización electoral

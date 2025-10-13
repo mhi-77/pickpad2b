@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Edit3, Trash2, Mail, User, Hash, UserCheck, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import EditUserForm from './EditUserForm';
 

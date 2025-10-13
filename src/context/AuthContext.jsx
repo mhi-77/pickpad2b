@@ -64,8 +64,44 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshUserProfile = async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      if (!authUser) {
+        return false;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, usuario_tipo, mesa_numero')
+        .eq('id', authUser.id)
+        .single();
+
+      const { data: userType } = await supabase
+        .from('usuariost')
+        .select('descripcion')
+        .eq('tipo', profile?.usuario_tipo || 5)
+        .maybeSingle();
+
+      setUser({
+        id: authUser.id,
+        email: authUser.email || '',
+        name: profile?.full_name || authUser.email?.split('@')[0] || 'Usuario',
+        usuario_tipo: profile?.usuario_tipo || 5,
+        mesa_numero: profile?.mesa_numero,
+        roleDescription: userType?.descripcion || 'COLABORADOR',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error refreshing user profile:', error);
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refreshUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

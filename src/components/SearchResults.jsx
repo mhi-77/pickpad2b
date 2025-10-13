@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, User, MapPin, Hash, Users, Sparkles, XCircle, CheckCircle, SquarePen } from 'lucide-react';
-import PickModal from './PickModal';
+import PickModal from './gpicks/PickModal';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 

@@ -12,6 +12,8 @@ import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
 import GpicksView from './GpicksView';
 import TestigoView from './TestigoView';
+import PadronesView from './PadronesView';
+import SettingsView from './SettingsView';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
@@ -316,17 +318,11 @@ export default function Dashboard({ appVersion }) {
         );
       case 'padrones':
         return (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Padrones</h2>
-            <p className="text-gray-600">Funcionalidad de gestión de padrones en desarrollo.</p>
-          </div>
+          <PadronesView />
         );
-      case 'settings': /* PERMITE MODIFICAR SUS PROPIOS PERFILES -ADMIN Y F GEN ADEMAS SU PROPIO NRO DE MESA ASIGNADA */
+      case 'settings':
         return (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Configuración</h2>
-            <p className="text-gray-600">Panel de configuración del sistema.</p>
-          </div>
+          <SettingsView />
         );
       default:
         return null;

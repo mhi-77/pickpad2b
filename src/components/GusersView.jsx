@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { UserPlus, Users, Settings, BarChart3, UserCheck, UserCog } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import SignupForm from './SignupForm';
-import UsersList from './UsersList';
-import FiscalesList from './FiscalesList';
+import SignupForm from './gusers/SignupForm';
+import UsersList from './gusers/UsersList';
+import FiscalesList from './fiscalizar/FiscalesList';
 
 /**
  * Componente GusersView - Vista principal para la gestión de usuarios

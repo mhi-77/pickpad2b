@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Search, RefreshCw, AlertCircle, Filter, MapPin, Hash } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 /**
  * Componente ResultadosTestigo - Vista de resultados para usuarios tipo 2 o inferior

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { X, Save, User } from 'lucide-react';
 
 export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, userTypes = [] }) {

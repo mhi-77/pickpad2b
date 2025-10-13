@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { User, AlertCircle, CheckCircle, X, Hash, Download, Upload } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FiscalesList({ userTypes = [] }) {
   const [fiscales, setFiscales] = useState([]);

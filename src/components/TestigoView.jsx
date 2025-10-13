@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { ScanEye, BarChart3, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import MuestreoTestigo from './MuestreoTestigo';
-import ResultadosTestigo from './ResultadosTestigo';
+import MuestreoTestigo from './testigo/MuestreoTestigo';
+import ResultadosTestigo from './testigo/ResultadosTestigo';
 
 /**
  * Componente TestigoView - Vista principal para Mesa Testigo

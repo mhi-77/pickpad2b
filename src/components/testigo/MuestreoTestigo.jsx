@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScanEye, Play, Square, AlertCircle, CheckCircle, X, Clock, Users, Calculator } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 /**
  * Componente MuestreoTestigo - Vista de muestreo para usuarios tipo 3 y 4

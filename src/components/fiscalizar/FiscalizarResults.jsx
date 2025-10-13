@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X, MapPin } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating, showSuccessModal, setShowSuccessModal, userRole }) {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
