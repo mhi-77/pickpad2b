@@ -137,7 +137,7 @@ export const convertRawToCSV = (data) => {
 };
 
 export const exportToExcelWithFormat = async (data, filename) => {
-  const XLSX = await import('sheetjs-style');
+  const XLSX = await import('xlsx');
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
@@ -149,43 +149,10 @@ export const exportToExcelWithFormat = async (data, filename) => {
     const address = XLSX.utils.encode_col(C) + '1';
     if (!worksheet[address]) continue;
     worksheet[address].s = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "2563EB" } },
-      alignment: { horizontal: "center", vertical: "center" },
-      border: {
-        top: { style: "thin", color: { rgb: "1E40AF" } },
-        bottom: { style: "thin", color: { rgb: "1E40AF" } },
-        left: { style: "thin", color: { rgb: "1E40AF" } },
-        right: { style: "thin", color: { rgb: "1E40AF" } }
-      }
+      font: { bold: true },
+      fill: { fgColor: { rgb: "D3D3D3" } },
+      alignment: { horizontal: "center", vertical: "center" }
     };
-  }
-
-  const headers = Object.keys(data[0]);
-  const votoEmitidoColIndex = headers.indexOf('Voto Emitido');
-
-  for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-    let applyGrayBackground = false;
-
-    if (votoEmitidoColIndex !== -1) {
-      const votoEmitidoAddress = XLSX.utils.encode_cell({ r: R, c: votoEmitidoColIndex });
-      const votoEmitidoCell = worksheet[votoEmitidoAddress];
-      if (votoEmitidoCell && (votoEmitidoCell.v === 'No' || votoEmitidoCell.v === false)) {
-        applyGrayBackground = true;
-      }
-    }
-
-    if (applyGrayBackground) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!worksheet[cellAddress]) continue;
-
-        worksheet[cellAddress].s = {
-          fill: { fgColor: { rgb: "F9FAFB" } },
-          alignment: { horizontal: "left", vertical: "center" }
-        };
-      }
-    }
   }
 
   const colWidths = [];
