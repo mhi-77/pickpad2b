@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { loadEmopicksWithCount, formatEmopickDisplay } from '../utils/emopicksUtils';
 
 /**
  * Componente GpicksView - Vista para mostrar votantes con emopicks asignados
@@ -52,14 +53,8 @@ export default function GpicksView() {
   const loadFilterData = async () => {
     try {
       // Cargar emopicks
-      const { data: emopicks, error: emopicksError } = await supabase
-        .from('emopicks')
-        .select('id, display')
-        .order('id');
-
-      if (!emopicksError) {
-        setAvailableEmopicks(emopicks || []);
-      }
+      const emopicks = await loadEmopicksWithCount();
+      setAvailableEmopicks(emopicks || []);
 
       // Cargar usuarios que han asignado emopicks
       const { data: users, error: usersError } = await supabase
@@ -339,7 +334,7 @@ export default function GpicksView() {
               <option value="">Todos los picks</option>
               {availableEmopicks.map((emopick) => (
                 <option key={emopick.id} value={emopick.id}>
-                  {emopick.display}
+                  {formatEmopickDisplay(emopick.display, emopick.count)}
                 </option>
               ))}
             </select>

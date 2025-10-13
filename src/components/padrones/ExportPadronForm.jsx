@@ -2,84 +2,62 @@ import React, { useState, useEffect } from 'react';
 import { Download, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
-  processBasicData,
-  processCompleteData,
-  convertToCSV,
+  processExtendedBasicData,
+  convertRawToCSV,
   downloadFile,
-  generateFileName
+  generateFileName,
+  exportToExcelWithFormat
 } from '../../utils/exportUtils';
+import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 
 export default function ExportPadronForm() {
-  const [format, setFormat] = useState('csv');
   const [isBasicMode, setIsBasicMode] = useState(false);
   const [voteStatus, setVoteStatus] = useState('all');
   const [selectedEmopick, setSelectedEmopick] = useState('all');
-  const [votoObligatorio, setVotoObligatorio] = useState('all');
-  const [selectedLocalidad, setSelectedLocalidad] = useState('all');
+  const [mesaDesde, setMesaDesde] = useState('');
+  const [mesaHasta, setMesaHasta] = useState('');
+  const [claseDesde, setClaseDesde] = useState('');
+  const [claseHasta, setClaseHasta] = useState('');
 
   const [emopicks, setEmopicks] = useState([]);
-  const [localidades, setLocalidades] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [recordCount, setRecordCount] = useState(null);
+  const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, percentage: 0 });
 
   useEffect(() => {
     loadEmopicks();
-    loadLocalidades();
   }, []);
 
   useEffect(() => {
     loadRecordCount();
-  }, [voteStatus, selectedEmopick, votoObligatorio, selectedLocalidad]);
+  }, [isBasicMode, voteStatus, selectedEmopick, mesaDesde, mesaHasta, claseDesde, claseHasta]);
 
   const loadEmopicks = async () => {
     try {
-      const { data, error } = await supabase
-        .from('emopicks')
-        .select('id, display')
-        .order('display');
-
-      if (error) throw error;
+      const data = await loadEmopicksWithCount();
       setEmopicks(data || []);
     } catch (error) {
       console.error('Error loading emopicks:', error);
     }
   };
 
-  const loadLocalidades = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('circuitos')
-        .select('localidad')
-        .not('localidad', 'is', null)
-        .order('localidad');
-
-      if (error) throw error;
-      const uniqueLocalities = [...new Set(data.map(item => item.localidad))];
-      setLocalidades(uniqueLocalities);
-    } catch (error) {
-      console.error('Error loading localidades:', error);
-    }
-  };
 
   const loadRecordCount = async () => {
     try {
-      if (selectedLocalidad !== 'all') {
-        const data = await fetchPadronData();
-        setRecordCount(data.length);
-      } else {
-        let query = supabase
-          .from('padron')
-          .select('documento', { count: 'exact', head: true });
+      let query = supabase
+        .from('padron')
+        .select('documento', { count: 'exact', head: true });
 
+      if (isBasicMode) {
         query = applyFilters(query);
-
-        const { count, error } = await query;
-
-        if (error) throw error;
-        setRecordCount(count);
       }
+
+      const { count, error } = await query;
+
+      if (error) throw error;
+      setRecordCount(count);
     } catch (error) {
       console.error('Error loading record count:', error);
       setRecordCount(null);
@@ -97,21 +75,25 @@ export default function ExportPadronForm() {
       query = query.eq('emopick_id', parseInt(selectedEmopick));
     }
 
-    if (votoObligatorio === 'true') {
-      query = query.eq('da_voto_obligatorio', true);
-    } else if (votoObligatorio === 'false') {
-      query = query.eq('da_voto_obligatorio', false);
+    if (mesaDesde && !isNaN(parseInt(mesaDesde))) {
+      query = query.gte('mesa_numero', parseInt(mesaDesde));
+    }
+
+    if (mesaHasta && !isNaN(parseInt(mesaHasta))) {
+      query = query.lte('mesa_numero', parseInt(mesaHasta));
+    }
+
+    if (claseDesde && !isNaN(parseInt(claseDesde))) {
+      query = query.gte('clase', parseInt(claseDesde));
+    }
+
+    if (claseHasta && !isNaN(parseInt(claseHasta))) {
+      query = query.lte('clase', parseInt(claseHasta));
     }
 
     return query;
   };
 
-  const filterByLocalidad = (data) => {
-    if (selectedLocalidad === 'all') return data;
-    return data.filter(record =>
-      record.mesas?.establecimientos?.circuitos?.localidad === selectedLocalidad
-    );
-  };
 
   const fetchPadronData = async () => {
     let query = supabase
@@ -143,6 +125,72 @@ export default function ExportPadronForm() {
     return data;
   };
 
+  const fetchAllPadronDataPaginated = async (totalRecords, isRawMode = false) => {
+    const BATCH_SIZE = 1000;
+    const totalBatches = Math.ceil(totalRecords / BATCH_SIZE);
+    let allData = [];
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const from = batchIndex * BATCH_SIZE;
+      const to = from + BATCH_SIZE - 1;
+
+      let query;
+
+      if (isRawMode) {
+        query = supabase
+          .from('padron')
+          .select('*')
+          .order('mesa_numero', { ascending: true })
+          .order('orden', { ascending: true })
+          .range(from, to);
+      } else {
+        query = supabase
+          .from('padron')
+          .select(`
+            *,
+            emopicks(id, display),
+            voto_pick_user_profile:profiles!padron_voto_pick_user_fkey(full_name),
+            emopick_user_profile:profiles!padron_emopick_user_fkey(full_name),
+            pick_check_user_profile:profiles!padron_pick_check_user_fkey(full_name),
+            mesas(
+              numero,
+              establecimientos(
+                nombre,
+                circuitos(
+                  localidad
+                )
+              )
+            )
+          `)
+          .order('mesa_numero', { ascending: true })
+          .order('orden', { ascending: true })
+          .range(from, to);
+
+        query = applyFilters(query);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`Error fetching batch ${batchIndex + 1}:`, error);
+        throw error;
+      }
+
+      allData = allData.concat(data);
+
+      const currentRecords = Math.min((batchIndex + 1) * BATCH_SIZE, totalRecords);
+      const percentage = Math.round((currentRecords / totalRecords) * 100);
+
+      setExportProgress({
+        current: currentRecords,
+        total: totalRecords,
+        percentage: percentage
+      });
+    }
+
+    return allData;
+  };
+
   const handleExport = async () => {
     if (recordCount === 0) {
       setMessage({
@@ -152,62 +200,92 @@ export default function ExportPadronForm() {
       return;
     }
 
+    if (recordCount > 350000) {
+      setMessage({
+        type: 'error',
+        text: `El límite máximo de exportación es 350,000 registros. Actualmente hay ${recordCount.toLocaleString('es-AR')} registros con los filtros aplicados. Por favor, aplique más filtros para reducir la cantidad.`
+      });
+      return;
+    }
+
     if (recordCount > 50000) {
       const confirm = window.confirm(
-        `Se exportarán ${recordCount} registros. Esto puede tomar tiempo. ¿Desea continuar?`
+        `Se exportarán ${recordCount.toLocaleString('es-AR')} registros. Esto puede tomar varios minutos. ¿Desea continuar?`
       );
       if (!confirm) return;
     }
 
     setIsLoading(true);
     setMessage({ type: '', text: '' });
+    setExportProgress({ current: 0, total: recordCount, percentage: 0 });
 
     try {
-      let rawData = await fetchPadronData();
-      rawData = filterByLocalidad(rawData);
+      let rawData;
 
-      const processedData = isBasicMode
-        ? processBasicData(rawData)
-        : processCompleteData(rawData);
+      if (isBasicMode) {
+        rawData = await fetchAllPadronDataPaginated(recordCount, false);
 
-      if (format === 'csv') {
-        await exportToCSV(processedData);
-      } else if (format === 'xlsx') {
-        await exportToExcel(processedData);
-      } else if (format === 'pdf') {
+        if (!rawData || rawData.length === 0) {
+          setMessage({
+            type: 'error',
+            text: 'No se encontraron datos para exportar con los filtros aplicados'
+          });
+          setIsLoading(false);
+          setExportProgress({ current: 0, total: 0, percentage: 0 });
+          return;
+        }
+
+        const processedData = processExtendedBasicData(rawData);
+
+        try {
+          const filename = generateFileName('xlsx', true);
+          await exportToExcelWithFormat(processedData, filename);
+
+          setMessage({
+            type: 'success',
+            text: `Se exportaron ${processedData.length.toLocaleString('es-AR')} registros correctamente en formato Excel`
+          });
+        } catch (excelError) {
+          console.error('Error generating Excel file:', excelError);
+          setMessage({
+            type: 'error',
+            text: 'Error al generar el archivo Excel. Intente nuevamente o contacte al administrador.'
+          });
+        }
+      } else {
+        rawData = await fetchAllPadronDataPaginated(recordCount, true);
+
+        if (!rawData || rawData.length === 0) {
+          setMessage({
+            type: 'error',
+            text: 'No se encontraron datos para exportar'
+          });
+          setIsLoading(false);
+          setExportProgress({ current: 0, total: 0, percentage: 0 });
+          return;
+        }
+
+        const csvContent = convertRawToCSV(rawData);
+        const filename = generateFileName('csv', false);
+        downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
+
         setMessage({
-          type: 'error',
-          text: 'Formato PDF no disponible. Use CSV o Excel.'
+          type: 'success',
+          text: `Se exportaron ${rawData.length.toLocaleString('es-AR')} registros correctamente en formato CSV`
         });
-        return;
       }
-
-      setMessage({
-        type: 'success',
-        text: `Se exportaron ${processedData.length} registros correctamente`
-      });
     } catch (error) {
       console.error('Error exporting data:', error);
       setMessage({
         type: 'error',
-        text: 'Error al exportar los datos. Intente nuevamente.'
+        text: `Error al exportar los datos: ${error.message || 'Intente nuevamente'}`
       });
     } finally {
       setIsLoading(false);
+      setExportProgress({ current: 0, total: 0, percentage: 0 });
     }
   };
 
-  const exportToCSV = async (data) => {
-    const csvContent = convertToCSV(data);
-    const filename = generateFileName('csv', isBasicMode);
-    downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
-  };
-
-  const exportToExcel = async (data) => {
-    const csvContent = convertToCSV(data);
-    const filename = generateFileName('xls', isBasicMode);
-    downloadFile(csvContent, filename, 'application/vnd.ms-excel;charset=utf-8;');
-  };
 
   return (
     <div className="space-y-4">
@@ -235,101 +313,157 @@ export default function ExportPadronForm() {
                 className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
               />
               <label htmlFor="basicMode" className="font-medium text-blue-900 cursor-pointer">
-                Modo Info Básica
+                Formato Personalizado
               </label>
             </div>
             <p className="text-sm text-blue-700 mt-2 ml-7">
-              Exportar solo: Documento, Apellido, Nombre, Sexo, Clase, Domicilio y Mesa
+              {isBasicMode
+                ? 'Exportar en excel con formato y filtrado (control y análisis)'
+                : 'Exportar tabla completa en CSV sin formato (programación)'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Formato de Exportación
-              </label>
-              <select
-                value={format}
-                onChange={(e) => setFormat(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="csv">CSV</option>
-                <option value="xlsx">Excel (XLS)</option>
-              </select>
+          {isBasicMode && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado de Votación
+                </label>
+                <select
+                  value={voteStatus}
+                  onChange={(e) => setVoteStatus(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Todos</option>
+                  <option value="voted">Votaron</option>
+                  <option value="not_voted">No Votaron</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pick
+                </label>
+                <select
+                  value={selectedEmopick}
+                  onChange={(e) => setSelectedEmopick(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Todos</option>
+                  {emopicks.map(emopick => (
+                    <option key={emopick.id} value={emopick.id}>
+                      {formatEmopickDisplay(emopick.display, emopick.count)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado de Votación
+            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Rango de Mesas
               </label>
-              <select
-                value={voteStatus}
-                onChange={(e) => setVoteStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Todos</option>
-                <option value="voted">Votaron</option>
-                <option value="not_voted">No Votaron</option>
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Desde Mesa N°
+                  </label>
+                  <input
+                    type="number"
+                    value={mesaDesde}
+                    onChange={(e) => setMesaDesde(e.target.value)}
+                    placeholder="Ej: 1"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Hasta Mesa N°
+                  </label>
+                  <input
+                    type="number"
+                    value={mesaHasta}
+                    onChange={(e) => setMesaHasta(e.target.value)}
+                    placeholder="Ej: 9999"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+              {mesaDesde && mesaHasta && parseInt(mesaDesde) > parseInt(mesaHasta) && (
+                <p className="text-sm text-red-600 mt-2">
+                  El número de mesa inicial debe ser menor o igual al número de mesa final
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado Emocional
+            <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Rango de Clase
               </label>
-              <select
-                value={selectedEmopick}
-                onChange={(e) => setSelectedEmopick(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Todos</option>
-                {emopicks.map(emopick => (
-                  <option key={emopick.id} value={emopick.id}>
-                    {emopick.display}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Voto Obligatorio
-              </label>
-              <select
-                value={votoObligatorio}
-                onChange={(e) => setVotoObligatorio(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Todos</option>
-                <option value="true">Sí</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Localidad
-              </label>
-              <select
-                value={selectedLocalidad}
-                onChange={(e) => setSelectedLocalidad(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Todas</option>
-                {localidades.map(localidad => (
-                  <option key={localidad} value={localidad}>
-                    {localidad}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Desde Clase
+                  </label>
+                  <input
+                    type="number"
+                    value={claseDesde}
+                    onChange={(e) => setClaseDesde(e.target.value)}
+                    placeholder="Ej: 1950"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Hasta Clase
+                  </label>
+                  <input
+                    type="number"
+                    value={claseHasta}
+                    onChange={(e) => setClaseHasta(e.target.value)}
+                    placeholder="Ej: 2006"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    min="0"
+                  />
+                </div>
+              </div>
+              {claseDesde && claseHasta && parseInt(claseDesde) > parseInt(claseHasta) && (
+                <p className="text-sm text-red-600 mt-2">
+                  La clase inicial debe ser menor o igual a la clase final
+                </p>
+              )}
             </div>
           </div>
+          )}
 
           {recordCount !== null && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
               <p className="text-gray-700">
                 Registros a exportar: <span className="font-bold text-blue-600">{recordCount.toLocaleString('es-AR')}</span>
               </p>
+            </div>
+          )}
+
+          {isLoading && exportProgress.percentage > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-700 font-medium">
+                  Descargando registros {exportProgress.current.toLocaleString('es-AR')} de {exportProgress.total.toLocaleString('es-AR')}
+                </span>
+                <span className="text-blue-600 font-bold">
+                  {exportProgress.percentage}%
+                </span>
+              </div>
+              <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${exportProgress.percentage}%` }}
+                ></div>
+              </div>
             </div>
           )}
 
@@ -353,17 +487,21 @@ export default function ExportPadronForm() {
           <button
             onClick={handleExport}
             disabled={isLoading || recordCount === 0}
-            className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generando archivo...</span>
+                <span>
+                  {exportProgress.percentage === 0 ? 'Preparando exportación...' :
+                   exportProgress.percentage === 100 ? 'Generando archivo...' :
+                   `Descargando datos... ${exportProgress.percentage}%`}
+                </span>
               </>
             ) : (
               <>
                 <Download className="w-5 h-5" />
-                <span>Exportar Padrón</span>
+                <span>Exportar Padrón {isBasicMode ? '(Excel)' : '(CSV)'}</span>
               </>
             )}
           </button>

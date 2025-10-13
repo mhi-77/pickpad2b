@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Filter, RefreshCw, User, MapPin, Hash, SquarePen, AlertCircle } from 'lucide-react';
+import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 
 export default function RealtimeStats() {
   const [unvotedVoters, setUnvotedVoters] = useState([]);
@@ -60,15 +61,8 @@ export default function RealtimeStats() {
       }
 
       // Cargar emopicks - solo aquellos con count > 0
-      const { data: emopicks, error: emopicksError } = await supabase
-        .from('emopicks')
-        .select('id, display')
-        .gt('count', 0)
-        .order('id');
-
-      if (!emopicksError) {
-        setAvailableEmopicks(emopicks || []);
-      }
+      const emopicks = await loadEmopicksWithCount();
+      setAvailableEmopicks(emopicks || []);
     } catch (error) {
       console.error('Error loading filter options:', error);
     }
@@ -232,7 +226,7 @@ export default function RealtimeStats() {
               >
                 <option value="">Todos</option>
                 {availableEmopicks.map(pick => (
-                  <option key={pick.id} value={pick.id}>{pick.display}</option>
+                  <option key={pick.id} value={pick.id}>{formatEmopickDisplay(pick.display, pick.count)}</option>
                 ))}
               </select>
             </div>
