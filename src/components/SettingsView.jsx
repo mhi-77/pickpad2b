@@ -161,6 +161,21 @@ export default function SettingsView() {
               <div className="max-w-2xl mx-auto space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={profileData.email}
+                    disabled
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    El correo electrónico no puede ser modificado
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nombre Completo
                   </label>
                   <input
@@ -188,21 +203,6 @@ export default function SettingsView() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    value={profileData.email}
-                    disabled
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    El correo electrónico no puede ser modificado
-                  </p>
-                </div>
-
                 {user?.usuario_tipo <= 3 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -219,14 +219,6 @@ export default function SettingsView() {
                     />
                   </div>
                 )}
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Shield className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium text-gray-700">Rol:</span>
-                    <span className="text-gray-600">{user?.roleDescription}</span>
-                  </div>
-                </div>
 
                 {saveMessage && (
                   <div

@@ -2,8 +2,9 @@ import React from 'react';
 import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-export default function FiscalizarResults({ results, isLoading, onMarcarVoto, isUpdating, showSuccessModal, setShowSuccessModal, userRole }) {
+export default function FiscalizarResults({ results, isLoading, onMarcarVoto, onDeshacerVoto, isUpdating, showSuccessModal, setShowSuccessModal, userRole }) {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
+  const [showUndoModal, setShowUndoModal] = React.useState(false);
   const [selectedDocumento, setSelectedDocumento] = React.useState(null);
   const [selectedVotante, setSelectedVotante] = React.useState(null);
 
@@ -27,6 +28,27 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
 
   const handleCancelModal = () => {
     setShowConfirmModal(false);
+    setSelectedDocumento(null);
+    setSelectedVotante(null);
+  };
+
+  const handleOpenUndoModal = (documento, votante) => {
+    setSelectedDocumento(documento);
+    setSelectedVotante(votante);
+    setShowUndoModal(true);
+  };
+
+  const handleConfirmDeshacer = () => {
+    if (selectedDocumento) {
+      onDeshacerVoto(selectedDocumento);
+    }
+    setShowUndoModal(false);
+    setSelectedDocumento(null);
+    setSelectedVotante(null);
+  };
+
+  const handleCancelUndoModal = () => {
+    setShowUndoModal(false);
     setSelectedDocumento(null);
     setSelectedVotante(null);
   };
@@ -158,27 +180,40 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
             {/* Información adicional si existe */}
             {(record.voto_pick_user || record.voto_pick_at) && (
               <div className="mt-2 pt-2 border-t border-gray-200">
-                
-                {record.voto_pick_at && (
-                  <p className="text-xs text-gray-500">
-                    <strong>Registrado:</strong> {new Date(record.voto_pick_at).toLocaleString('es-AR', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: false
-                      })}
-                  </p>
-                )}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    {record.voto_pick_at && (
+                      <p className="text-xs text-gray-500">
+                        <strong>Registrado:</strong> {new Date(record.voto_pick_at).toLocaleString('es-AR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: false
+                        })}
+                      </p>
+                    )}
 
-                {record.voto_pick_user && (
-                  <p className="text-xs text-gray-500 mb-1">
-                    <strong>Usuario:</strong> {record.voto_pick_user_profile?.full_name || 'N/A'}
-                  </p>
-                )}
-                
+                    {record.voto_pick_user && (
+                      <p className="text-xs text-gray-500 mb-1">
+                        <strong>Usuario:</strong> {record.voto_pick_user_profile?.full_name || 'N/A'}
+                      </p>
+                    )}
+                  </div>
+
+                  {userRole && userRole <= 2 && (
+                    <button
+                      onClick={() => handleOpenUndoModal(record.documento, record)}
+                      disabled={isUpdating}
+                      className="flex items-center space-x-1 px-3 py-2 bg-red-400 text-white text-xs rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="font-medium">BORRAR</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -241,6 +276,70 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, is
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Confirmar voto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación para deshacer voto */}
+      {showUndoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Confirmar deshacer voto
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelUndoModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-red-700 font-medium mb-2">
+                  ⚠️ Esta acción revertirá el voto marcado
+                </p>
+                <p className="text-red-600 text-sm">
+                  Se eliminará el registro de voto y el votante volverá a estado "No votó"
+                </p>
+              </div>
+
+              {selectedVotante && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 mb-1">Votante:</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedVotante.apellido}, {selectedVotante.nombre}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    DNI: {selectedVotante.documento}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelUndoModal}
+                className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={handleConfirmDeshacer}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Confirmar deshacer
               </button>
             </div>
           </div>
