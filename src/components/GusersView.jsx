@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import SignupForm from './gusers/SignupForm';
 import UsersList from './gusers/UsersList';
-import FiscalesList from './fiscalizar/FiscalesList';
+import FiscalesList from './gusers/FiscalesList';
 
 /**
  * Componente GusersView - Vista principal para la gestión de usuarios
