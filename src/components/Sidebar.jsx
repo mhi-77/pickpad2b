@@ -1,18 +1,20 @@
 import React from 'react';
 import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { FEATURES } from '../config/features';
 
 // Configuración de elementos del menú con permisos por rol
 // maxRole define el nivel máximo de usuario que puede acceder (1=SUPERUSUARIO, 5=COLABORADOR)
+// disabled: indica si la funcionalidad está temporalmente deshabilitada
 const menuItems = [
-  { id: 'search', label: 'Búsqueda', icon: Search, maxRole: 5 },
-  { id: 'fiscalizar', label: 'Fiscalizar', icon: ListChecks, maxRole: 4 },
-  { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4 },
-  { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3 },
-  { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3 },
-  { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2 },
-  { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2 },
-  { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 5 },
+  { id: 'search', label: 'Búsqueda', icon: Search, maxRole: 5, disabled: false },
+  { id: 'fiscalizar', label: 'Fiscalizar', icon: ListChecks, maxRole: 4, disabled: false },
+  { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4, disabled: !FEATURES.MESA_TESTIGO_ENABLED },
+  { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3, disabled: false },
+  { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3, disabled: false },
+  { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2, disabled: false },
+  { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2, disabled: false },
+  { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 5, disabled: false },
 ];
 
 /**
@@ -98,20 +100,27 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
               {visibleMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;
-                
+                const isDisabled = item.disabled;
+
                 return (
-                  // Botón de navegación con estado activo/inactivo
+                  // Botón de navegación con estado activo/inactivo/deshabilitado
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveView(item.id);
-                      setIsOpen(false); // Cerrar sidebar en móviles al seleccionar
+                      if (!isDisabled) {
+                        setActiveView(item.id);
+                        setIsOpen(false); // Cerrar sidebar en móviles al seleccionar
+                      }
                     }}
+                    disabled={isDisabled}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive
+                      isDisabled
+                        ? 'bg-gray-00 text-gray-400 cursor-not-allowed opacity-60'
+                        : isActive
                         ? 'bg-blue-600 text-white shadow-md'
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
+                    title={isDisabled ? 'Funcionalidad temporalmente deshabilitada' : ''}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>

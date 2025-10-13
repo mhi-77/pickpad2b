@@ -10,6 +10,7 @@ import GusersView from './GusersView';
 import { useAuth } from '../context/AuthContext';
 import { useAutoLogout } from '../hooks/useAutoLogout';
 import { supabase } from '../lib/supabase';
+import { FEATURES } from '../config/features';
 import GpicksView from './GpicksView';
 import TestigoView from './TestigoView';
 import PadronesView from './PadronesView';
@@ -51,6 +52,14 @@ export default function Dashboard({ appVersion }) {
 
   // Estado para controlar qué vista está activa (search, fiscalizar, stats, etc.)
   const [activeView, setActiveView] = useState('search');
+
+  // Efecto para prevenir navegación a vistas deshabilitadas
+  useEffect(() => {
+    if (activeView === 'testigo' && !FEATURES.MESA_TESTIGO_ENABLED) {
+      // Si el usuario intenta acceder a testigo y está deshabilitado, redirigir a search
+      setActiveView('search');
+    }
+  }, [activeView]);
   // Estado para almacenar los resultados de búsqueda en el padrón
   const [searchResults, setSearchResults] = useState([]);
   // Estado para indicar si se está realizando una búsqueda

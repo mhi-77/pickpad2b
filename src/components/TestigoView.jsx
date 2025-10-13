@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { ScanEye, BarChart3, AlertCircle } from 'lucide-react';
+import { ScanEye, BarChart3, AlertCircle, Construction } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { FEATURES } from '../config/features';
 import MuestreoTestigo from './testigo/MuestreoTestigo';
 import ResultadosTestigo from './testigo/ResultadosTestigo';
 
 /**
  * Componente TestigoView - Vista principal para Mesa Testigo
- * 
+ *
  * Propósito: Contenedor principal que maneja las dos sub-vistas de Mesa Testigo:
  * - Muestreo: Para usuarios tipo 3 y 4 (fiscales)
  * - Resultados: Para usuarios tipo 2 o inferior (administradores)
@@ -15,21 +16,41 @@ export default function TestigoView() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('muestreo');
 
+  // Verificar si la funcionalidad está deshabilitada
+  if (!FEATURES.MESA_TESTIGO_ENABLED) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="text-center py-16">
+          <Construction className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+          <h3 className="text-2xl font-semibold text-gray-500 mb-3">
+            Funcionalidad Temporalmente Deshabilitada
+          </h3>
+          <p className="text-gray-400 text-lg mb-2">
+            Mesa Testigo está actualmente en pausa para desarrollo
+          </p>
+          <p className="text-gray-400">
+            Esta sección estará disponible próximamente
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Configuración de pestañas con permisos
   const tabs = [
-    { 
-      id: 'muestreo', 
-      label: 'Muestreo', 
-      icon: ScanEye, 
+    {
+      id: 'muestreo',
+      label: 'Muestreo',
+      icon: ScanEye,
       minRole: 3, // Usuarios tipo 3 y 4
-      maxRole: 4 
+      maxRole: 4
     },
-    { 
-      id: 'resultados', 
-      label: 'Resultados', 
-      icon: BarChart3, 
+    {
+      id: 'resultados',
+      label: 'Resultados',
+      icon: BarChart3,
       minRole: 1, // Usuarios tipo 1 y 2
-      maxRole: 2 
+      maxRole: 2
     },
   ];
 
