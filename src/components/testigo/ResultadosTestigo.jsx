@@ -27,7 +27,7 @@ export default function ResultadosTestigo() {
   // Estados para estadísticas
   const [stats, setStats] = useState({
     totalRegistros: 0,
-    mesasConTestigos: 0,
+    mesasTestigo: 0,
     promedioFaltante: 0,
     promedioPorcentaje: 0
   });
@@ -131,7 +131,7 @@ export default function ResultadosTestigo() {
     if (data.length === 0) {
       setStats({
         totalRegistros: 0,
-        mesasConTestigos: 0,
+        mesasTestigo: 0,
         promedioFaltante: 0,
         promedioPorcentaje: 0
       });
@@ -139,7 +139,7 @@ export default function ResultadosTestigo() {
     }
 
     const totalRegistros = data.length;
-    const mesasConTestigos = new Set(data.map(r => r.mesa_numero)).size;
+    const mesasTestigo = new Set(data.map(r => r.mesa_numero)).size;
     
     const totalFaltante = data.reduce((sum, r) => sum + (r.pila_faltante || 0), 0);
     const promedioFaltante = (totalFaltante / totalRegistros).toFixed(1);
@@ -157,7 +157,7 @@ export default function ResultadosTestigo() {
 
     setStats({
       totalRegistros,
-      mesasConTestigos,
+      mesasTestigo,
       promedioFaltante: parseFloat(promedioFaltante),
       promedioPorcentaje: parseFloat(promedioPorcentaje)
     });
@@ -228,8 +228,8 @@ export default function ResultadosTestigo() {
             <div className="flex items-center space-x-3">
               <Hash className="w-8 h-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold text-green-900">{stats.mesasConTestigos}</p>
-                <p className="text-sm text-green-700">Mesas con Testigos</p>
+                <p className="text-2xl font-bold text-green-900">{stats.mesasTestigo}</p>
+                <p className="text-sm text-green-700">Mesas Testigo</p>
               </div>
             </div>
           </div>

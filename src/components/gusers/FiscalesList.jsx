@@ -120,7 +120,7 @@ export default function FiscalesList({ userTypes = [] }) {
           conteo.set(numInt, (conteo.get(numInt) || 0) + 1);
         }
       });
-      setFiscalesPorMesa(conteo);
+      setFiscalesPorMesa(conteo); //calcula en frontend la cantidad de fiscales por mesa asignados
     }
   }, [fiscales, validMesas]);
 

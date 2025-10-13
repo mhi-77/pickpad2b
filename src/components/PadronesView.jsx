@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FileText, Upload, Download, Search, Database } from 'lucide-react';
+import ExportPadronForm from './padrones/ExportPadronForm';
 
 export default function PadronesView() {
   const [activeTab, setActiveTab] = useState('consulta');
@@ -98,56 +99,7 @@ export default function PadronesView() {
         );
 
       case 'exportar':
-        return (
-          <div className="space-y-4">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <Download className="w-6 h-6 text-purple-600" />
-                <div>
-                  <h3 className="font-semibold text-purple-800">Exportar Padrón</h3>
-                  <p className="text-sm text-purple-700">
-                    Descarga información del padrón en diferentes formatos
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="max-w-2xl mx-auto space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Formato de Exportación
-                  </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option>CSV</option>
-                    <option>Excel (XLSX)</option>
-                    <option>PDF</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filtros
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      <span className="text-sm text-gray-700">Incluir solo votantes activos</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
-                      <span className="text-sm text-gray-700">Filtrar por circuito electoral</span>
-                    </label>
-                  </div>
-                </div>
-
-                <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
-                  Exportar Padrón
-                </button>
-              </div>
-            </div>
-          </div>
-        );
+        return <ExportPadronForm />;
 
       default:
         return null;

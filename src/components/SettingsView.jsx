@@ -42,7 +42,7 @@ export default function SettingsView() {
   const tabs = [
     { id: 'perfil', label: 'Perfil', icon: User },
     { id: 'seguridad', label: 'Seguridad', icon: Lock },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'notificaciones', label: 'Avisos', icon: Bell },
   ];
 
   const handleProfileSave = async () => {
