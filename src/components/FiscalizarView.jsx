@@ -117,7 +117,6 @@ export default function FiscalizarView() {
   const handleMarcarVoto = async (documento) => {
     setIsUpdating(true);
     try {
-      // Actualizar el registro en la base de datos
       const { error } = await supabase
         .from('padron')
         .update({
@@ -126,7 +125,7 @@ export default function FiscalizarView() {
           voto_pick_user: user.id
         })
         .eq('documento', documento)
-        .eq('mesa_numero', user.mesa_numero); // Seguridad: solo mesa asignada
+        .eq('mesa_numero', user.mesa_numero);
 
       if (error) {
         console.error('Error updating vote:', error);
@@ -134,12 +133,11 @@ export default function FiscalizarView() {
         return;
       }
 
-      // Actualizar los datos localmente para reflejar el cambio inmediatamente
-      const updatedPadron = padronData.map(record => 
-        record.documento === documento 
-          ? { 
-              ...record, 
-              voto_emitido: true, 
+      const updatedPadron = padronData.map(record =>
+        record.documento === documento
+          ? {
+              ...record,
+              voto_emitido: true,
               voto_pick_at: new Date().toISOString(),
               voto_pick_user: user.id,
               voto_pick_user_profile: {
@@ -148,18 +146,16 @@ export default function FiscalizarView() {
             }
           : record
       );
-      
-      // Actualizar datos completos solo si existen
+
       if (padronData.length > 0) {
         setPadronData(updatedPadron);
       }
-      
-      // Actualizar también los datos filtrados para la vista actual
-      const updatedFiltered = filteredData.map(record => 
-        record.documento === documento 
-          ? { 
-              ...record, 
-              voto_emitido: true, 
+
+      const updatedFiltered = filteredData.map(record =>
+        record.documento === documento
+          ? {
+              ...record,
+              voto_emitido: true,
               voto_pick_at: new Date().toISOString(),
               voto_pick_user: user.id,
               voto_pick_user_profile: {
@@ -168,15 +164,70 @@ export default function FiscalizarView() {
             }
           : record
       );
-      
-      setFilteredData(updatedFiltered);
 
-      // Mostrar confirmación de éxito al usuario
+      setFilteredData(updatedFiltered);
       setShowSuccessModal(true);
 
     } catch (error) {
       console.error('Error marking vote:', error);
       alert('Error al registrar el voto');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeshacerVoto = async (documento) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('padron')
+        .update({
+          voto_emitido: false,
+          voto_pick_at: null,
+          voto_pick_user: null
+        })
+        .eq('documento', documento)
+        .eq('mesa_numero', user.mesa_numero);
+
+      if (error) {
+        console.error('Error undoing vote:', error);
+        alert('Error al deshacer el voto');
+        return;
+      }
+
+      const updatedPadron = padronData.map(record =>
+        record.documento === documento
+          ? {
+              ...record,
+              voto_emitido: false,
+              voto_pick_at: null,
+              voto_pick_user: null,
+              voto_pick_user_profile: null
+            }
+          : record
+      );
+
+      if (padronData.length > 0) {
+        setPadronData(updatedPadron);
+      }
+
+      const updatedFiltered = filteredData.map(record =>
+        record.documento === documento
+          ? {
+              ...record,
+              voto_emitido: false,
+              voto_pick_at: null,
+              voto_pick_user: null,
+              voto_pick_user_profile: null
+            }
+          : record
+      );
+
+      setFilteredData(updatedFiltered);
+
+    } catch (error) {
+      console.error('Error undoing vote:', error);
+      alert('Error al deshacer el voto');
     } finally {
       setIsUpdating(false);
     }
@@ -287,6 +338,7 @@ export default function FiscalizarView() {
         results={filteredData}
         isLoading={isLoading}
         onMarcarVoto={handleMarcarVoto}
+        onDeshacerVoto={handleDeshacerVoto}
         isUpdating={isUpdating}
         showSuccessModal={showSuccessModal}
         setShowSuccessModal={setShowSuccessModal}
