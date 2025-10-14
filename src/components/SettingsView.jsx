@@ -52,7 +52,7 @@ export default function SettingsView() {
     try {
       const updateData = {
         full_name: profileData.full_name,
-        mesa_numero: profileData.mesa_numero,
+        mesa_numero: profileData.mesa_numero || null,
       };
 
       if (profileData.dni) {
