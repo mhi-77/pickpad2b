@@ -3,27 +3,29 @@ import { X, Save, SquarePen } from 'lucide-react';
 
 /**
  * Componente PickModal - Modal para seleccionar emopick y agregar anotación
- * 
+ *
  * Propósito: Permite al usuario seleccionar un emoji/display de la tabla emopicks
  * y agregar una anotación breve para un votante específico.
- * 
+ *
  * Props:
  * - isOpen: boolean - Controla la visibilidad del modal
  * - onClose: function - Callback para cerrar el modal
  * - onSave: function - Callback para guardar la selección (emopickId, pickNota)
  * - emopicksList: array - Lista de emopicks disponibles
- * - initialEmopickId: number - ID del emopick inicialmente seleccionado
+ * - initialEmopickId: number - ID del emopick inicialmente seleccionado (para pre-seleccionar el dropdown)
  * - initialPickNota: string - Anotación inicial
  * - votanteName: string - Nombre del votante para mostrar en el modal
+ * - currentVoterEmopickId: number - ID del emopick que tiene asignado el votante actual (para verificar si tiene emopick)
  */
-export default function PickModal({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  emopicksList = [], 
+export default function PickModal({
+  isOpen,
+  onClose,
+  onSave,
+  emopicksList = [],
   initialEmopickId = null,
   initialPickNota = '',
-  votanteName = ''
+  votanteName = '',
+  currentVoterEmopickId = null
 }) {
   // Estados locales del modal
   const [selectedEmopickId, setSelectedEmopickId] = useState(initialEmopickId);
@@ -39,6 +41,7 @@ export default function PickModal({
   /**
    * Maneja el guardado de la selección
    * Valida que se haya seleccionado un emopick y llama al callback onSave
+   * Si se selecciona UNMARK, se envía null para desmarcar
    */
   const handleSave = async () => {
     if (!selectedEmopickId) {
@@ -48,7 +51,11 @@ export default function PickModal({
 
     setIsSaving(true);
     try {
-      await onSave(selectedEmopickId, pickNota.trim());
+      if (selectedEmopickId === 'UNMARK') {
+        await onSave(null, '');
+      } else {
+        await onSave(selectedEmopickId, pickNota.trim());
+      }
     } catch (error) {
       console.error('Error saving pick:', error);
     } finally {
@@ -103,10 +110,23 @@ export default function PickModal({
             </label>
             <select
               value={selectedEmopickId || ''}
-              onChange={(e) => setSelectedEmopickId(e.target.value ? parseInt(e.target.value) : null)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'UNMARK') {
+                  setSelectedEmopickId('UNMARK');
+                } else {
+                  setSelectedEmopickId(value ? parseInt(value) : null);
+                }
+              }}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
             >
-              <option value="">Selecciona una opción</option>
+              {currentVoterEmopickId ? (
+                <option value="UNMARK" className="font-bold text-red-600">
+                 X X = DESMARCAR = X X
+                </option>
+              ) : (
+                <option value="">Selecciona una opción</option>
+              )}
               {emopicksList.map((emopick) => (
                 <option key={emopick.id} value={emopick.id}>
                   {emopick.display}

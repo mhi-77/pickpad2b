@@ -15,7 +15,7 @@ import GpicksView from './GpicksView';
 import TestigoView from './TestigoView';
 import PadronesView from './PadronesView';
 import SettingsView from './SettingsView';
-import { loadEmopicksWithCount } from '../utils/emopicksUtils';
+//import { loadEmopicksWithCount } from '../utils/emopicksUtils';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
@@ -125,7 +125,16 @@ export default function Dashboard({ appVersion }) {
    */
   const fetchEmopicks = async () => {
     try {
-      const data = await loadEmopicksWithCount();
+        //const data = await loadEmopicksWithCount();
+        const { data, error } = await supabase
+        .from('emopicks')
+        .select('id, display')
+        .order('id');
+
+        if (error) {
+          console.error('Error fetching emopicks:', error);
+          return;
+        }
       setAvailableEmopicks(data || []);
     } catch (error) {
       console.error('Error loading emopicks:', error);

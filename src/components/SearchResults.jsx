@@ -51,76 +51,71 @@ export default function SearchResults({ results, isLoading, userRole, availableE
 
   /**
    * Guarda la selección de emopick y anotación en la base de datos
+   * Si emopickId es null, desmarca el votante limpiando todos los campos relacionados
    */
   const handlePickSave = async (emopickId, pickNota) => {
     if (!currentRecordToPick) return;
 
-    // Log de datos que se van a guardar
-   /* console.log('=== INICIANDO ACTUALIZACIÓN DE PADRON ===');
-    console.log('Documento del votante:', currentRecordToPick.documento);
-    console.log('Emopick ID a guardar:', emopickId);
-    console.log('Pick nota a guardar:', pickNota);
-    console.log('Usuario que realiza la actualización:', user?.id);
-    console.log('Tipo de emopickId:', typeof emopickId);
-    console.log('Registro completo:', currentRecordToPick); */
-    
     try {
-    //  console.log('Ejecutando update en Supabase...');
-      
-      // Actualizar en la base de datos
-      const { error } = await supabase
-        .from('padron')
-        .update({
+      let updateData;
+
+      if (emopickId === null) {
+        // Flujo DESMARCAR: limpiar todos los campos relacionados
+        updateData = {
+          emopick_id: null,
+          pick_nota: null,
+          emopick_user: null,
+          pick_check_user: null,
+          pick_check: false
+        };
+      } else {
+        // Flujo NORMAL: actualizar con los valores proporcionados
+        updateData = {
           emopick_id: emopickId,
           pick_nota: pickNota || null,
           emopick_user: user?.id || null
-        })
+        };
+      }
+
+      // Actualizar en la base de datos
+      const { error } = await supabase
+        .from('padron')
+        .update(updateData)
         .eq('documento', currentRecordToPick.documento);
 
-     /* console.log('Respuesta de Supabase - Error:', error);
       if (error) {
-        console.error('Error updating pick:', error);
-        console.error('Detalles del error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw new Error('Error al guardar la selección');
       }
-      console.log('✅ Actualización exitosa en Supabase'); */
-      
+
       // Actualizar resultados localmente
-      const updatedResults = localResults.map(record => 
-        record.documento === currentRecordToPick.documento 
-          ? { 
-              ...record, 
+      const updatedResults = localResults.map(record =>
+        record.documento === currentRecordToPick.documento
+          ? {
+              ...record,
               emopick_id: emopickId,
-              pick_nota: pickNota || null,
-              emopick_user: user?.id || null,
-              emopicks: availableEmopicks.find(e => e.id === emopickId) || record.emopicks
+              pick_nota: emopickId === null ? null : (pickNota || null),
+              emopick_user: emopickId === null ? null : (user?.id || null),
+              pick_check_user: emopickId === null ? null : record.pick_check_user,
+              pick_check: emopickId === null ? false : record.pick_check,
+              emopicks: emopickId === null ? null : (availableEmopicks.find(e => e.id === emopickId) || record.emopicks)
             }
           : record
       );
-      
-     // console.log('Actualizando resultados locales...');
+
       setLocalResults(updatedResults);
 
-      // Guardar última selección en localStorage
-      setLastUsedEmopickId(emopickId);
-      setLastUsedPickNota(pickNota);
-      localStorage.setItem('lastUsedEmopickId', emopickId.toString());
-      localStorage.setItem('lastUsedPickNota', pickNota);
+      // Guardar última selección en localStorage (solo si no es desmarcar)
+      if (emopickId !== null) {
+        setLastUsedEmopickId(emopickId);
+        setLastUsedPickNota(pickNota);
+        localStorage.setItem('lastUsedEmopickId', emopickId.toString());
+        localStorage.setItem('lastUsedPickNota', pickNota);
+      }
 
-     // console.log('✅ Datos guardados en localStorage');
-     // console.log('=== ACTUALIZACIÓN COMPLETADA ===');
-      
-    // Cerrar modal
+      // Cerrar modal
       handleClosePickModal();
 
     } catch (error) {
-    //  console.error('❌ Error en handlePickSave:', error);
-    //  console.error('Stack trace:', error.stack);
       alert(error.message || 'Error al guardar la selección');
     }
   };
@@ -288,6 +283,7 @@ export default function SearchResults({ results, isLoading, userRole, availableE
         initialEmopickId={currentRecordToPick?.emopick_id || lastUsedEmopickId}
         initialPickNota={currentRecordToPick?.pick_nota || lastUsedPickNota}
         votanteName={currentRecordToPick ? `${currentRecordToPick.apellido}, ${currentRecordToPick.nombre}` : ''}
+        currentVoterEmopickId={currentRecordToPick?.emopick_id}
       />
     </div>
   );
