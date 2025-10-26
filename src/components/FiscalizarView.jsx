@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Users, CheckCircle, Clock } from 'lucide-react';
+import { AlertCircle, Users, CheckCircle, Clock, ChevronRight, BarChart3, TrendingUp, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import FiscalizarSearchForm from './fiscalizar/FiscalizarSearchForm';
 import FiscalizarResults from './fiscalizar/FiscalizarResults';
+import {
+  calcularTendenciaProyectada,
+  calcularAsistenciaActual,
+  obtenerAsistenciaHistorica,
+  obtenerHoraFormateada,
+  obtenerColorTendencia,
+  obtenerIndiceHistorico
+} from '../utils/tendenciaParticipacion';
 
 /**
  * Componente FiscalizarView - Vista principal para la fiscalización electoral
@@ -35,6 +43,16 @@ export default function FiscalizarView() {
   const [error, setError] = useState('');
   // Control del modal de éxito
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // Control del modal de participación
+  const [showParticipacionModal, setShowParticipacionModal] = useState(false);
+  // Métricas de participación calculadas
+  const [metricasParticipacion, setMetricasParticipacion] = useState({
+    asistenciaHistorica: null,
+    asistenciaActual: 0,
+    tendenciaProyectada: null,
+    horaCalculo: '',
+    antesDeLas9: false
+  });
 
   /**
    * Efecto para cargar los datos del padrón cuando el perfil esté disponible
@@ -183,6 +201,20 @@ export default function FiscalizarView() {
     }
   };
 
+  /**
+   * Abre el modal de estadísticas de participación
+   */
+  const handleOpenParticipacionModal = () => {
+    setShowParticipacionModal(true);
+  };
+
+  /**
+   * Cierra el modal de estadísticas de participación
+   */
+  const handleCloseParticipacionModal = () => {
+    setShowParticipacionModal(false);
+  };
+
   const handleDeshacerVoto = async (documento) => {
     setIsUpdating(true);
     try {
@@ -246,6 +278,40 @@ export default function FiscalizarView() {
   const pendientes = totalEmpadronados - totalVotaron;
   const porcentajeParticipacion = totalEmpadronados > 0 ? ((totalVotaron / totalEmpadronados) * 100).toFixed(1) : 0;
 
+  useEffect(() => {
+    if (totalEmpadronados > 0) {
+      calcularMetricasParticipacion();
+    }
+  }, [totalVotaron, totalEmpadronados]);
+
+  const calcularMetricasParticipacion = () => {
+    const ahora = new Date();
+    const indiceHistorico = obtenerIndiceHistorico(ahora);
+
+    if (!indiceHistorico) {
+      setMetricasParticipacion({
+        asistenciaHistorica: null,
+        asistenciaActual: calcularAsistenciaActual(totalVotaron, totalEmpadronados),
+        tendenciaProyectada: null,
+        horaCalculo: obtenerHoraFormateada(ahora),
+        antesDeLas9: true
+      });
+      return;
+    }
+
+    const asistenciaHistorica = obtenerAsistenciaHistorica(ahora);
+    const asistenciaActual = calcularAsistenciaActual(totalVotaron, totalEmpadronados);
+    const tendenciaProyectada = calcularTendenciaProyectada(totalVotaron, totalEmpadronados, ahora);
+
+    setMetricasParticipacion({
+      asistenciaHistorica,
+      asistenciaActual,
+      tendenciaProyectada,
+      horaCalculo: obtenerHoraFormateada(ahora),
+      antesDeLas9: false
+    });
+  };
+
   // Verificar permisos del usuario
   if (!user || user.usuario_tipo == 5) {
     return (
@@ -286,7 +352,7 @@ export default function FiscalizarView() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Panel de estadísticas de participación */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -319,7 +385,10 @@ export default function FiscalizarView() {
           </div>
         </div>
         
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+        <div
+          onClick={handleOpenParticipacionModal}
+          className="bg-purple-50 border border-purple-200 rounded-lg p-3 cursor-pointer hover:shadow-lg hover:border-purple-300 transition-all duration-200 relative"
+        >
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">%</span>
@@ -329,6 +398,7 @@ export default function FiscalizarView() {
               <p className="text-sm text-purple-700">Participación</p>
             </div>
           </div>
+          <ChevronRight className="w-4 h-4 text-purple-400 absolute top-2 right-2" />
         </div>
       </div>
 
@@ -351,6 +421,179 @@ export default function FiscalizarView() {
         setShowSuccessModal={setShowSuccessModal}
         userRole={user?.usuario_tipo}
       />
+
+      {/* Modal de Estadísticas de Participación */}
+      {showParticipacionModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={handleCloseParticipacionModal}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Encabezado */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Estadísticas de Participación
+                  </h3>
+                  <p className="text-sm text-gray-500">Análisis detallado de votación</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseParticipacionModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Contenido - Tres Cards de Métricas */}
+            {metricasParticipacion.antesDeLas9 ? (
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 text-center">
+                <Clock className="w-16 h-16 text-yellow-600 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-yellow-900 mb-2">
+                  Cálculo no disponible
+                </h4>
+                <p className="text-sm text-yellow-700">
+                  Los cálculos de tendencia de participación están disponibles a partir de las 09:00 AM.
+                </p>
+                <p className="text-xs text-yellow-600 mt-2">
+                  Hora actual: {metricasParticipacion.horaCalculo}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Card 1: Asistencia Histórica */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-4xl font-bold text-blue-900">
+                        {metricasParticipacion.asistenciaHistorica !== null
+                          ? `${metricasParticipacion.asistenciaHistorica.toFixed(1)}%`
+                          : 'N/A'}
+                      </p>
+                      <p className="text-sm font-medium text-blue-700 mt-1">
+                        Asistencia histórica hasta las {metricasParticipacion.horaCalculo} hs
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Promedio histórico de participación a esta hora
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Asistencia en Esta Mesa */}
+                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-4xl font-bold text-green-900">
+                        {metricasParticipacion.asistenciaActual.toFixed(1)}%
+                      </p>
+                      <p className="text-sm font-medium text-green-700 mt-1">
+                        Asistencia registrada en esta mesa
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        {totalVotaron} de {totalEmpadronados} votantes registrados
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3: Tendencia Proyectada (Destacada) */}
+                <div className={`border-4 rounded-lg p-4 ${
+                  obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                    ? 'bg-green-50 border-green-300'
+                    : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                    ? 'bg-yellow-50 border-yellow-300'
+                    : 'bg-red-50 border-red-300'
+                }`}>
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                        ? 'bg-green-100'
+                        : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                        ? 'bg-yellow-100'
+                        : 'bg-red-100'
+                    }`}>
+                      <TrendingUp className={`w-6 h-6 ${
+                        obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                          ? 'text-green-600'
+                          : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-4xl font-bold ${
+                        obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                          ? 'text-green-900'
+                          : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                          ? 'text-yellow-900'
+                          : 'text-red-900'
+                      }`}>
+                        {metricasParticipacion.tendenciaProyectada !== null
+                          ? `${metricasParticipacion.tendenciaProyectada.toFixed(1)}%`
+                          : 'N/A'}
+                      </p>
+                      <p className={`text-sm font-medium mt-1 ${
+                        obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                          ? 'text-green-700'
+                          : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                          ? 'text-yellow-700'
+                          : 'text-red-700'
+                      }`}>
+                        Tendencia de participación proyectada
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
+                          ? 'text-green-600'
+                          : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`}>
+                        Proyección de participación final basada en datos históricos
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Nota informativa */}
+            {!metricasParticipacion.antesDeLas9 && (
+              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <p className="text-xs text-gray-600 text-center">
+                  <strong>Cálculo:</strong> La tendencia proyectada se calcula dividiendo los votantes actuales ({totalVotaron})
+                  por el índice histórico a las {metricasParticipacion.horaCalculo}
+                  ({metricasParticipacion.asistenciaHistorica?.toFixed(1)}%), luego dividiendo por el total de empadronados ({totalEmpadronados}).
+                </p>
+              </div>
+            )}
+
+            {/* Botón de cierre */}
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleCloseParticipacionModal}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
