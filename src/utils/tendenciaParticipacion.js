@@ -24,7 +24,7 @@ export function obtenerIndiceHistorico(fechaHora = null) {
   const horaActual = ahora.getHours();
   const minutosActuales = ahora.getMinutes();
 
-  if (horaActual < 3) {
+  if (horaActual < 9) {
     return null;
   }
 
