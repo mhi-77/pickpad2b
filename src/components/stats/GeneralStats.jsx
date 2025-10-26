@@ -5,19 +5,26 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { 
-  Users, 
-  CheckCircle, 
-  PieChart, 
-  Clock, 
-  AlertCircle, 
+import {
+  Users,
+  CheckCircle,
+  PieChart,
+  Clock,
+  AlertCircle,
   TrendingUp,
   RefreshCw,
   TableProperties,
   ToggleLeft,
   ToggleRight,
-  X
+  X,
+  BarChart3
 } from 'lucide-react';
+import {
+  calcularTendenciaProyectada,
+  obtenerIndiceHistorico,
+  obtenerColorTendencia,
+  obtenerHoraFormateada
+} from '../../utils/tendenciaParticipacion';
 
 // Función de debounce para evitar múltiples llamadas rápidas
 // Útil si hay muchos cambios en tiempo real
@@ -49,6 +56,9 @@ export default function GeneralStats() {
   const [error, setError] = useState('');
   const [isRealtime, setIsRealtime] = useState(false); // Modo manual por defecto
   const [showMesasModal, setShowMesasModal] = useState(false); // Modal de mesas
+  const [showTendencia, setShowTendencia] = useState(false); // Toggle para mostrar tendencia
+  const [horaActual, setHoraActual] = useState('');
+  const [puedeCalcularTendencia, setPuedeCalcularTendencia] = useState(false);
   
 // Formatea números con punto como separador de miles y coma como decimal
 const formatNumber = (num) => {
@@ -101,19 +111,37 @@ const formatNumber = (num) => {
         : 0;
 
       // --- 3. TODAS LAS MESAS ---
-      // Calculamos participación individual y ordenamos por número
+      // Calculamos participación individual y tendencia proyectada, ordenamos por número
+      const ahora = new Date();
+      const indiceHistorico = obtenerIndiceHistorico(ahora);
+      const puedeCalcular = indiceHistorico !== null;
+      const horaFormateada = obtenerHoraFormateada(ahora);
+
       const mesasPorParticipacion = data.map(mesa => {
-        const participacion = mesa.total_empadronados > 0 
-          ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100 
+        const participacion = mesa.total_empadronados > 0
+          ? ((mesa.total_votaron || 0) / mesa.total_empadronados) * 100
           : 0;
+
+        const tendencia = puedeCalcular
+          ? calcularTendenciaProyectada(
+              mesa.total_votaron || 0,
+              mesa.total_empadronados,
+              ahora
+            )
+          : null;
+
         return {
           mesa: mesa.numero,
           empadronados: mesa.total_empadronados,
           votaron: mesa.total_votaron || 0,
           participacion: participacion.toFixed(1),
+          tendenciaProyectada: tendencia !== null ? tendencia.toFixed(1) : null,
           establecimiento: mesa.establecimientos?.nombre || 'Sin establecimiento'
         };
       }).sort((a, b) => a.mesa - b.mesa); // Orden ascendente por número
+
+      setPuedeCalcularTendencia(puedeCalcular);
+      setHoraActual(horaFormateada);
 
       // --- 4. RESUMEN POR LOCALIDAD ---
       // Agrupamos mesas por localidad (desde circuitos)
@@ -561,8 +589,13 @@ const formatNumber = (num) => {
       {showMesasModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Todas las Mesas</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Todas las Mesas</h3> 
+            
+                <div className="text-sm font-bold text-purple-700 text-left rounded-full shadow-sm ">
+                  {horaActual} h
+                </div>
+              
               <button
                 onClick={() => setShowMesasModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -570,45 +603,110 @@ const formatNumber = (num) => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Toggle de Participación / Tendencia */}
+            <div className="mb-4 flex items-center justify-between bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTendencia(false)}
+                  disabled={!puedeCalcularTendencia && showTendencia}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    !showTendencia
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Participación Actual</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowTendencia(true)}
+                  disabled={!puedeCalcularTendencia}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    showTendencia
+                      ? 'bg-purple-600 text-white'
+                      : puedeCalcularTendencia
+                      ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Tendencia Proyectada</span>
+                </button>
+              </div>
+            
+              {showTendencia && puedeCalcularTendencia}
+
+              {!puedeCalcularTendencia && (
+                <div className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-lg border border-yellow-200">
+                  Tendencia disponible después de las 09:00 hs
+                </div>
+              )}
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mesa</th>
-                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Part.</th>
+                    <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      {showTendencia ? 'Tend.' : 'Part.'}
+                    </th>
                     <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Establecimiento</th>
                     <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Padrón</th>
                     <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Votaron</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {stats.mesasPorParticipacion.map((mesa) => (
-                    <tr key={mesa.mesa}>
-                      <td className="px-1 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Mesa {mesa.mesa}
-                      </td>
-                      <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`px-1 py-1 rounded-full text-xs font-medium ${
-                          mesa.participacion >= stats.porcentajeParticipacion * 0.95
-                            ? 'bg-green-100 text-green-800' :
-                          mesa.participacion >= stats.porcentajeParticipacion * 0.65
-                            ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                        }`}>
-                          {mesa.participacion}%
-                        </span>
-                      </td>
-                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {mesa.establecimiento}
-                      </td>
-                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {formatNumber(mesa.empadronados)}
-                      </td>
-                      <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                        {formatNumber(mesa.votaron)}
-                      </td>
-                    </tr>
-                  ))}
+                  {stats.mesasPorParticipacion.map((mesa) => {
+                    const valorMostrar = showTendencia ? mesa.tendenciaProyectada : mesa.participacion;
+                    const esNA = showTendencia && mesa.tendenciaProyectada === null;
+
+                    let colorClase = '';
+                    if (esNA) {
+                      colorClase = 'bg-gray-100 text-gray-500';
+                    } else if (showTendencia) {
+                      const tendencia = parseFloat(valorMostrar);
+                      const colorTendencia = obtenerColorTendencia(tendencia);
+                      colorClase = colorTendencia === 'green'
+                        ? 'bg-green-100 text-green-800'
+                        : colorTendencia === 'yellow'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800';
+                    } else {
+                      const participacion = parseFloat(valorMostrar);
+                      colorClase = participacion >= stats.porcentajeParticipacion * 0.95
+                        ? 'bg-green-100 text-green-800'
+                        : participacion >= stats.porcentajeParticipacion * 0.65
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800';
+                    }
+
+                    return (
+                      <tr key={mesa.mesa}>
+                        <td className="px-1 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Mesa {mesa.mesa}
+                        </td>
+                        <td className="px-1 py-1 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-1 py-1 rounded-full text-xs font-medium ${colorClase}`}>
+                            {esNA ? 'N/A' : `${valorMostrar}%`}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {mesa.establecimiento}
+                        </td>
+                        <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {formatNumber(mesa.empadronados)}
+                        </td>
+                        <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                          {formatNumber(mesa.votaron)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
