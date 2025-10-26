@@ -429,7 +429,7 @@ export default function FiscalizarView() {
           onClick={handleCloseParticipacionModal}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            className="bg-white rounded-xl shadow-2xl p-4 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Encabezado */}
