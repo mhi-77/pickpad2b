@@ -429,30 +429,38 @@ export default function FiscalizarView() {
           onClick={handleCloseParticipacionModal}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4"
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Encabezado */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-purple-600" />
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Estadísticas de Participación
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Estadísticas de Participación
-                  </h3>
-                  <p className="text-sm text-gray-500">Análisis detallado de votación</p>
-                </div>
-              </div>
-              <button
-                onClick={handleCloseParticipacionModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
 
+                <button
+                  onClick={handleCloseParticipacionModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="bg-purple-0 border-2 border-purple-300 rounded-lg py-2 px-4">
+                <p className="text-lg font-bold text-center tracking-wide">
+                 * ESTIMACIÓN PARA MESA {user.mesa_numero} * {metricasParticipacion.horaCalculo} hs
+                </p>
+              </div>
+            </div>
+             
             {/* Contenido - Tres Cards de Métricas */}
             {metricasParticipacion.antesDeLas9 ? (
               <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 text-center">
@@ -468,44 +476,38 @@ export default function FiscalizarView() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Card 1: Asistencia Histórica */}
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-blue-600" />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-8 h-8 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-4xl font-bold text-blue-900">
+                      <p className="text-2xl font-bold text-blue-900">
                         {metricasParticipacion.asistenciaHistorica !== null
                           ? `${metricasParticipacion.asistenciaHistorica.toFixed(1)}%`
                           : 'N/A'}
                       </p>
-                      <p className="text-sm font-medium text-blue-700 mt-1">
+                      <p className="text-xs font-medium text-blue-700 mt-0.5">
                         Asistencia histórica hasta las {metricasParticipacion.horaCalculo} hs
-                      </p>
-                      <p className="text-xs text-blue-600 mt-1">
-                        Promedio histórico de participación a esta hora
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Card 2: Asistencia en Esta Mesa */}
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-green-600" />
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-9 h-9 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-8 h-8 text-green-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-4xl font-bold text-green-900">
+                      <p className="text-2xl font-bold text-green-900">
                         {metricasParticipacion.asistenciaActual.toFixed(1)}%
                       </p>
-                      <p className="text-sm font-medium text-green-700 mt-1">
+                      <p className="text-xs font-medium text-green-700 mt-0.5">
                         Asistencia registrada en esta mesa
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        {totalVotaron} de {totalEmpadronados} votantes registrados
                       </p>
                     </div>
                   </div>
@@ -520,14 +522,14 @@ export default function FiscalizarView() {
                     : 'bg-red-50 border-red-300'
                 }`}>
                   <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
                       obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
                         ? 'bg-green-100'
                         : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
                         ? 'bg-yellow-100'
                         : 'bg-red-100'
                     }`}>
-                      <TrendingUp className={`w-6 h-6 ${
+                      <TrendingUp className={`w-7 h-7 ${
                         obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
                           ? 'text-green-600'
                           : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
@@ -536,7 +538,7 @@ export default function FiscalizarView() {
                       }`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-4xl font-bold ${
+                      <p className={`text-5xl font-bold ${
                         obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
                           ? 'text-green-900'
                           : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
@@ -554,16 +556,7 @@ export default function FiscalizarView() {
                           ? 'text-yellow-700'
                           : 'text-red-700'
                       }`}>
-                        Tendencia de participación proyectada
-                      </p>
-                      <p className={`text-xs mt-1 ${
-                        obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'green'
-                          ? 'text-green-600'
-                          : obtenerColorTendencia(metricasParticipacion.tendenciaProyectada) === 'yellow'
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                      }`}>
-                        Proyección de participación final basada en datos históricos
+                        Tendencia de participación proyectada para el comicio
                       </p>
                     </div>
                   </div>
@@ -571,19 +564,8 @@ export default function FiscalizarView() {
               </div>
             )}
 
-            {/* Nota informativa */}
-            {!metricasParticipacion.antesDeLas9 && (
-              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-xs text-gray-600 text-center">
-                  <strong>Cálculo:</strong> La tendencia proyectada se calcula dividiendo los votantes actuales ({totalVotaron})
-                  por el índice histórico a las {metricasParticipacion.horaCalculo}
-                  ({metricasParticipacion.asistenciaHistorica?.toFixed(1)}%), luego dividiendo por el total de empadronados ({totalEmpadronados}).
-                </p>
-              </div>
-            )}
-
             {/* Botón de cierre */}
-            <div className="mt-6 flex justify-center">
+            <div className="mt-5 flex justify-center">
               <button
                 onClick={handleCloseParticipacionModal}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium"
