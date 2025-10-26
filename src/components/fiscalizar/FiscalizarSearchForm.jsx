@@ -28,7 +28,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
           <h2 className="text-2xl font-bold text-gray-900">Fiscalización Mesa N° {mesaNumero}</h2>
           <div className="flex items-center space-x-4 mt-2">
             <p className="text-sm text-gray-500">
-             Buscar por documento (≥10000) u orden (&lt;10000)
+             Buscar por documento u orden
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
               value={documento}
               onChange={(e) => setDocumento(e.target.value)}
               className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              placeholder="Ingrese documento u orden (1-300)"
+              placeholder="Ingrese documento u orden"
             />
           </div>
           <div className="flex w-full gap-3">
