@@ -83,7 +83,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, on
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white rounded-xl shadow-lg p-4">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-gray-900">
           En padrón: {results.length} registro{results.length !== 1 ? 's' : ''}
