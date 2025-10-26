@@ -48,8 +48,9 @@ export default function FiscalizarView() {
 
   /**
    * Maneja la búsqueda de votantes en el padrón de la mesa
-   * 
-   * @param {string} documento - Número de documento a buscar (vacío para todos)
+   * Busca por número de orden si el valor es < 10000, de lo contrario por documento
+   *
+   * @param {string} documento - Número de documento u orden a buscar (vacío para todos)
    */
   const handleSearch = async (documento) => {
     if (!user?.mesa_numero) {
@@ -78,10 +79,16 @@ export default function FiscalizarView() {
         .order('orden', { ascending: true });
 
       if (documento.trim()) {
-        // Si se proporciona documento, filtrar por ese número específico
-        const docNumber = parseInt(documento.trim());
-        if (!isNaN(docNumber)) {
-          query = query.eq('documento', docNumber);
+        // Si se proporciona un número, determinar si es búsqueda por orden o documento
+        const number = parseInt(documento.trim());
+        if (!isNaN(number)) {
+          // Si el número es menor a 10000, buscar por orden
+          // De lo contrario, buscar por documento
+          if (number < 10000) {
+            query = query.eq('orden', number);
+          } else {
+            query = query.eq('documento', number);
+          }
         }
       }
 
