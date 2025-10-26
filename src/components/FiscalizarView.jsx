@@ -454,7 +454,7 @@ export default function FiscalizarView() {
                 </button>
               </div>
 
-              <div className="bg-purple-0 border-2 border-purple-300 rounded-lg py-2 px-4">
+              <div className="bg-purple-0 border-2 border-purple-300 rounded-lg py-2 px-2">
                 <p className="text-lg font-bold text-center tracking-wide">
                  * ESTIMACIÓN PARA MESA {user.mesa_numero} * {metricasParticipacion.horaCalculo} hs
                 </p>
