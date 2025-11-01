@@ -51,7 +51,7 @@ export default function FiscalizarView() {
     asistenciaActual: 0,
     tendenciaProyectada: null,
     horaCalculo: '',
-    antesDeLas9: false
+    antesDeLas11: false
   });
 
   /**
@@ -294,7 +294,7 @@ export default function FiscalizarView() {
         asistenciaActual: calcularAsistenciaActual(totalVotaron, totalEmpadronados),
         tendenciaProyectada: null,
         horaCalculo: obtenerHoraFormateada(ahora),
-        antesDeLas9: true
+        antesDeLas11: true
       });
       return;
     }
@@ -308,7 +308,7 @@ export default function FiscalizarView() {
       asistenciaActual,
       tendenciaProyectada,
       horaCalculo: obtenerHoraFormateada(ahora),
-      antesDeLas9: false
+      antesDeLas11: false
     });
   };
 
@@ -462,14 +462,14 @@ export default function FiscalizarView() {
             </div>
              
             {/* Contenido - Tres Cards de Métricas */}
-            {metricasParticipacion.antesDeLas9 ? (
+            {metricasParticipacion.antesDeLas11 ? (
               <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 text-center">
                 <Clock className="w-16 h-16 text-yellow-600 mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-yellow-900 mb-2">
                   Cálculo no disponible
                 </h4>
                 <p className="text-sm text-yellow-700">
-                  Los cálculos de tendencia de participación están disponibles a partir de las 09:00 AM.
+                  Los cálculos de tendencia de participación están disponibles a partir de las 11:00 AM.
                 </p>
                 <p className="text-xs text-yellow-600 mt-2">
                   Hora actual: {metricasParticipacion.horaCalculo}

@@ -11,8 +11,10 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
     if (!documento.trim()) {
       return;
     }
-    
+
     onSearch(documento);
+    setDocumento('');
+    
   };
 
   const handleReset = () => {
