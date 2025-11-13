@@ -204,41 +204,43 @@ export default function SearchResults({ results, isLoading, userRole, availableE
               </div>
             </div>
 
-            {/* Nivel 5: da_es_nuevo / da_voto_obligatorio / voto_emitido */}
-            <div className="grid grid-cols-3 gap-4 mb-3">
-              <div className="flex items-center justify-center">
-                {record.da_es_nuevo && (
-                  <span className="flex items-center space-x-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                    {/* <Sparkles className="w-3 h-3" /> */} 
-                    <span>NUEVO</span>
-                  </span>
-                )}
+            {/* Nivel 5: da_es_nuevo / da_voto_obligatorio / voto_emitido - Solo visible p/ users tipo 3 o inferior*/}
+            {userRole && userRole <= 3 && (
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                <div className="flex items-center justify-center">
+                  {record.da_es_nuevo && (
+                    <span className="flex items-center space-x-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      {/* <Sparkles className="w-3 h-3" /> */} 
+                      <span>NUEVO</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-center">
+                  {record.da_voto_obligatorio === false ? (
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+                {/* <span className="flex items-center space-x-1 text-gray-600 text-xs font-medium">
+                      <XCircle className="w-3 h-3" /> */} 
+                      <span>NO.OBLIGADO</span>
+                    </span>
+                  ) : record.da_voto_obligatorio === true ? (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                    {/* <span className="flex items-center space-x-1 text-green-600 text-sm font-medium">
+                      <CheckCircle className="w-3 h-3" /> */} 
+                      <span>OBLIGATORIO</span>
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex items-center justify-center">
+                  {record.voto_emitido !== null && (
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {record.voto_emitido ? 'Votó' : 'No.votó'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center justify-center">
-                {record.da_voto_obligatorio === false ? (
-                  <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-              {/* <span className="flex items-center space-x-1 text-gray-600 text-xs font-medium">
-                    <XCircle className="w-3 h-3" /> */} 
-                    <span>NO.OBLIGADO</span>
-                  </span>
-                ) : record.da_voto_obligatorio === true ? (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  {/* <span className="flex items-center space-x-1 text-green-600 text-sm font-medium">
-                    <CheckCircle className="w-3 h-3" /> */} 
-                    <span>OBLIGATORIO</span>
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex items-center justify-center">
-                {record.voto_emitido !== null && (
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {record.voto_emitido ? 'Votó' : 'No.votó'}
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
 
             {/* Nivel 6: Solo visible para usuarios tipo 3 o inferior */}
             {userRole && userRole <= 3 && (
