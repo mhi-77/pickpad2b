@@ -1,157 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { User, Lock, Bell, Shield, Save, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, MapPin, Building2, Save, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 
 export default function SettingsView() {
-  const { user, refreshUserProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState('perfil');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('comicio');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const [profileData, setProfileData] = useState({
-    full_name: '',
-    dni: '',
-    email: '',
-    mesa_numero: '',
-  });
-
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
-
-  useEffect(() => {
-    if (user) {
-      setProfileData({
-        full_name: user.name || '',
-        dni: user.dni || '',
-        email: user.email || '',
-        mesa_numero: user.mesa_numero || '',
-      });
-    }
-  }, [user]);
-
   const tabs = [
-    { id: 'perfil', label: 'Perfil', icon: User },
-    { id: 'seguridad', label: 'Seguridad', icon: Lock },
-    { id: 'notificaciones', label: 'Avisos', icon: Bell },
+    { id: 'comicio', label: 'Comicio', icon: Building2 },
+    { id: 'circuitos', label: 'Circuitos & Mesas', icon: MapPin },
   ];
-
-  const handleProfileSave = async () => {
-    setIsSaving(true);
-    setSaveMessage('');
-
-    try {
-      const updateData = {
-        full_name: profileData.full_name,
-        mesa_numero: profileData.mesa_numero || null,
-      };
-
-      if (profileData.dni) {
-        updateData.dni = parseInt(profileData.dni);
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      await refreshUserProfile();
-
-      setSaveMessage('Perfil actualizado correctamente');
-      setTimeout(() => setSaveMessage(''), 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setSaveMessage('Error al actualizar el perfil');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (!passwordData.currentPassword) {
-      setSaveMessage('Debe ingresar su contraseña actual');
-      return;
-    }
-
-    if (!passwordData.newPassword) {
-      setSaveMessage('Debe ingresar una nueva contraseña');
-      return;
-    }
-
-    if (passwordData.newPassword === passwordData.currentPassword) {
-      setSaveMessage('La nueva contraseña debe ser diferente a la actual');
-      return;
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setSaveMessage('Las contraseñas no coinciden');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      setSaveMessage('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveMessage('');
-
-    try {
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: passwordData.currentPassword,
-      });
-
-      if (verifyError) {
-        setSaveMessage('La contraseña actual es incorrecta');
-        setIsSaving(false);
-        return;
-      }
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      });
-
-      if (updateError) throw updateError;
-
-      setSaveMessage('Contraseña actualizada correctamente');
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-      setTimeout(() => setSaveMessage(''), 3000);
-    } catch (error) {
-      console.error('Error updating password:', error);
-      setSaveMessage('Error al actualizar la contraseña');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'perfil':
+      case 'comicio':
         return (
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <User className="w-6 h-6 text-blue-600" />
+                <Building2 className="w-6 h-6 text-blue-600" />
                 <div>
-                  <h3 className="font-semibold text-blue-800">Información del Perfil</h3>
+                  <h3 className="font-semibold text-blue-800">Configuración del Comicio</h3>
                   <p className="text-sm text-blue-700">
-                    Actualiza tu información personal y datos de contacto
+                    Gestiona los datos generales del evento electoral
                   </p>
                 </div>
               </div>
@@ -161,64 +34,83 @@ export default function SettingsView() {
               <div className="max-w-2xl mx-auto space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    value={profileData.email}
-                    disabled
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    El correo electrónico no puede ser modificado
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre Completo
+                    Nombre del Comicio
                   </label>
                   <input
                     type="text"
-                    value={profileData.full_name}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, full_name: e.target.value })
-                    }
+                    placeholder="Ej: Elecciones Generales 2025"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    DNI
+                    Fecha del Comicio
                   </label>
                   <input
-                    type="number"
-                    value={profileData.dni}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, dni: e.target.value })
-                    }
+                    type="date"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Ej: 12345678"
                   />
                 </div>
 
-                {user?.usuario_tipo <= 3 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    rows="4"
+                    placeholder="Descripción del evento electoral"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Número de Mesa Asignada
+                      Hora de Apertura
                     </label>
                     <input
-                      type="text"
-                      value={profileData.mesa_numero || ''}
-                      onChange={(e) =>
-                        setProfileData({ ...profileData, mesa_numero: e.target.value })
-                      }
+                      type="time"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Ej: 1234"
                     />
                   </div>
-                )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Hora de Cierre
+                    </label>
+                    <input
+                      type="time"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ubicación / Jurisdicción
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Ciudad Autónoma de Buenos Aires"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">Comicio Activo</p>
+                      <p className="text-sm text-gray-600">
+                        Habilitar funcionalidades relacionadas con este comicio
+                      </p>
+                    </div>
+                  </label>
+                </div>
 
                 {saveMessage && (
                   <div
@@ -233,28 +125,35 @@ export default function SettingsView() {
                 )}
 
                 <button
-                  onClick={handleProfileSave}
+                  onClick={() => {
+                    setIsSaving(true);
+                    setTimeout(() => {
+                      setSaveMessage('Configuración guardada correctamente');
+                      setIsSaving(false);
+                      setTimeout(() => setSaveMessage(''), 3000);
+                    }, 1000);
+                  }}
                   disabled={isSaving}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{isSaving ? 'Guardando...' : 'Guardar Cambios'}</span>
+                  <span>{isSaving ? 'Guardando...' : 'Guardar Configuración'}</span>
                 </button>
               </div>
             </div>
           </div>
         );
 
-      case 'seguridad':
+      case 'circuitos':
         return (
           <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <Lock className="w-6 h-6 text-red-600" />
+                <MapPin className="w-6 h-6 text-green-600" />
                 <div>
-                  <h3 className="font-semibold text-red-800">Cambiar Contraseña</h3>
-                  <p className="text-sm text-red-700">
-                    Actualiza tu contraseña para mantener tu cuenta segura
+                  <h3 className="font-semibold text-green-800">Gestión de Circuitos y Mesas</h3>
+                  <p className="text-sm text-green-700">
+                    Administra los circuitos electorales y mesas de votación
                   </p>
                 </div>
               </div>
@@ -262,82 +161,127 @@ export default function SettingsView() {
 
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="max-w-2xl mx-auto space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contraseña Actual
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.current ? "text" : "password"}
-                      value={passwordData.currentPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                      }
-                      className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      Configuración de Circuitos
+                    </h4>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nueva Contraseña
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.new ? "text" : "password"}
-                      value={passwordData.newPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, newPassword: e.target.value })
-                      }
-                      className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Mínimo 6 caracteres
-                  </p>
-                </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Número de Circuito
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 1, 2A, 3B"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirmar Nueva Contraseña
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPasswords.confirm ? "text" : "password"}
-                      value={passwordData.confirmPassword}
-                      onChange={(e) =>
-                        setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                      }
-                      className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nombre del Circuito
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Circuito Norte"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Zona / Región
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Zona Centro"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2">
+                        <Save className="w-4 h-4" />
+                        <span>Agregar Circuito</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                      Configuración de Mesas
+                    </h4>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Número de Mesa
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 1234"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Circuito Asignado
+                        </label>
+                        <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                          <option value="">Seleccionar circuito</option>
+                          <option value="1">Circuito 1</option>
+                          <option value="2">Circuito 2</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ubicación / Escuela
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Escuela Nº 123 - Av. Principal 456"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Cantidad de Electores
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Ej: 350"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Estado
+                          </label>
+                          <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="activa">Activa</option>
+                            <option value="inactiva">Inactiva</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+                        <Save className="w-4 h-4" />
+                        <span>Agregar Mesa</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {saveMessage && (
                   <div
                     className={`p-3 rounded-lg text-sm ${
-                      saveMessage.includes('Error') || saveMessage.includes('incorrecta') || saveMessage.includes('ingresar') || saveMessage.includes('coinciden') || saveMessage.includes('diferente') || saveMessage.includes('caracteres')
+                      saveMessage.includes('Error')
                         ? 'bg-red-50 text-red-700 border border-red-200'
                         : 'bg-green-50 text-green-700 border border-green-200'
                     }`}
@@ -345,67 +289,6 @@ export default function SettingsView() {
                     {saveMessage}
                   </div>
                 )}
-
-                <button
-                  onClick={handlePasswordChange}
-                  disabled={isSaving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-                  className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>{isSaving ? 'Actualizando...' : 'Cambiar Contraseña'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'notificaciones':
-        return (
-          <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <Bell className="w-6 h-6 text-yellow-600" />
-                <div>
-                  <h3 className="font-semibold text-yellow-800">Preferencias de Notificaciones</h3>
-                  <p className="text-sm text-yellow-700">
-                    Configura cómo deseas recibir notificaciones del sistema
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="max-w-2xl mx-auto space-y-4">
-                <div className="space-y-4">
-                  <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div>
-                      <p className="font-medium text-gray-900">Notificaciones por Email</p>
-                      <p className="text-sm text-gray-600">Recibe actualizaciones importantes por correo</p>
-                    </div>
-                    <input type="checkbox" className="w-5 h-5 text-blue-600" defaultChecked />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div>
-                      <p className="font-medium text-gray-900">Alertas del Sistema</p>
-                      <p className="text-sm text-gray-600">Notificaciones sobre eventos importantes</p>
-                    </div>
-                    <input type="checkbox" className="w-5 h-5 text-blue-600" defaultChecked />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div>
-                      <p className="font-medium text-gray-900">Resumen Semanal</p>
-                      <p className="text-sm text-gray-600">Recibe un resumen de actividades cada semana</p>
-                    </div>
-                    <input type="checkbox" className="w-5 h-5 text-blue-600" />
-                  </label>
-                </div>
-
-                <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
-                  <Save className="w-4 h-4" />
-                  <span>Guardar Preferencias</span>
-                </button>
               </div>
             </div>
           </div>
@@ -421,9 +304,9 @@ export default function SettingsView() {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Configuración</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Configuración del Sistema</h2>
             <p className="text-gray-600 mt-1">
-              Administra tu perfil y preferencias del sistema
+              Administra los parámetros generales del sistema electoral
             </p>
           </div>
           <div className="flex items-center space-x-2">
