@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen } from 'lucide-react';
+import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { FEATURES } from '../config/features';
 
@@ -14,7 +14,7 @@ const menuItems = [
   { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3, disabled: false },
   { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2, disabled: false },
   { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2, disabled: false },
-  { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 5, disabled: false },
+  { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 2, disabled: false },
 ];
 
 /**
@@ -78,54 +78,115 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
           <div className="flex-1 px-4 py-6">
             {/* Sección de información del usuario */}
             <div className="mb-8">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                {/* Avatar del usuario con inicial {user?.name?.charAt(0).toUpperCase()} */}
-                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium">
-                    <CheckCheck className="w-6 h-6 text-white-600" />
-                  </span>
+              <button
+                onClick={() => {
+                  setActiveView('perfil');
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer group"
+              >
+                {/* Avatar del usuario */}
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <UserCog className="w-6 h-6 text-white" />
                 </div>
-                {/* Información del usuario */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.name} 
+                {/* Información del usuario - alineada a la izquierda */}
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                    {user?.name}
                   </p>
-                  <p className="text-xs text-gray-500">{user?.roleDescription}</p>
+                  <p className="text-xs text-gray-500 group-hover:text-blue-500 transition-colors">{user?.roleDescription}</p>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* Navegación principal */}
             <nav className="space-y-2">
-              {visibleMenuItems.map((item) => {
+              {visibleMenuItems.map((item, index) => {
                 const Icon = item.icon;
                 const isActive = activeView === item.id;
                 const isDisabled = item.disabled;
 
-                return (
-                  // Botón de navegación con estado activo/inactivo/deshabilitado
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      if (!isDisabled) {
-                        setActiveView(item.id);
-                        setIsOpen(false); // Cerrar sidebar en móviles al seleccionar
-                      }
-                    }}
-                    disabled={isDisabled}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isDisabled
-                        ? 'bg-gray-00 text-gray-400 cursor-not-allowed opacity-60'
-                        : isActive
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    title={isDisabled ? 'Funcionalidad temporalmente deshabilitada' : ''}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                );
+                // Identificar si es el primer ítem administrativo (Usuarios)
+                const isFirstAdminItem = item.id === 'gusers';
+                const isAdminItem = ['gusers', 'padrones', 'settings'].includes(item.id);
+
+                // Renderizar ítem normal (sin contenedor)
+                if (!isAdminItem) {
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          setActiveView(item.id);
+                          setIsOpen(false);
+                        }
+                      }}
+                      disabled={isDisabled}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isDisabled
+                          ? 'bg-gray-00 text-gray-400 cursor-not-allowed opacity-60'
+                          : isActive
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title={isDisabled ? 'Funcionalidad temporalmente deshabilitada' : ''}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  );
+                }
+
+                // Renderizar ítems administrativos dentro del contenedor
+                if (isFirstAdminItem) {
+                  // Obtener todos los ítems administrativos
+                  const adminItems = visibleMenuItems.filter(i =>
+                    ['gusers', 'padrones', 'settings'].includes(i.id)
+                  );
+
+                  return (
+                    <div key="admin-section" className="pt-2 pb-2">
+                      { /*
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-3">
+                      Administración
+                      </p>   */ }
+                      <div className="bg-gray-50 rounded-lg p-2 space-y-1">
+                        {adminItems.map(adminItem => {
+                          const AdminIcon = adminItem.icon;
+                          const isAdminActive = activeView === adminItem.id;
+                          const isAdminDisabled = adminItem.disabled;
+
+                          return (
+                            <button
+                              key={adminItem.id}
+                              onClick={() => {
+                                if (!isAdminDisabled) {
+                                  setActiveView(adminItem.id);
+                                  setIsOpen(false);
+                                }
+                              }}
+                              disabled={isAdminDisabled}
+                              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                                isAdminDisabled
+                                  ? 'bg-gray-00 text-gray-400 cursor-not-allowed opacity-60'
+                                  : isAdminActive
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                              title={isAdminDisabled ? 'Funcionalidad temporalmente deshabilitada' : ''}
+                            >
+                              <AdminIcon className="w-5 h-5" />
+                              <span className="font-medium">{adminItem.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // No renderizar otros ítems administrativos individualmente
+                return null;
               })}
             </nav>
           </div>

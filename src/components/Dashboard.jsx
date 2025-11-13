@@ -15,6 +15,7 @@ import GpicksView from './GpicksView';
 import TestigoView from './TestigoView';
 import PadronesView from './PadronesView';
 import SettingsView from './SettingsView';
+import PerfilView from './PerfilView';
 //import { loadEmopicksWithCount } from '../utils/emopicksUtils';
 
 /**
@@ -180,15 +181,24 @@ export default function Dashboard({ appVersion }) {
   };
 
   /**
+   * Limpia los resultados de búsqueda y resetea el estado
+   * Se ejecuta cuando el usuario presiona el botón "Limpiar"
+   */
+  const handleClearSearch = () => {
+    setSearchResults([]);
+    setHasSearched(false);
+  };
+
+  /**
    * Maneja la búsqueda en el padrón electoral
-   * 
+   *
    * Flujo:
    * 1. Activa el estado de carga
    * 2. Construye la consulta a Supabase basada en los filtros
    * 3. Aplica filtros específicos según el tipo de dato
    * 4. Limita los resultados a 50 para mejor rendimiento
    * 5. Actualiza el estado con los resultados
-   * 
+   *
    * @param {Object} filters - Objeto con los filtros de búsqueda
    */
   const handleSearch = async (filters) => {
@@ -291,10 +301,11 @@ export default function Dashboard({ appVersion }) {
       case 'search':
         return (
           <div className="space-y-10">
-            <SearchForm 
-              onSearch={handleSearch} 
+            <SearchForm
+              onSearch={handleSearch}
               isLoading={isSearching}
               availableLocalities={availableLocalities}
+              onClear={handleClearSearch}
             />
             {hasSearched && (
               <SearchResults 
@@ -333,6 +344,10 @@ export default function Dashboard({ appVersion }) {
       case 'settings':
         return (
           <SettingsView />
+        );
+      case 'perfil':
+        return (
+          <PerfilView />
         );
       default:
         return null;
