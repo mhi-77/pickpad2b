@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
         // Obtener el perfil del usuario
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, usuario_tipo, mesa_numero')
+          .select('full_name, dni, informacion, usuario_tipo, mesa_numero')
           .eq('id', data.user.id)
           .single();
 
@@ -41,6 +41,8 @@ export function AuthProvider({ children }) {
           id: data.user.id,
           email: data.user.email || '',
           name: profile?.full_name || data.user.email?.split('@')[0] || 'Usuario',
+          dni: profile?.dni,
+          informacion: profile?.informacion,
           usuario_tipo: profile?.usuario_tipo || 5, // Default to most restricted role
           mesa_numero: profile?.mesa_numero,
           roleDescription: userType?.descripcion || 'COLABORADOR',
