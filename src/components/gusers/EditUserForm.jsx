@@ -5,6 +5,7 @@ import { X, Save, User } from 'lucide-react';
 export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, userTypes = [] }) {
   const [formData, setFormData] = useState({
     full_name: '',
+    informacion: '',
     dni: '',
     usuario_tipo: '',
     email: ''
@@ -35,6 +36,7 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
       } else {
         setFormData({
           full_name: data.full_name || '',
+          informacion: data.informacion || '',
           dni: data.dni?.toString() || '',
           usuario_tipo: data.usuario_tipo?.toString() || '',
           email: data.email || ''
@@ -66,6 +68,7 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
         .from('profiles')
         .update({
           full_name: formData.full_name,
+          informacion: formData.informacion || null,
           dni: parseInt(formData.dni),
           usuario_tipo: parseInt(formData.usuario_tipo),
           updated_at: new Date().toISOString()
@@ -100,7 +103,7 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <User className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-900">Editar Usuario</h2>
@@ -114,14 +117,14 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-5">
           {loadingUser ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-gray-600">Cargando datos...</span>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
                 <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
                   Nombre Completo
@@ -138,6 +141,30 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
               </div>
 
               <div>
+                <label htmlFor="informacion" className="block text-sm font-medium text-gray-700 mb-1">
+                  Info / Data
+                </label>
+                <input
+                  id="informacion"
+                  name="informacion"
+                  type="text"
+                  value={formData.informacion}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 30) {
+                      setFormData(prev => ({ ...prev, informacion: value }));
+                    }
+                  }}
+                  maxLength={30}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Datos complementarios (opcional)"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.informacion.length}/30 caracteres
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">
                   DNI
                 </label>
@@ -148,7 +175,7 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
                   value={formData.dni}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  //required
+                  placeholder="Ej: 12345678"
                 />
               </div>
 
@@ -190,7 +217,7 @@ export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, u
                   disabled
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Para cambiar el email, el usuario debe hacerlo desde su perfil
+                  El correo electrónico no puede ser modificado
                 </p>
               </div>
 

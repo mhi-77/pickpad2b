@@ -2,14 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Edit3, Trash2, Mail, User, Hash, UserCheck, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import EditUserForm from './EditUserForm';
+import { useAuth } from '../../context/AuthContext';
+import DeleteConfirmModal from './DeleteConfirmModal';
+import NotificationToast from './NotificationToast';
 
 export default function UsersList({ userTypes = [] }) {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState(null); // null = mostrar todos
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [notification, setNotification] = useState({ isOpen: false, type: 'success', message: '' });
 
   useEffect(() => {
     fetchUsers();
@@ -55,32 +62,63 @@ export default function UsersList({ userTypes = [] }) {
     setShowEditModal(true);
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar a ${userName}?`)) {
-      return;
-    }
+  const handleDeleteUser = (userId, userName) => {
+    setUserToDelete({ id: userId, name: userName });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
 
     try {
       const { error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('id', userToDelete.id);
 
       if (error) {
         console.error('Error deleting user:', error);
-        alert('Error al eliminar usuario');
+        setNotification({
+          isOpen: true,
+          type: 'error',
+          message: 'Error al eliminar usuario'
+        });
       } else {
         fetchUsers();
-        alert('Usuario eliminado exitosamente');
+        setNotification({
+          isOpen: true,
+          type: 'success',
+          message: 'Usuario eliminado exitosamente'
+        });
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error inesperado al eliminar usuario');
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        message: 'Error inesperado al eliminar usuario'
+      });
+    } finally {
+      setShowDeleteModal(false);
+      setUserToDelete(null);
     }
+  };
+
+  const cancelDeleteUser = () => {
+    setShowDeleteModal(false);
+    setUserToDelete(null);
   };
 
   const handleUserUpdated = () => {
     fetchUsers();
+  };
+
+  const canModifyUser = (targetUser) => {
+    if (!currentUser) return false;
+    if (currentUser.usuario_tipo > 1 && targetUser.usuario_tipo === 1) {
+      return false;
+    }
+    return true;
   };
 
   const getUserTypeColor = (tipo) => {
@@ -181,13 +219,13 @@ export default function UsersList({ userTypes = [] }) {
     <div className="space-y-6">
       {/* Estadísticas con filtro */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2">
           {/* Total */}
           <button
             type="button"
             onClick={() => setFilterStatus(null)}
             title="Mostrar todos los usuarios"
-            className={`bg-white rounded-lg shadow p-4 sm:p-6 text-left transition-all duration-200 ${
+            className={`bg-white rounded-lg shadow p-3 sm:p-3 text-left transition-all duration-200 ${
               filterStatus === null
                 ? 'ring-2 ring-blue-500 bg-blue-50'
                 : 'hover:shadow-md hover:bg-gray-50'
@@ -207,7 +245,7 @@ export default function UsersList({ userTypes = [] }) {
             type="button"
             onClick={() => setFilterStatus('active')}
             title="Mostrar solo usuarios operativos"
-            className={`bg-white rounded-lg shadow p-4 sm:p-6 text-left transition-all duration-200 ${
+            className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'active'
                 ? 'ring-2 ring-green-500 bg-green-50'
                 : 'hover:shadow-md hover:bg-gray-50'
@@ -227,7 +265,7 @@ export default function UsersList({ userTypes = [] }) {
             type="button"
             onClick={() => setFilterStatus('invited')}
             title="Mostrar solo usuarios invitados"
-            className={`bg-white rounded-lg shadow p-4 sm:p-6 text-left transition-all duration-200 ${
+            className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'invited'
                 ? 'ring-2 ring-yellow-500 bg-yellow-50'
                 : 'hover:shadow-md hover:bg-gray-50'
@@ -247,7 +285,7 @@ export default function UsersList({ userTypes = [] }) {
             type="button"
             onClick={() => setFilterStatus('pending')}
             title="Mostrar solo usuarios pendientes"
-            className={`bg-white rounded-lg shadow p-4 sm:p-6 text-left transition-all duration-200 ${
+            className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'pending'
                 ? 'ring-2 ring-gray-500 bg-gray-50'
                 : 'hover:shadow-md hover:bg-gray-50'
@@ -349,20 +387,37 @@ export default function UsersList({ userTypes = [] }) {
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-1">
-                        <button
-                          onClick={() => handleEditUser(user)}
-                          className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded transition-colors"
-                          title="Editar usuario"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id, user.full_name)}
-                          className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                          title="Eliminar usuario"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {(() => {
+                          const canModify = canModifyUser(user);
+                          return (
+                            <>
+                              <button
+                                onClick={() => canModify && handleEditUser(user)}
+                                disabled={!canModify}
+                                className={`p-1 rounded transition-colors ${
+                                  canModify
+                                    ? 'text-blue-600 hover:text-blue-900 hover:bg-blue-50 cursor-pointer'
+                                    : 'text-gray-400 cursor-not-allowed opacity-50'
+                                }`}
+                                title={canModify ? "Editar usuario" : "No puedes editar superusuarios"}
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => canModify && handleDeleteUser(user.id, user.full_name)}
+                                disabled={!canModify}
+                                className={`p-1 rounded transition-colors ${
+                                  canModify
+                                    ? 'text-red-600 hover:text-red-900 hover:bg-red-50 cursor-pointer'
+                                    : 'text-gray-400 cursor-not-allowed opacity-50'
+                                }`}
+                                title={canModify ? "Eliminar usuario" : "No puedes eliminar superusuarios"}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -391,18 +446,35 @@ export default function UsersList({ userTypes = [] }) {
                     </div>
                   </div>
                   <div className="flex space-x-1">
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.id, user.full_name)}
-                      className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {(() => {
+                      const canModify = canModifyUser(user);
+                      return (
+                        <>
+                          <button
+                            onClick={() => canModify && handleEditUser(user)}
+                            disabled={!canModify}
+                            className={`p-1 rounded ${
+                              canModify
+                                ? 'text-blue-600 hover:text-blue-900 hover:bg-blue-50'
+                                : 'text-gray-400 cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => canModify && handleDeleteUser(user.id, user.full_name)}
+                            disabled={!canModify}
+                            className={`p-1 rounded ${
+                              canModify
+                                ? 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                                : 'text-gray-400 cursor-not-allowed opacity-50'
+                            }`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
         
@@ -448,6 +520,22 @@ export default function UsersList({ userTypes = [] }) {
           }}
           onUserUpdated={handleUserUpdated}
           userTypes={userTypes}
+        />
+
+        {/* Modal de confirmación de eliminación */}
+        <DeleteConfirmModal
+          isOpen={showDeleteModal}
+          userName={userToDelete?.name || ''}
+          onConfirm={confirmDeleteUser}
+          onCancel={cancelDeleteUser}
+        />
+
+        {/* Notificación Toast */}
+        <NotificationToast
+          isOpen={notification.isOpen}
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification({ ...notification, isOpen: false })}
         />
       </div>
     </div>
