@@ -150,7 +150,7 @@ export default function PerfilView() {
                 <div>
                   <h3 className="font-semibold text-blue-800">Información del Perfil</h3>
                   <p className="text-sm text-blue-700">
-                    Actualiza tu información personal y datos de contacto
+                    Actualiza tus datos de usuario / fiscal
                   </p>
                 </div>
               </div>
@@ -253,7 +253,7 @@ export default function PerfilView() {
                 <div>
                   <h3 className="font-semibold text-red-800">Cambiar Contraseña</h3>
                   <p className="text-sm text-red-700">
-                    Actualiza tu contraseña para mantener tu cuenta segura
+                    Actualiza tu contraseña 
                   </p>
                 </div>
               </div>
@@ -364,7 +364,7 @@ export default function PerfilView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-3">
           <div>
