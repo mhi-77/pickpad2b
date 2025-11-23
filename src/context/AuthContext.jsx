@@ -74,7 +74,7 @@ export function AuthProvider({ children }) {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, usuario_tipo, mesa_numero')
+        .select('full_name, dni, informacion, usuario_tipo, mesa_numero')
         .eq('id', authUser.id)
         .single();
 
@@ -88,6 +88,8 @@ export function AuthProvider({ children }) {
         id: authUser.id,
         email: authUser.email || '',
         name: profile?.full_name || authUser.email?.split('@')[0] || 'Usuario',
+        dni: profile?.dni,
+        informacion: profile?.informacion,
         usuario_tipo: profile?.usuario_tipo || 5,
         mesa_numero: profile?.mesa_numero,
         roleDescription: userType?.descripcion || 'COLABORADOR',

@@ -11,6 +11,7 @@ export default function PerfilView() {
 
   const [profileData, setProfileData] = useState({
     full_name: '',
+    informacion: '',
     dni: '',
     email: '',
     mesa_numero: '',
@@ -32,6 +33,7 @@ export default function PerfilView() {
     if (user) {
       setProfileData({
         full_name: user.name || '',
+        informacion: user.informacion || '',
         dni: user.dni || '',
         email: user.email || '',
         mesa_numero: user.mesa_numero || '',
@@ -51,12 +53,10 @@ export default function PerfilView() {
     try {
       const updateData = {
         full_name: profileData.full_name,
+        informacion: profileData.informacion || null,
+        dni: profileData.dni ? parseInt(profileData.dni) : null,
         mesa_numero: profileData.mesa_numero || null,
       };
-
-      if (profileData.dni) {
-        updateData.dni = parseInt(profileData.dni);
-      }
 
       const { error } = await supabase
         .from('profiles')
@@ -185,6 +185,28 @@ export default function PerfilView() {
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Info / Data
+                  </label>
+                  <input
+                    type="text"
+                    value={profileData.informacion}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value.length <= 30) {
+                        setProfileData({ ...profileData, informacion: value });
+                      }
+                    }}
+                    maxLength={30}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Datos complementarios (opcional)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {profileData.informacion.length}/30 caracteres
+                  </p>
                 </div>
 
                 <div>

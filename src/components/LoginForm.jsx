@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff, AlertCircle, CheckCheck } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle, CheckCheck, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import logoImage from '../pblanca.png';
+import mhiImage from '../mhi.png';
 
 /**
  * Componente LoginForm - Formulario de inicio de sesión
@@ -21,6 +22,8 @@ export default function LoginForm({ appVersion }) {
   const [showPassword, setShowPassword] = useState(false);
   // Estado para almacenar y mostrar mensajes de error de autenticación
   const [error, setError] = useState('');
+  // Estado para controlar la visibilidad del modal de créditos
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   // Obtener funciones de autenticación del contexto
   const { login, isLoading } = useAuth();
 
@@ -57,17 +60,24 @@ export default function LoginForm({ appVersion }) {
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Header del formulario con logo y título */}
         <div className="text-center mb-8">
-         {/*   <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4"> */}
-            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 overflow-hidden">
-              <img 
-                src={logoImage} 
-                alt="Logo de la aplicación" 
-                className="w-11 h-11 object-cover"
-              />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <button
+            type="button"
+            onClick={() => setShowCreditsModal(true)}
+            className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 overflow-hidden hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            <img
+              src={logoImage}
+              alt="Logo de la aplicación"
+              className="w-11 h-11 object-cover"
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreditsModal(true)}
+            className="text-2xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors cursor-pointer"
+          >
             PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
-          </h1>
+          </button>
           <p className="text-gray-600">Ingresa tus credenciales para continuar</p>
         </div>
 
@@ -150,6 +160,64 @@ export default function LoginForm({ appVersion }) {
           </div>
         </div>
       </div>
+
+      {/* Modal de créditos */}
+      {showCreditsModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowCreditsModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-8 w-80 max-w-md relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botón cerrar */}
+            <button
+              onClick={() => setShowCreditsModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Contenido del modal */}
+            <div className="text-center">
+              {/* Logo MHI */}
+              <div className="mb-6 flex justify-center">
+                <img
+                  src={mhiImage}
+                  alt="MHI - Me Havas Idean"
+                  className="w-32 h-32 object-contain"
+                />
+              </div>
+
+              {/* Información de contacto y detalles */}
+              <div className="space-y-3 text-gray-700">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Contacto</p>
+                  <p className="text-base">contacto@mehavasidean.com</p>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Sitio Web</p>
+                  <p className="text-base text-blue-600">www.mehavasidean.com</p>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-lg font-bold text-gray-900">PickPad</p>
+                  <p className="text-sm text-gray-600">Versión {appVersion}</p>
+                  <p className="text-xs text-gray-500 mt-1">Última actualización: Noviembre 2025</p>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-xs text-gray-600 italic">
+                    Licencia de uso: Municipalidad de XXX
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
