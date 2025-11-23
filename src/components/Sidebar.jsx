@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { FEATURES } from '../config/features';
+import CreditsModal from './CreditsModal';
 
 // Configuración de elementos del menú con permisos por rol
 // maxRole define el nivel máximo de usuario que puede acceder (1=SUPERUSUARIO, 5=COLABORADOR)
@@ -33,6 +34,8 @@ const menuItems = [
 export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, appVersion }) {
   // Obtener datos del usuario autenticado
   const { user } = useAuth();
+  // Estado para controlar el modal de créditos
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   /**
    * Filtrar elementos del menú basado en el rol del usuario
@@ -58,13 +61,15 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
       }`}>
         {/* Header del sidebar con logo y botón de cierre */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowCreditsModal(true)}
+            className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
+          >
             <CheckCheck className="w-6 h-6 text-blue-600" />
-         {/* <h1 className="text-xl font-bold text-gray-900">PickPad v{appVersion}</h1> */}
-             <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-gray-900">
               PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
-             </h1>
-          </div>
+            </h1>
+          </button>
           {/* Botón de cierre solo visible en dispositivos móviles */}
           <button
             onClick={() => setIsOpen(false)}
@@ -80,10 +85,17 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
             <div className="mb-8">
               <button
                 onClick={() => {
-                  setActiveView('perfil');
-                  setIsOpen(false);
+                  if (user?.usuario_tipo && user.usuario_tipo <= 4) {
+                    setActiveView('perfil');
+                    setIsOpen(false);
+                  }
                 }}
-                className="w-full flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer group"
+                disabled={!(user?.usuario_tipo && user.usuario_tipo <= 4)}
+                className={`w-full flex items-center space-x-3 p-3 bg-gray-50 rounded-lg transition-colors ${
+                  user?.usuario_tipo && user.usuario_tipo <= 4
+                    ? 'hover:bg-blue-50 cursor-pointer group'
+                    : 'opacity-60 cursor-not-allowed'
+                }`}
               >
                 {/* Avatar del usuario */}
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -91,10 +103,14 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
                 </div>
                 {/* Información del usuario - alineada a la izquierda */}
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                  <p className={`text-sm font-medium text-gray-900 truncate transition-colors ${
+                    user?.usuario_tipo && user.usuario_tipo <= 4 ? 'group-hover:text-blue-600' : ''
+                  }`}>
                     {user?.name}
                   </p>
-                  <p className="text-xs text-gray-500 group-hover:text-blue-500 transition-colors">{user?.roleDescription}</p>
+                  <p className={`text-xs text-gray-500 transition-colors ${
+                    user?.usuario_tipo && user.usuario_tipo <= 4 ? 'group-hover:text-blue-500' : ''
+                  }`}>{user?.roleDescription}</p>
                 </div>
               </button>
             </div>
@@ -192,6 +208,13 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
           </div>
         </div>
       </div>
+
+      {/* Modal de créditos */}
+      <CreditsModal
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+        appVersion={appVersion}
+      />
     </>
   );
 }
