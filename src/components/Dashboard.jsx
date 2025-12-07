@@ -204,18 +204,22 @@ export default function Dashboard({ appVersion }) {
    * 1. Activa el estado de carga
    * 2. Construye la consulta a Supabase basada en los filtros
    * 3. Aplica filtros específicos según el tipo de dato
-   * 4. Limita los resultados a 50 para mejor rendimiento *** ya NOOO *** muestra PAGINADO 
+   * 4. Limita los resultados a 50 para mejor rendimiento *** ya NOOO *** muestra PAGINADO
    * 5. Actualiza el estado con los resultados
    *
    * @param {Object} filters - Objeto con los filtros de búsqueda
+   * @param {number} page - Número de página a consultar
+   * @param {number} customPageSize - Tamaño de página personalizado (opcional, usa el estado si no se provee)
    */
-  const handleSearch = async (filters, page = 1) => {
+  const handleSearch = async (filters, page = 1, customPageSize = null) => {
     setIsSearching(true);
     setHasSearched(true);
     setCurrentFilters(filters);
     if (page === 1) {
       setCurrentPage(1);
     }
+
+    const effectivePageSize = customPageSize !== null ? customPageSize : pageSize;
 
     try {
       let query = supabase.from('padron').select(`
@@ -278,8 +282,8 @@ export default function Dashboard({ appVersion }) {
 
       query = query.order('orden', { ascending: true });
 
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const from = (page - 1) * effectivePageSize;
+      const to = from + effectivePageSize - 1;
 
       const { data, error, count } = await query.range(from, to);
 
@@ -313,7 +317,7 @@ export default function Dashboard({ appVersion }) {
     setCurrentPage(1);
     localStorage.setItem('padronSearchPageSize', newSize.toString());
     if (currentFilters) {
-      handleSearch(currentFilters, 1);
+      handleSearch(currentFilters, 1, newSize);
     }
   };
 
