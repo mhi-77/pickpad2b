@@ -71,6 +71,14 @@ export default function Dashboard({ appVersion }) {
   // Estado para controlar la visibilidad del modal de advertencia de sesión
   const [showWarning, setShowWarning] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('padronSearchPageSize');
+    return saved ? Number(saved) : 25;
+  });
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentFilters, setCurrentFilters] = useState(null);
+
   // Estado para almacenar las localidades disponibles
   const [availableLocalities, setAvailableLocalities] = useState([]);
   // Estado para almacenar los emopicks disponibles
@@ -196,17 +204,20 @@ export default function Dashboard({ appVersion }) {
    * 1. Activa el estado de carga
    * 2. Construye la consulta a Supabase basada en los filtros
    * 3. Aplica filtros específicos según el tipo de dato
-   * 4. Limita los resultados a 50 para mejor rendimiento
+   * 4. Limita los resultados a 50 para mejor rendimiento *** ya NOOO *** muestra PAGINADO 
    * 5. Actualiza el estado con los resultados
    *
    * @param {Object} filters - Objeto con los filtros de búsqueda
    */
-  const handleSearch = async (filters) => {
+  const handleSearch = async (filters, page = 1) => {
     setIsSearching(true);
     setHasSearched(true);
-    
+    setCurrentFilters(filters);
+    if (page === 1) {
+      setCurrentPage(1);
+    }
+
     try {
-      // Inicializar consulta base a la tabla padron
       let query = supabase.from('padron').select(`
         *,
         emopicks(
@@ -224,72 +235,86 @@ export default function Dashboard({ appVersion }) {
             )
           )
         )
-      `);
-      
-      // Aplicar filtros específicos según los datos proporcionados
+      `, { count: 'exact' });
+
       if (filters.documento) {
-        // El documento es bigint - intentar conversión a número para búsqueda exacta
         const docNumber = parseInt(filters.documento);
         if (!isNaN(docNumber)) {
           query = query.eq('documento', docNumber);
         } else {
-          // Si no es un número válido, realizar búsqueda parcial como texto
           query = query.ilike('documento', `%${filters.documento}%`);
         }
       }
-      
+
       if (filters.apellido) {
-        // Apellido es texto - búsqueda parcial insensible a mayúsculas/minúsculas
         query = query.ilike('apellido', `%${filters.apellido}%`);
       }
-      
+
       if (filters.nombre) {
-        // Nombre es texto - búsqueda parcial insensible a mayúsculas/minúsculas
         query = query.ilike('nombre', `%${filters.nombre}%`);
       }
 
       if (filters.localidad) {
         query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filters.localidad}%`);
       }
-      
+
       if (filters.circuito) {
         query = query.ilike('mesas.establecimientos.circuitos.codigo', `%${filters.circuito}%`);
       }
-      
+
       if (filters.mesa_numero) {
-        // Mesa es bigint - búsqueda exacta por número
         const mesaNumber = parseInt(filters.mesa_numero);
         if (!isNaN(mesaNumber)) {
           query = query.eq('mesa_numero', mesaNumber);
         }
       }
-      
+
       if (filters.clase) {
-        // Clase (año de nacimiento) es entero - búsqueda exacta
         const claseNumber = parseInt(filters.clase);
         if (!isNaN(claseNumber)) {
           query = query.eq('clase', claseNumber);
         }
       }
-      
-      // Limitar resultados a 50 para optimizar rendimiento y UX
-     // query = query.order('apellido', { ascending: true }).order('nombre', { ascending: true }).limit(50);
-      query = query.order('orden', { ascending: true }).limit(50);
-      
-      const { data, error } = await query;
-      
+
+      query = query.order('orden', { ascending: true });
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await query.range(from, to);
+
       if (error) {
         console.error('Error searching padron:', error);
         setSearchResults([]);
+        setTotalCount(0);
       } else {
         setSearchResults(data || []);
+        setTotalCount(count || 0);
       }
     } catch (error) {
       console.error('Error during search:', error);
       setSearchResults([]);
+      setTotalCount(0);
     }
-    
+
     setIsSearching(false);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    if (currentFilters) {
+      handleSearch(currentFilters, page);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    localStorage.setItem('padronSearchPageSize', newSize.toString());
+    if (currentFilters) {
+      handleSearch(currentFilters, 1);
+    }
   };
 
   /**
@@ -308,11 +333,16 @@ export default function Dashboard({ appVersion }) {
               onClear={handleClearSearch}
             />
             {hasSearched && (
-              <SearchResults 
-                results={searchResults} 
-                isLoading={isSearching} 
+              <SearchResults
+                results={searchResults}
+                isLoading={isSearching}
                 userRole={user?.usuario_tipo}
                 availableEmopicks={availableEmopicks}
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
               />
             )}
           </div>

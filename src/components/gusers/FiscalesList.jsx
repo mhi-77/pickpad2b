@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { User, AlertCircle, CheckCircle, X, Hash, Download, Upload } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import Pagination from '../shared/Pagination';
 
 export default function FiscalesList({ userTypes = [] }) {
   const [fiscales, setFiscales] = useState([]);
+  const [allFiscales, setAllFiscales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
@@ -19,12 +21,23 @@ export default function FiscalesList({ userTypes = [] }) {
   const [mesaStats, setMesaStats] = useState({ total: 0, asignadas: 0, sinAsignar: 0 });
   const [showMesasModal, setShowMesasModal] = useState(false);
   const [fiscalesPorMesa, setFiscalesPorMesa] = useState(new Map());
-  const [uploadResult, setUploadResult] = useState(null); // Para feedback de carga
+  const [uploadResult, setUploadResult] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('fiscalesListPageSize');
+    return saved ? Number(saved) : 25;
+  });
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    fetchValidMesas();
+    fetchAllFiscales();
+  }, []);
 
   useEffect(() => {
     fetchFiscales();
-    fetchValidMesas();
-  }, []);
+  }, [currentPage, pageSize, activeFilter]);
 
   const fetchValidMesas = async () => {
     try {
@@ -52,11 +65,26 @@ export default function FiscalesList({ userTypes = [] }) {
     }
   };
 
+  const fetchAllFiscales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, usuario_tipo, mesa_numero')
+        .in('usuario_tipo', [3, 4]);
+
+      if (!error && data) {
+        setAllFiscales(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching all fiscales:', error);
+    }
+  };
+
   const fetchFiscales = async () => {
     setLoading(true);
     setError('');
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('profiles')
         .select(`
           id,
@@ -70,15 +98,32 @@ export default function FiscalesList({ userTypes = [] }) {
               nombre
             )
           )
-        `)
-        .in('usuario_tipo', [3, 4])
-        .order('full_name', { ascending: true });
+        `, { count: 'exact' })
+        .in('usuario_tipo', [3, 4]);
+
+      if (activeFilter === 'tipo3') {
+        query = query.eq('usuario_tipo', 3).order('full_name', { ascending: true });
+      } else if (activeFilter === 'tipo4') {
+        query = query.eq('usuario_tipo', 4).order('full_name', { ascending: true });
+      } else if (activeFilter === 'asignadas') {
+        query = query.not('mesa_numero', 'is', null).order('mesa_numero', { ascending: true });
+      } else if (activeFilter === 'sinAsignar') {
+        query = query.is('mesa_numero', null).order('full_name', { ascending: true });
+      } else {
+        query = query.order('full_name', { ascending: true });
+      }
+
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await query.range(from, to);
 
       if (error) {
         console.error('Error fetching fiscales:', error);
         setError('Error al cargar la lista de fiscales');
       } else {
         setFiscales(data || []);
+        setTotalCount(count || 0);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -89,18 +134,18 @@ export default function FiscalesList({ userTypes = [] }) {
   };
 
   useEffect(() => {
-    if (fiscales.length > 0) {
-      const total = fiscales.length;
-      const tipo3 = fiscales.filter(f => f.usuario_tipo === 3).length;
-      const tipo4 = fiscales.filter(f => f.usuario_tipo === 4).length;
+    if (allFiscales.length > 0) {
+      const total = allFiscales.length;
+      const tipo3 = allFiscales.filter(f => f.usuario_tipo === 3).length;
+      const tipo4 = allFiscales.filter(f => f.usuario_tipo === 4).length;
       setStats({ total, tipo3, tipo4 });
     }
-  }, [fiscales]);
+  }, [allFiscales]);
 
   useEffect(() => {
-    if (validMesas.size > 0 && fiscales.length > 0) {
+    if (validMesas.size > 0 && allFiscales.length > 0) {
       const mesasAsignadasSet = new Set(
-        fiscales
+        allFiscales
           .map(f => f.mesa_numero)
           .filter(num => num != null && num !== '' && parseInt(num) > 0)
           .map(num => parseInt(num))
@@ -113,40 +158,16 @@ export default function FiscalesList({ userTypes = [] }) {
       setMesaStats({ total, asignadas, sinAsignar });
 
       const conteo = new Map();
-      fiscales.forEach(f => {
+      allFiscales.forEach(f => {
         const num = f.mesa_numero;
         if (num != null && num !== '' && parseInt(num) > 0) {
           const numInt = parseInt(num);
           conteo.set(numInt, (conteo.get(numInt) || 0) + 1);
         }
       });
-      setFiscalesPorMesa(conteo); //calcula en frontend la cantidad de fiscales por mesa asignados
+      setFiscalesPorMesa(conteo);
     }
-  }, [fiscales, validMesas]);
-
-  const filteredFiscales = useMemo(() => {
-    let result = [...fiscales];
-    switch (activeFilter) {
-      case 'tipo3':
-        return result
-          .filter(f => f.usuario_tipo === 3)
-          .sort((a, b) => a.full_name.localeCompare(b.full_name));
-      case 'tipo4':
-        return result
-          .filter(f => f.usuario_tipo === 4)
-          .sort((a, b) => a.full_name.localeCompare(b.full_name));
-      case 'asignadas':
-        return result
-          .filter(f => f.mesa_numero != null && f.mesa_numero !== '' && parseInt(f.mesa_numero) > 0)
-          .sort((a, b) => parseInt(a.mesa_numero) - parseInt(b.mesa_numero));
-      case 'sinAsignar':
-        return result
-          .filter(f => f.mesa_numero == null || f.mesa_numero === '' || parseInt(f.mesa_numero) <= 0)
-          .sort((a, b) => a.full_name.localeCompare(b.full_name));
-      default:
-        return result;
-    }
-  }, [fiscales, activeFilter]);
+  }, [allFiscales, validMesas]);
 
   const getUserTypeName = (tipo) => {
     const userType = userTypes.find(t => t.tipo === tipo);
@@ -204,6 +225,7 @@ export default function FiscalesList({ userTypes = [] }) {
         if (input) input.value = pendingUpdate.currentMesa || '';
       } else {
         await fetchFiscales();
+        await fetchAllFiscales();
         setSuccessMessage(`✅ Mesa ${pendingUpdate.newMesaDisplay} asignada a ${pendingUpdate.fiscalName}`);
         setTimeout(() => setSuccessMessage(''), 3000);
       }
@@ -215,6 +237,22 @@ export default function FiscalesList({ userTypes = [] }) {
       setShowConfirmModal(false);
       setPendingUpdate(null);
     }
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    localStorage.setItem('fiscalesListPageSize', newSize.toString());
+  };
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setCurrentPage(1);
   };
 
   const handleCancelUpdate = () => {
@@ -231,7 +269,7 @@ export default function FiscalesList({ userTypes = [] }) {
   };
 
   const getUserTypeColor = (tipo) => {
-    return tipo === 3 ? 'bg-orange-500' : 'bg-blue-600';
+    return tipo === 3 ? 'bg-orange-400' : 'bg-blue-400';
   };
 
   // --- Función de carga masiva desde CSV ---
@@ -309,6 +347,7 @@ export default function FiscalesList({ userTypes = [] }) {
       });
 
       await fetchFiscales();
+      await fetchAllFiscales();
       event.target.value = null;
     };
     reader.readAsText(file);
@@ -353,7 +392,7 @@ export default function FiscalesList({ userTypes = [] }) {
       type="button"
       onClick={() => {
         const headers = ['fiscal_id', 'full_name', 'mesa'];
-        const rows = fiscales.map(f => [f.id, f.full_name, f.mesa_numero || '']);
+        const rows = allFiscales.map(f => [f.id, f.full_name, f.mesa_numero || '']);
         const csv = [
           headers.join(','),
           ...rows.map(r => r.map(field => `"${field}"`).join(','))
@@ -396,14 +435,14 @@ export default function FiscalesList({ userTypes = [] }) {
         {/* Total */}
         <button
           type="button"
-          onClick={() => setActiveFilter(null)}
+          onClick={() => handleFilterChange(null)}
           className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
-            activeFilter === null ? 'ring-2 ring-blue-500 bg-blue-50 bg-opacity-30' : 'hover:shadow-md'
+            activeFilter === null ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
         >
           <div className="text-xs font-medium text-gray-700 text-center">Total Fiscales</div>
           <div className="flex items-center justify-center mt-1 space-x-1">
-            <User className="h-4 w-4 text-blue-600" />
+            <User className="h-5 w-5 text-blue-600" />
             <span className="text-sm font-semibold text-gray-900">{stats.total}</span>
           </div>
         </button>
@@ -415,14 +454,14 @@ export default function FiscalesList({ userTypes = [] }) {
           return (
             <button
               type="button"
-              onClick={() => setActiveFilter('tipo3')}
+              onClick={() => handleFilterChange('tipo3')}
               className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
-                activeFilter === 'tipo3' ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
+                activeFilter === 'tipo3' ? 'ring-2 ring-blue-500 bg-blue-50 bg-opacity-30' : 'hover:shadow-md'
               }`}
             >
               <div className="text-xs font-medium text-gray-700 text-center">{tipo3Data.descripcion}</div>  
               <div className="flex items-center justify-center mt-1 space-x-1">
-                <span className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                <span className="w-5 h-5 bg-orange-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">G</span>
                 </span>
                 <span className="text-sm font-semibold text-gray-900">{stats.tipo3}</span>
@@ -438,14 +477,14 @@ export default function FiscalesList({ userTypes = [] }) {
           return (
             <button
               type="button"
-              onClick={() => setActiveFilter('tipo4')}
+              onClick={() => handleFilterChange('tipo4')}
               className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
-                activeFilter === 'tipo4' ? 'ring-2 ring-blue-500 bg-blue-50 bg-opacity-30' : 'hover:shadow-md'
+                activeFilter === 'tipo4' ? 'ring-2 ring-blue-400 bg-blue-50 bg-opacity-30' : 'hover:shadow-md'
               }`}
             >
               <div className="text-xs font-medium text-gray-700 text-center">{tipo4Data.descripcion}</div>
               <div className="flex items-center justify-center mt-1 space-x-1">
-                <span className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="w-5 h-5 bg-blue-400 rounded-full flex items-center justify-center">
                   <span className="text-white text-xs font-bold">F</span>
                 </span>
                 <span className="text-sm font-semibold text-gray-900">{stats.tipo4}</span>
@@ -473,7 +512,7 @@ export default function FiscalesList({ userTypes = [] }) {
         {/* Asignadas */}
         <button
           type="button"
-          onClick={() => setActiveFilter('asignadas')}
+          onClick={() => handleFilterChange('asignadas')}
           className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
             activeFilter === 'asignadas' ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
@@ -488,7 +527,7 @@ export default function FiscalesList({ userTypes = [] }) {
         {/* Sin asignar */}
         <button
           type="button"
-          onClick={() => setActiveFilter('sinAsignar')}
+          onClick={() => handleFilterChange('sinAsignar')}
           className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
             activeFilter === 'sinAsignar' ? 'ring-2 ring-yellow-500 bg-yellow-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
@@ -509,7 +548,7 @@ export default function FiscalesList({ userTypes = [] }) {
       )}
 
       {/* Lista */}
-      {filteredFiscales.length === 0 ? (
+      {fiscales.length === 0 ? (
         <div className="p-4 text-center text-gray-500">
           <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
           <p>No hay fiscales que coincidan con el filtro</p>
@@ -517,7 +556,7 @@ export default function FiscalesList({ userTypes = [] }) {
       ) : (
         <div className="p-2">
           <div className="space-y-2">
-            {filteredFiscales.map((fiscal) => (
+            {fiscales.map((fiscal) => (
               <div key={fiscal.id} className="border border-gray-200 rounded-lg p-3 hover:shadow transition-shadow">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center space-x-3 flex-1">
@@ -550,6 +589,21 @@ export default function FiscalesList({ userTypes = [] }) {
               </div>
             ))}
           </div>
+
+          {/* Paginación */}
+          {fiscales.length > 0 && (
+            <div className="mt-2">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(totalCount / pageSize)}
+                totalItems={totalCount}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                loading={loading}
+              />
+            </div>
+          )}
         </div>
       )}
 

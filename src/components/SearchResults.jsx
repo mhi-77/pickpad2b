@@ -1,10 +1,21 @@
 import React from 'react';
 import { FileText, User, MapPin, Hash, Users, Sparkles, XCircle, CheckCircle, SquarePen } from 'lucide-react';
 import PickModal from './gpicks/PickModal';
+import Pagination from './shared/Pagination';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-export default function SearchResults({ results, isLoading, userRole, availableEmopicks = [] }) {
+export default function SearchResults({
+  results,
+  isLoading,
+  userRole,
+  availableEmopicks = [],
+  currentPage,
+  pageSize,
+  totalCount,
+  onPageChange,
+  onPageSizeChange
+}) {
   // Obtener datos del usuario autenticado para registrar quién hace las actualizaciones
   const { user } = useAuth();
 
@@ -152,9 +163,9 @@ export default function SearchResults({ results, isLoading, userRole, availableE
   return (
     <div className="bg-white rounded-xl shadow-lg p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-gray-900">
+        <h3 className="text-m  text-gray-800">
           <span>
-            {results.length < 50 ? `-> Resultados (${results.length}) <-` : '->Al menos 50 resultados. Refine la búsqueda <-'}
+            ~ Mostrando {results.length} de {totalCount} resultados ~
           </span>
         </h3>
       </div>
@@ -275,6 +286,19 @@ export default function SearchResults({ results, isLoading, userRole, availableE
           </div>
         ))}
       </div>
+
+      {/* Paginación */}
+      {results.length > 0 && totalCount > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(totalCount / pageSize)}
+          totalItems={totalCount}
+          pageSize={pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          loading={isLoading}
+        />
+      )}
 
       {/* Modal de PICK */}
       <PickModal

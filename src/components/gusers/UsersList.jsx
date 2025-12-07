@@ -5,6 +5,7 @@ import EditUserForm from './EditUserForm';
 import { useAuth } from '../../context/AuthContext';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import NotificationToast from './NotificationToast';
+import Pagination from '../shared/Pagination';
 
 export default function UsersList({ userTypes = [] }) {
   const { user: currentUser } = useAuth();
@@ -13,48 +14,78 @@ export default function UsersList({ userTypes = [] }) {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState(null); // null = mostrar todos
+  const [filterStatus, setFilterStatus] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [notification, setNotification] = useState({ isOpen: false, type: 'success', message: '' });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('usersListPageSize');
+    return saved ? Number(saved) : 25;
+  });
+  const [totalCount, setTotalCount] = useState(0);
+
   useEffect(() => {
     fetchUsers();
+  }, [currentPage, pageSize, filterStatus]);
+
+  useEffect(() => {
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users_status')
+        .select('status');
+
+      if (!error && data) {
+        const stats = data.reduce((acc, user) => {
+          acc[user.status] = (acc[user.status] || 0) + 1;
+          return acc;
+        }, {});
+
+        setStats({
+          total: data.length,
+          active: stats.active || 0,
+          invited: stats.invited || 0,
+          pending: stats.pending || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users_status')
-        .select('*')
-        .order('full_name', { ascending: true, nullsFirst: false }); // ✅ Orden alfabético
+        .select('*', { count: 'exact' })
+        .order('full_name', { ascending: true, nullsFirst: false });
+
+      if (filterStatus) {
+        query = query.eq('status', filterStatus);
+      }
+
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await query.range(from, to);
 
       if (error) {
         console.error('Error fetching users:', error);
       } else {
         setUsers(data || []);
-        calculateStats(data || []);
+        setTotalCount(count || 0);
       }
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStats = (userData) => {
-    const stats = userData.reduce((acc, user) => {
-      acc[user.status] = (acc[user.status] || 0) + 1;
-      return acc;
-    }, {});
-
-    setStats({
-      total: userData.length,
-      active: stats.active || 0,
-      invited: stats.invited || 0,
-      pending: stats.pending || 0
-    });
   };
 
   const handleEditUser = (user) => {
@@ -84,7 +115,8 @@ export default function UsersList({ userTypes = [] }) {
           message: 'Error al eliminar usuario'
         });
       } else {
-        fetchUsers();
+        await fetchUsers();
+        await fetchStats();
         setNotification({
           isOpen: true,
           type: 'success',
@@ -109,8 +141,25 @@ export default function UsersList({ userTypes = [] }) {
     setUserToDelete(null);
   };
 
-  const handleUserUpdated = () => {
-    fetchUsers();
+  const handleUserUpdated = async () => {
+    await fetchUsers();
+    await fetchStats();
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    localStorage.setItem('usersListPageSize', newSize.toString());
+  };
+
+  const handleFilterChange = (status) => {
+    setFilterStatus(status);
+    setCurrentPage(1);
   };
 
   const canModifyUser = (targetUser) => {
@@ -210,10 +259,7 @@ export default function UsersList({ userTypes = [] }) {
     );
   }
 
-  // ✅ Aplicar filtro
-  const displayedUsers = filterStatus 
-    ? users.filter(user => user.status === filterStatus) 
-    : users;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6">
@@ -223,7 +269,7 @@ export default function UsersList({ userTypes = [] }) {
           {/* Total */}
           <button
             type="button"
-            onClick={() => setFilterStatus(null)}
+            onClick={() => handleFilterChange(null)}
             title="Mostrar todos los usuarios"
             className={`bg-white rounded-lg shadow p-3 sm:p-3 text-left transition-all duration-200 ${
               filterStatus === null
@@ -243,7 +289,7 @@ export default function UsersList({ userTypes = [] }) {
           {/* Operativos */}
           <button
             type="button"
-            onClick={() => setFilterStatus('active')}
+            onClick={() => handleFilterChange('active')}
             title="Mostrar solo usuarios operativos"
             className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'active'
@@ -263,7 +309,7 @@ export default function UsersList({ userTypes = [] }) {
           {/* Invitados */}
           <button
             type="button"
-            onClick={() => setFilterStatus('invited')}
+            onClick={() => handleFilterChange('invited')}
             title="Mostrar solo usuarios invitados"
             className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'invited'
@@ -283,7 +329,7 @@ export default function UsersList({ userTypes = [] }) {
           {/* Pendientes */}
           <button
             type="button"
-            onClick={() => setFilterStatus('pending')}
+            onClick={() => handleFilterChange('pending')}
             title="Mostrar solo usuarios pendientes"
             className={`bg-white rounded-lg shadow p-3 sm:p-4 text-left transition-all duration-200 ${
               filterStatus === 'pending'
@@ -307,11 +353,11 @@ export default function UsersList({ userTypes = [] }) {
         {/* Espacio inferior, sin título redundante */}
         <div className="px-4 sm:px-6 pb-2 sm:pb-4"></div>
 
-        {displayedUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
             <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>
-              {filterStatus 
+              {filterStatus
                 ? `No hay usuarios con estado "${getStatusConfig(filterStatus).name}"`
                 : 'No hay usuarios registrados'
               }
@@ -342,7 +388,7 @@ export default function UsersList({ userTypes = [] }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {displayedUsers.map((user) => {
+              {users.map((user) => {
                 const statusConfig = getStatusConfig(user.status);
                 const StatusIcon = statusConfig.icon;
         
@@ -426,10 +472,10 @@ export default function UsersList({ userTypes = [] }) {
             </tbody>
           </table>
         </div>
-            
+
         {/* Tarjetas para móvil */}
         <div className="sm:hidden divide-y divide-gray-100">
-          {displayedUsers.map((user) => {
+          {users.map((user) => {
             const statusConfig = getStatusConfig(user.status);
             const StatusIcon = statusConfig.icon;
         
@@ -509,7 +555,20 @@ export default function UsersList({ userTypes = [] }) {
         </div>
           </>
         )}
-                              
+
+        {/* Paginación */}
+        {users.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            loading={loading}
+          />
+        )}
+
         {/* Modal de edición */}
         <EditUserForm
           userId={editingUser}
