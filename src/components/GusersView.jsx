@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus, Users, Settings, BarChart3, UserCheck, UserCog } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import SignupForm from './gusers/SignupForm';
 import UsersList from './gusers/UsersList';
 import FiscalesList from './gusers/FiscalesList';
@@ -18,12 +19,21 @@ import FiscalesList from './gusers/FiscalesList';
  * - Pestaña "Configuración": Reservada para futuras configuraciones de usuarios
  */
 export default function GusersView() {
+  // Obtener información del usuario logueado
+  const { user: currentUser } = useAuth();
+
   // Estado para controlar qué pestaña está activa
   const [activeTab, setActiveTab] = useState('altas');
-  
+
   // Estado para almacenar los tipos de usuario desde la base de datos
   const [userTypes, setUserTypes] = useState([]);
   const [loadingUserTypes, setLoadingUserTypes] = useState(true);
+
+  // Filtrar tipos de usuario según permisos del usuario logueado
+  // Solo puede ver tipos de su mismo nivel o inferior
+  const filteredUserTypes = currentUser?.usuario_tipo
+    ? userTypes.filter(type => type.tipo >= currentUser.usuario_tipo)
+    : [];
 
   // Configuración de las pestañas disponibles
   const tabs = [
@@ -99,7 +109,7 @@ export default function GusersView() {
                     <p className="mt-2 text-gray-600">Cargando tipos de usuario...</p>
                   </div>
                 ) : (
-                  <SignupForm userTypes={userTypes} />
+                  <SignupForm userTypes={filteredUserTypes} />
                 )}
               </div>
             </div>
@@ -124,14 +134,14 @@ export default function GusersView() {
             
             {/* Contenedor principal para la lista de usuarios */}
             <div className="bg-white border border-gray-200 rounded-lg">
-              {/* AQUÍ ESTÁ EL CAMBIO IMPORTANTE - Pasar userTypes como prop */}
+              {/* Pasar tipos de usuario filtrados según permisos del usuario logueado */}
               {loadingUserTypes ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="mt-2 text-gray-600">Cargando tipos de usuario...</p>
                 </div>
               ) : (
-                <UsersList userTypes={userTypes} />
+                <UsersList userTypes={filteredUserTypes} />
               )}
             </div>
           </div>
@@ -156,7 +166,7 @@ export default function GusersView() {
             {/* Contenedor para la lista de fiscales */}
             <div className="bg-white border border-gray-200 rounded-lg p-2">
               {/* Componente FiscalesList para gestionar fiscales */}
-              <FiscalesList userTypes={userTypes} />
+              <FiscalesList userTypes={filteredUserTypes} />
             </div>
           </div>
         );
