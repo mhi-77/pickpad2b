@@ -280,7 +280,11 @@ export default function Dashboard({ appVersion }) {
         }
       }
 
-      query = query.order('orden', { ascending: true });
+      if (filters.mesa_numero) {
+        query = query.order('orden', { ascending: true });
+      } else {
+        query = query.order('apellido', { ascending: true }).order('nombre', { ascending: true });
+      }
 
       const from = (page - 1) * effectivePageSize;
       const to = from + effectivePageSize - 1;
