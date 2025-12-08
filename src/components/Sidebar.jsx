@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-3">
                       Administración
                       </p>   */ }
-                      <div className="bg-gray-50 rounded-lg p-2 space-y-1">
+                      <div className="bg-gray-200 rounded-lg p-2 space-y-1">
                         {adminItems.map(adminItem => {
                           const AdminIcon = adminItem.icon;
                           const isAdminActive = activeView === adminItem.id;
