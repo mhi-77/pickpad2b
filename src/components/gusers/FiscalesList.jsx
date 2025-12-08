@@ -437,7 +437,7 @@ export default function FiscalesList({ userTypes = [] }) {
           type="button"
           onClick={() => handleFilterChange(null)}
           className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
-            activeFilter === null ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
+            activeFilter === null ? 'ring-2 ring-blue-500 bg-blue-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
         >
           <div className="text-xs font-medium text-gray-700 text-center">Total Fiscales</div>
@@ -500,7 +500,7 @@ export default function FiscalesList({ userTypes = [] }) {
         <button
           type="button"
           onClick={() => setShowMesasModal(true)}
-          className="bg-gray-50 rounded-lg border border-gray-200 p-2 text-left hover:shadow-md transition-all duration-200"
+          className="bg-yellow-50 rounded-lg border border-gray-200 p-2 text-left hover:shadow-md transition-all duration-200"
         >
           <div className="text-xs font-medium text-gray-700 text-center">Total Mesas</div>
           <div className="flex items-center justify-center mt-1 space-x-1">
@@ -513,8 +513,8 @@ export default function FiscalesList({ userTypes = [] }) {
         <button
           type="button"
           onClick={() => handleFilterChange('asignadas')}
-          className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
-            activeFilter === 'asignadas' ? 'ring-2 ring-green-500 bg-green-50 bg-opacity-30' : 'hover:shadow-md'
+          className={`bg-yellow-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
+            activeFilter === 'asignadas' ? 'ring-2 ring-yellow-500 bg-yellow-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
         >
           <div className="text-xs font-medium text-gray-700 text-center">Asignadas</div>
@@ -528,7 +528,7 @@ export default function FiscalesList({ userTypes = [] }) {
         <button
           type="button"
           onClick={() => handleFilterChange('sinAsignar')}
-          className={`bg-gray-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
+          className={`bg-yellow-50 rounded-lg border border-gray-200 p-2 text-left transition-all duration-200 ${
             activeFilter === 'sinAsignar' ? 'ring-2 ring-yellow-500 bg-yellow-50 bg-opacity-30' : 'hover:shadow-md'
           }`}
         >

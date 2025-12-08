@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Users, Settings, BarChart3, UserCheck, UserCog } from 'lucide-react';
+import { UserPlus, Users, BarChart3, UserCheck, UserCog } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -39,7 +39,7 @@ export default function GusersView() {
   const tabs = [
     { id: 'altas', label: 'Altas', icon: UserPlus },
     { id: 'gestion', label: 'Gestión', icon: Users },
-    { id: 'fiscales', label: 'Fiscales', icon: Settings },
+    { id: 'fiscales', label: 'Fiscales', icon: UserCheck },
   ];
   
   /**
@@ -99,12 +99,12 @@ export default function GusersView() {
             {/* Contenedor principal para el formulario de registro */}
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Formulario de Registro
                 </h3>
                 {/* Componente SignupForm para crear nuevos usuarios con tipos dinámicos */}
                 {loadingUserTypes ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-6">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-2 text-gray-600">Cargando tipos de usuario...</p>
                   </div>
@@ -122,7 +122,7 @@ export default function GusersView() {
             {/* Panel informativo para la sección de gestión */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <UserCheck className="w-6 h-6 text-green-600" />
+                <Users className="w-6 h-6 text-green-600" />
                 <div>
                   <h3 className="font-semibold text-green-800">Administrar Usuarios</h3>
                   <p className="text-sm text-green-700">
@@ -153,11 +153,11 @@ export default function GusersView() {
             {/* Panel informativo para la sección de fiscales */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <Settings className="w-6 h-6 text-orange-600" />
+                <UserCheck className="w-6 h-6 text-orange-600" />
                 <div>
-                  <h3 className="font-semibold text-orange-800">Gestión de Fiscales</h3>
+                  <h3 className="font-semibold text-orange-800">Gestionar Fiscales</h3>
                   <p className="text-sm text-orange-700">
-                    Administra la asignación de mesas para fiscales
+                    Administra la asignación de mesas
                   </p>
                 </div>
               </div>
@@ -184,13 +184,13 @@ export default function GusersView() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h2>
             <p className="text-gray-600 mt-1">
-              Administra usuarios, roles y permisos del sistema
+              Administra usuarios, roles y asignaciones
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+    {/*  <div className="flex items-center space-x-2">
             <BarChart3 className="w-6 h-6 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">Panel de Control</span>
-          </div>
+          </div>   */}
         </div>
 
         {/* Navegación por pestañas */}
