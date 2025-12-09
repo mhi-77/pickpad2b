@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, FileText } from 'lucide-react';
+import { BarChart3, CircleDashed, TextSearch, FileText } from 'lucide-react';
 // Import the new components
 import RealtimeStats from './stats/RealtimeStats';
 import GeneralStats from './stats/GeneralStats';
@@ -10,7 +10,7 @@ export default function StatsView() {
 
   const tabs = [
     { id: 'general', label: 'General', icon: BarChart3 },
-    { id: 'realtime', label: 'Pendientes', icon: TrendingUp },
+    { id: 'realtime', label: 'Pendientes', icon: TextSearch },
     { id: 'reports', label: 'Reportes', icon: FileText },
   ];
 
