@@ -30,7 +30,7 @@ export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, 
           <h2 className="text-2xl font-bold text-gray-900">Fiscalización Mesa N° {mesaNumero}</h2>
           <div className="flex items-center space-x-4 mt-2">
             <p className="text-sm text-gray-500">
-             Buscar por documento u orden
+             Buscar por número de documento u orden
             </p>
           </div>
         </div>

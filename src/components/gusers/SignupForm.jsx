@@ -42,7 +42,7 @@ export default function SignupForm({ userTypes = [] }) {
       if (error) {
         setMessage(`Error: ${error.message}`);
       } else {
-        setMessage('¡Usuario creado exitosamente! Revisa tu correo para confirmar tu cuenta.');
+        setMessage('¡Usuario creado exitosamente! Debe revisar correo y confirmar cuenta.');
         // Limpiar formulario después del éxito
         setEmail('');
         setPassword('');
