@@ -10,7 +10,7 @@ export default function StatsView() {
 
   const tabs = [
     { id: 'general', label: 'General', icon: BarChart3 },
-    { id: 'realtime', label: 'Tiempo Real', icon: TrendingUp },
+    { id: 'realtime', label: 'Pendientes', icon: TrendingUp },
     { id: 'reports', label: 'Reportes', icon: FileText },
   ];
 
