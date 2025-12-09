@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog } from 'lucide-react';
+import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog, ClipboardList } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { FEATURES } from '../config/features';
 import CreditsModal from './CreditsModal';
@@ -13,6 +13,7 @@ const menuItems = [
   { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4, disabled: !FEATURES.MESA_TESTIGO_ENABLED },
   { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3, disabled: false },
   { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3, disabled: false },
+  { id: 'control', label: 'Control', icon: ClipboardList, maxRole: 2, disabled: false },
   { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2, disabled: false },
   { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2, disabled: false },
   { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 2, disabled: false },

@@ -16,6 +16,7 @@ import TestigoView from './TestigoView';
 import PadronesView from './PadronesView';
 import SettingsView from './SettingsView';
 import PerfilView from './PerfilView';
+import ControlView from './ControlView';
 //import { loadEmopicksWithCount } from '../utils/emopicksUtils';
 
 /**
@@ -370,6 +371,10 @@ export default function Dashboard({ appVersion }) {
       case 'testigo':
         return (
           <TestigoView />
+        );
+      case 'control':
+        return (
+          <ControlView />
         );
       case 'gusers':
         return (

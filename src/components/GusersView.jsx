@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { UserPlus, Users, BarChart3, UserCheck, UserCog } from 'lucide-react';
+import { UserPlus, Users, BarChart3, UserCheck, UserCog, Zap } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import SignupForm from './gusers/SignupForm';
 import UsersList from './gusers/UsersList';
-import FiscalesList from './gusers/FiscalesList';
 
 /**
  * Componente GusersView - Vista principal para la gestión de usuarios
@@ -39,7 +38,7 @@ export default function GusersView() {
   const tabs = [
     { id: 'altas', label: 'Altas', icon: UserPlus },
     { id: 'gestion', label: 'Gestión', icon: Users },
-    { id: 'fiscales', label: 'Fiscales', icon: UserCheck },
+    { id: 'acciones', label: 'Acciones', icon: Zap },
   ];
   
   /**
@@ -131,7 +130,7 @@ export default function GusersView() {
                 </div>
               </div>
             </div>
-            
+
             {/* Contenedor principal para la lista de usuarios */}
             <div className="bg-white border border-gray-200 rounded-lg">
               {/* Pasar tipos de usuario filtrados según permisos del usuario logueado */}
@@ -146,31 +145,41 @@ export default function GusersView() {
             </div>
           </div>
         );
-      
-     case 'fiscales':
+
+      case 'acciones':
         return (
           <div className="space-y-4">
-            {/* Panel informativo para la sección de fiscales */}
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center space-x-3">
-                <UserCheck className="w-6 h-6 text-orange-600" />
+                <Zap className="w-6 h-6 text-yellow-600" />
                 <div>
-                  <h3 className="font-semibold text-orange-800">Gestionar Fiscales</h3>
-                  <p className="text-sm text-orange-700">
-                    Administra la asignación de mesas
+                  <h3 className="font-semibold text-yellow-800">Acciones sobre Usuarios</h3>
+                  <p className="text-sm text-yellow-700">
+                    Operaciones masivas y acciones especiales
                   </p>
                 </div>
               </div>
             </div>
-            
-            {/* Contenedor para la lista de fiscales */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2">
-              {/* Componente FiscalesList para gestionar fiscales */}
-              <FiscalesList userTypes={filteredUserTypes} />
+
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <div className="text-center max-w-md mx-auto space-y-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full">
+                  <Zap className="w-8 h-8 text-gray-400" />
+                </div>
+
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Funcionalidad en Desarrollo
+                </h3>
+
+                <p className="text-sm text-gray-600">
+                  El módulo de acciones estará disponible próximamente.
+                  Aquí podrás realizar operaciones masivas, exportaciones y otras acciones especiales sobre los usuarios.
+                </p>
+              </div>
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
