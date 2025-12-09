@@ -31,8 +31,8 @@ export default function StatsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Estadísticas Electorales</h2>
             <p className="text-gray-600 mt-1">
