@@ -1,3 +1,5 @@
+import * as XLSX from 'xlsx';
+
 export const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -137,8 +139,6 @@ export const convertRawToCSV = (data) => {
 };
 
 export const exportToExcelWithFormat = async (data, filename) => {
-  const XLSX = await import('xlsx');
-
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Padrón');

@@ -27,15 +27,14 @@ export default function GpicksView() {
   const [error, setError] = useState('');
 
   // Estados para filtros
+  const [filterVoteStatus, setFilterVoteStatus] = useState('all');
   const [filterVerified, setFilterVerified] = useState(null); // null = todos, true = verificados, false = no verificados
   const [filterEmopickId, setFilterEmopickId] = useState('');
   const [filterAssignedByUserId, setFilterAssignedByUserId] = useState('');
-  const [filterLocality, setFilterLocality] = useState('');
-  
+
   // Estados para datos de los selectores
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
-  const [availableLocalities, setAvailableLocalities] = useState([]);
 
   /**
    * Efecto para cargar los datos cuando el componente se monta
@@ -56,27 +55,14 @@ export default function GpicksView() {
       const emopicks = await loadEmopicksWithCount();
       setAvailableEmopicks(emopicks || []);
 
-      // Cargar usuarios que han asignado emopicks
+      // Cargar usuarios que han asignado emopicks desde el VIEW users_picks
       const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .not('full_name', 'is', null)
+        .from('users_picks')
+        .select('id, full_name, padron_count')
         .order('full_name');
 
       if (!usersError) {
         setAvailableUsers(users || []);
-      }
-
-      // Cargar localidades únicas
-      const { data: localities, error: localitiesError } = await supabase
-        .from('circuitos')
-        .select('localidad')
-        .not('localidad', 'is', null)
-        .order('localidad');
-
-      if (!localitiesError) {
-        const uniqueLocalities = [...new Set(localities.map(l => l.localidad))];
-        setAvailableLocalities(uniqueLocalities);
       }
 
     } catch (error) {
@@ -124,20 +110,22 @@ export default function GpicksView() {
 
       // Aplicar filtros si están activos
       if (applyFilters) {
+        if (filterVoteStatus === 'voted') {
+          query = query.eq('voto_emitido', true);
+        } else if (filterVoteStatus === 'not_voted') {
+          query = query.eq('voto_emitido', false);
+        }
+
         if (filterVerified !== null) {
           query = query.eq('pick_check', filterVerified);
         }
-        
+
         if (filterEmopickId) {
           query = query.eq('emopick_id', parseInt(filterEmopickId));
         }
-        
+
         if (filterAssignedByUserId) {
           query = query.eq('emopick_user', filterAssignedByUserId);
-        }
-        
-        if (filterLocality) {
-          query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
         }
       }
 
@@ -174,10 +162,10 @@ export default function GpicksView() {
    * Limpia todos los filtros y recarga los datos
    */
   const handleClearFilters = () => {
+    setFilterVoteStatus('all');
     setFilterVerified(null);
     setFilterEmopickId('');
     setFilterAssignedByUserId('');
-    setFilterLocality('');
     fetchGpicks(false);
   };
 
@@ -305,10 +293,26 @@ export default function GpicksView() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* Filtro por estado de votación */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Estado de Votación
+            </label>
+            <select
+              value={filterVoteStatus}
+              onChange={(e) => setFilterVoteStatus(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            >
+              <option value="all">Todos</option>
+              <option value="voted">Votaron</option>
+              <option value="not_voted">No Votaron</option>
+            </select>
+          </div>
+
           {/* Filtro por estado de verificación */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
+              Check de acciones
             </label>
             <select
               value={filterVerified === null ? '' : filterVerified.toString()}
@@ -316,8 +320,8 @@ export default function GpicksView() {
               className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
             >
               <option value="">Todos</option>
-              <option value="true">Verificados</option>
-              <option value="false">Sin verificar</option>
+              <option value="true">Atendidos</option>
+              <option value="false">Sin gestión</option>
             </select>
           </div>
 
@@ -343,36 +347,18 @@ export default function GpicksView() {
           {/* Filtro por usuario que asignó */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Asignado por
+              Marcados por
             </label>
             <select
               value={filterAssignedByUserId}
               onChange={(e) => setFilterAssignedByUserId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              disabled={availableUsers.length === 0}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100"
             >
               <option value="">Todos los usuarios</option>
               {availableUsers.map((userOption) => (
                 <option key={userOption.id} value={userOption.id}>
-                  {userOption.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Filtro por localidad */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Localidad
-            </label>
-            <select
-              value={filterLocality}
-              onChange={(e) => setFilterLocality(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="">Todas las localidades</option>
-              {availableLocalities.map((locality) => (
-                <option key={locality} value={locality}>
-                  {locality}
+                  {userOption.full_name} ({userOption.padron_count})
                 </option>
               ))}
             </select>
