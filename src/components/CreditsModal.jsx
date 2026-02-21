@@ -35,11 +35,11 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
         {/* Contenido del modal */}
         <div className="text-center">
           {/* Logo MHI */}
-          <div className="mb-6 flex justify-center">
+          <div className="mb-4 flex justify-center">
             <img
               src={mhiImage}
               alt="MHI - Mi Havas Ideon"
-              className="w-32 h-32 object-contain"
+              className="w-16 h-16 object-contain"
             />
           </div>
 
@@ -65,12 +65,12 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             <div className="pt-4 border-t border-gray-200">
               <p className="text-lg font-bold text-gray-900">PickPad</p>
               <p className="text-sm text-gray-600">Versión {appVersion}</p>
-              <p className="text-xs text-gray-500 mt-1">Última actualización: Noviembre 2025</p>
+              <p className="text-xs text-gray-500 mt-1">Última actualización: Febrero 2026</p>
             </div>
 
             <div className="pt-4 border-t border-gray-200">
               <p className="text-xs text-gray-600 italic">
-                Licencia de uso: Municipalidad de TQST
+                Licencia de uso: PJ-TQST
               </p>
             </div>
           </div>
