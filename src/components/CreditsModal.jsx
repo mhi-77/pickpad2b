@@ -39,7 +39,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             <img
               src={mhiImage}
               alt="MHI - Mi Havas Ideon"
-              className="w-16 h-16 object-contain"
+              className="w-24 h-24 object-contain"
             />
           </div>
 
