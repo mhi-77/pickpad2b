@@ -38,7 +38,7 @@ const MODES = {
  * Flujo:
  * SELECTION → VALIDATION → IMPORTING → COMPLETED
  * 
- * Permisos: Solo usuarios tipo 1 (Admin) o tipo 2 (Coordinador)
+ * Permisos: Solo usuarios tipo 1 (Superusuario) o tipo 2 (Administrador)
  */
 export default function ImportPadronForm() {
   // ====== ESTADO PRINCIPAL ======
@@ -124,7 +124,7 @@ export default function ImportPadronForm() {
   
   /**
    * Verifica si el usuario actual tiene permisos para importar
-   * Solo usuarios tipo 1 (Admin) o 2 (Coordinador) pueden importar
+   * Solo usuarios tipo 1 (Superusuario) y tipo2 (Administrador) pueden importar
    */
   const checkUserPermissions = async () => {
     try {
@@ -144,7 +144,7 @@ export default function ImportPadronForm() {
 
       if (error) throw error;
 
-      // Solo Admin (1) o Coordinador (2) tienen permisos
+      // Solo Superusuario (1) o Administrador (2)) tienen permisos
       setUserPermissions(profile.usuario_tipo <= 2);
     } catch (error) {
       console.error('Error checking permissions:', error);
@@ -564,7 +564,7 @@ export default function ImportPadronForm() {
 
   /**
    * Estado: Sin permisos
-   * Solo Admin y Coordinador pueden acceder
+   * Solo Superusuario y Administrador pueden acceder
    */
   if (userPermissions === false) {
     return (
@@ -575,7 +575,7 @@ export default function ImportPadronForm() {
             <div>
               <h3 className="font-semibold text-red-800">Acceso Denegado</h3>
               <p className="text-sm text-red-700">
-                Solo administradores y coordinadores pueden importar datos al padrón
+                Solo superusuarios y administradores pueden importar datos al padrón
               </p>
             </div>
           </div>
