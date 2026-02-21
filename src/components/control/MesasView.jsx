@@ -1,6 +1,20 @@
 import React from 'react';
 import { Grid3x3, Clock } from 'lucide-react';
 
+/**
+ * Componente MesasView - Vista de gestión de mesas electorales
+ *
+ * Propósito: Placeholder para el módulo de gestión de mesas electorales.
+ * Este componente será expandido para incluir funcionalidades completas de
+ * administración de mesas, asignación de fiscales y monitoreo de estado.
+ *
+ * Funcionalidades planificadas:
+ * - Listado de todas las mesas electorales
+ * - Asignación de establecimientos y circuitos
+ * - Configuración de capacidad de cada mesa
+ * - Visualización de estado en tiempo real
+ * - Asignación de fiscales por mesa
+ */
 export default function MesasView() {
   return (
     <div className="space-y-4">

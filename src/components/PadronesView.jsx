@@ -3,6 +3,22 @@ import { FileText, Upload, Download, Search, Database } from 'lucide-react';
 import ExportPadronForm from './padrones/ExportPadronForm';
 import ImportPadronForm from './padrones/ImportPadronForm';
 
+/**
+ * Componente PadronesView - Vista de gestión de padrones electorales
+ *
+ * Propósito: Proporciona una interfaz unificada para todas las operaciones relacionadas
+ * con el padrón electoral, organizadas en pestañas.
+ *
+ * Funcionalidades principales:
+ * - Consulta: Búsqueda de votantes en el padrón (en desarrollo)
+ * - Importar: Carga masiva de datos del padrón desde archivos Excel/CSV
+ * - Exportar: Descarga de datos del padrón con filtros personalizados
+ *
+ * Estructura:
+ * - Tres pestañas principales para organizar las funcionalidades
+ * - Cada pestaña renderiza un componente especializado
+ * - Interfaz consistente con otras vistas del sistema
+ */
 export default function PadronesView() {
   const [activeTab, setActiveTab] = useState('consulta');
 

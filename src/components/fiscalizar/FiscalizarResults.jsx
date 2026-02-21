@@ -2,6 +2,35 @@ import React from 'react';
 import { CheckCircle, XCircle, Hash, User, Calendar, AlertCircle, Clock, X, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+/**
+ * Componente FiscalizarResults - Resultados de búsqueda y fiscalización de votantes
+ *
+ * Propósito: Muestra los resultados de búsqueda del padrón electoral y permite a los fiscales
+ * marcar votantes como que han emitido su voto, con confirmaciones y control de permisos.
+ *
+ * Funcionalidades principales:
+ * - Visualización de resultados de búsqueda con información completa del votante
+ * - Marcar votantes como "han votado" con confirmación en dos pasos
+ * - Deshacer marcado de voto (solo administradores)
+ * - Indicadores visuales de estado de votación
+ * - Modal de confirmación antes de marcar voto
+ * - Modal de éxito después de operación exitosa
+ * - Información detallada: nombre, documento, mesa, establecimiento, localidad
+ *
+ * Control de permisos:
+ * - Fiscales: pueden marcar votos
+ * - Administradores: pueden marcar y deshacer votos
+ *
+ * Props:
+ * - results: array - Resultados de búsqueda del padrón
+ * - isLoading: boolean - Estado de carga
+ * - onMarcarVoto: function - Callback para marcar un voto
+ * - onDeshacerVoto: function - Callback para deshacer un voto
+ * - isUpdating: boolean - Estado de actualización en curso
+ * - showSuccessModal: boolean - Controla visibilidad de modal de éxito
+ * - setShowSuccessModal: function - Setter para modal de éxito
+ * - userRole: number - Rol del usuario actual para control de permisos
+ */
 export default function FiscalizarResults({ results, isLoading, onMarcarVoto, onDeshacerVoto, isUpdating, showSuccessModal, setShowSuccessModal, userRole }) {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [showUndoModal, setShowUndoModal] = React.useState(false);

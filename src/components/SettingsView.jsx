@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import { Settings, MapPin, Building2, Save, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Componente SettingsView - Configuración del sistema electoral
+ *
+ * Propósito: Proporciona una interfaz para administrar la configuración general
+ * del sistema electoral, incluyendo datos del comicio y organización de circuitos/mesas.
+ *
+ * Funcionalidades principales:
+ * - Configuración de datos del comicio (nombre, fecha, descripción)
+ * - Gestión de circuitos electorales y localidades
+ * - Administración de establecimientos y mesas de votación
+ * - Dos pestañas organizadas: Comicio y Circuitos & Mesas
+ * - Formularios con validación para cada tipo de configuración
+ *
+ * Nota: Actualmente en modo vista previa con formularios de ejemplo.
+ * La funcionalidad completa de persistencia debe ser implementada.
+ */
 export default function SettingsView() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('comicio');

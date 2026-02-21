@@ -2,6 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { X, Save, User } from 'lucide-react';
 
+/**
+ * Componente EditUserForm - Formulario de edición de usuario
+ *
+ * Propósito: Proporciona un modal para editar los datos de un usuario existente,
+ * incluyendo información personal y tipo de usuario.
+ *
+ * Funcionalidades principales:
+ * - Carga automática de datos del usuario al abrir el modal
+ * - Edición de: nombre completo, DNI, información adicional, tipo de usuario
+ * - Validación de campos obligatorios antes de guardar
+ * - Actualización en base de datos con feedback visual
+ * - Cierre automático después de guardado exitoso
+ * - Manejo de errores con mensajes descriptivos
+ *
+ * Props:
+ * - userId: string - ID del usuario a editar
+ * - isOpen: boolean - Controla visibilidad del modal
+ * - onClose: function - Callback para cerrar el modal
+ * - onUserUpdated: function - Callback ejecutado después de actualización exitosa
+ * - userTypes: array - Lista de tipos de usuario disponibles para selección
+ *
+ * Nota: El email no es editable por seguridad (campo de solo lectura).
+ */
 export default function EditUserForm({ userId, isOpen, onClose, onUserUpdated, userTypes = [] }) {
   const [formData, setFormData] = useState({
     full_name: '',

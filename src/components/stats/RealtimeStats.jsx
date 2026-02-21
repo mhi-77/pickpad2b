@@ -1,9 +1,32 @@
-// Bolt
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Filter, RefreshCw, User, MapPin, Hash, SquarePen, AlertCircle } from 'lucide-react';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 
+/**
+ * Componente RealtimeStats - Estadísticas en tiempo real de votantes pendientes
+ *
+ * Propósito: Muestra una lista en tiempo real de votantes que aún no han emitido su voto,
+ * con múltiples opciones de filtrado para facilitar la fiscalización.
+ *
+ * Funcionalidades principales:
+ * - Lista completa de votantes pendientes (voto_emitido = false)
+ * - Filtros por: localidad, número de mesa, apellido, emopick
+ * - Métricas agregadas: total pendientes, con/sin emopick asignado
+ * - Visualización de información completa del votante (nombre, documento, mesa, establecimiento)
+ * - Actualización manual de datos con botón de recarga
+ * - Indicador visual del estado de emopick
+ *
+ * Métricas calculadas:
+ * - Total de votantes pendientes
+ * - Votantes pendientes con emopick asignado
+ * - Votantes pendientes sin emopick asignado
+ *
+ * Casos de uso:
+ * - Monitoreo de participación durante el día electoral
+ * - Identificación de votantes que necesitan ser contactados
+ * - Análisis de participación por localidad o mesa
+ */
 export default function RealtimeStats() {
   const [unvotedVoters, setUnvotedVoters] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

@@ -4,6 +4,23 @@ import { User, AlertCircle, CheckCircle, X, Hash, Download, Upload } from 'lucid
 import { useAuth } from '../../context/AuthContext';
 import Pagination from '../shared/Pagination';
 
+/**
+ * Componente FiscalesList - Lista y gestión de fiscales con asignación de mesas
+ *
+ * Propósito: Proporciona una interfaz completa para gestionar fiscales (tipos 3 y 4),
+ * permitiendo la asignación de mesas de votación tanto manual como masiva mediante CSV.
+ *
+ * Funcionalidades principales:
+ * - Listado paginado de fiscales con filtros por tipo y estado de asignación
+ * - Asignación manual de mesas con validación en tiempo real
+ * - Importación y exportación masiva de asignaciones mediante CSV
+ * - Estadísticas en tiempo real de fiscales y mesas
+ * - Modal de confirmación para cambios de asignación
+ * - Vista detallada de todas las mesas con conteo de fiscales asignados
+ *
+ * Props:
+ * - userTypes: array - Lista de tipos de usuario con su descripción (tipo 3: General, tipo 4: Fiscal)
+ */
 export default function FiscalesList({ userTypes = [] }) {
   const [fiscales, setFiscales] = useState([]);
   const [allFiscales, setAllFiscales] = useState([]);
@@ -39,6 +56,11 @@ export default function FiscalesList({ userTypes = [] }) {
     fetchFiscales();
   }, [currentPage, pageSize, activeFilter]);
 
+  /**
+   * Obtiene todas las mesas válidas desde la base de datos
+   * Carga la información de mesas con sus establecimientos y localidades
+   * para validar asignaciones y mostrar estadísticas
+   */
   const fetchValidMesas = async () => {
     try {
       const { data, error } = await supabase
@@ -65,6 +87,10 @@ export default function FiscalesList({ userTypes = [] }) {
     }
   };
 
+  /**
+   * Carga todos los fiscales (tipos 3 y 4) sin paginación
+   * Utilizado para cálculos de estadísticas generales y exportación CSV
+   */
   const fetchAllFiscales = async () => {
     try {
       const { data, error } = await supabase
@@ -80,6 +106,11 @@ export default function FiscalesList({ userTypes = [] }) {
     }
   };
 
+  /**
+   * Obtiene la lista paginada de fiscales según filtros activos
+   * Aplica filtros por tipo de usuario y estado de asignación de mesa
+   * Incluye información de la mesa y establecimiento asignado
+   */
   const fetchFiscales = async () => {
     setLoading(true);
     setError('');
@@ -169,11 +200,21 @@ export default function FiscalesList({ userTypes = [] }) {
     }
   }, [allFiscales, validMesas]);
 
+  /**
+   * Obtiene el nombre descriptivo del tipo de usuario
+   */
   const getUserTypeName = (tipo) => {
     const userType = userTypes.find(t => t.tipo === tipo);
     return userType ? userType.descripcion : `Tipo ${tipo}`;
   };
 
+  /**
+   * Maneja el evento de pérdida de foco en el campo de mesa
+   * Valida el número de mesa ingresado y muestra modal de confirmación
+   *
+   * @param {string} fiscalId - ID del fiscal a actualizar
+   * @param {string} newMesaValue - Nuevo valor de mesa ingresado
+   */
   const handleMesaBlur = (fiscalId, newMesaValue) => {
     const fiscal = fiscales.find(f => f.id === fiscalId);
     if (!fiscal) return;
@@ -205,6 +246,10 @@ export default function FiscalesList({ userTypes = [] }) {
     setShowConfirmModal(true);
   };
 
+  /**
+   * Confirma y ejecuta la actualización de asignación de mesa
+   * Actualiza el registro en la base de datos y refresca las listas
+   */
   const handleConfirmUpdate = async () => {
     if (!pendingUpdate) return;
     setUpdating(true);
@@ -264,15 +309,27 @@ export default function FiscalesList({ userTypes = [] }) {
     setPendingUpdate(null);
   };
 
+  /**
+   * Retorna la letra identificadora del tipo de usuario
+   */
   const getUserTypeLetter = (tipo) => {
     return tipo === 3 ? 'G' : 'F';
   };
 
+  /**
+   * Retorna el color de badge según el tipo de usuario
+   */
   const getUserTypeColor = (tipo) => {
     return tipo === 3 ? 'bg-orange-400' : 'bg-blue-400';
   };
 
-  // --- Función de carga masiva desde CSV ---
+  /**
+   * Procesa la carga masiva de asignaciones desde archivo CSV
+   * Formato esperado: fiscal_id, mesa
+   * Valida cada mesa antes de actualizar y muestra resultado de la operación
+   *
+   * @param {Event} event - Evento de cambio del input file
+   */
   const handleCsvUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;

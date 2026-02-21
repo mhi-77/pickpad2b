@@ -5,6 +5,24 @@ import FiscalesList from './gusers/FiscalesList';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
+/**
+ * Componente ControlView - Vista de control electoral
+ *
+ * Propósito: Proporciona herramientas para gestionar la operación electoral,
+ * incluyendo administración de mesas y fiscales.
+ *
+ * Funcionalidades principales:
+ * - Gestión de mesas electorales
+ * - Administración de fiscales y asignación de mesas
+ * - Control de acceso basado en tipos de usuario
+ * - Dos pestañas: Mesas y Fiscales
+ *
+ * Características:
+ * - Carga dinámica de tipos de usuario desde la base de datos
+ * - Filtrado de tipos de usuario según permisos del usuario actual
+ * - Integración con componentes especializados (MesasView, FiscalesList)
+ * - Estados de carga y manejo de errores
+ */
 export default function ControlView() {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('mesas');

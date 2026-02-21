@@ -1,6 +1,25 @@
 import React from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
+/**
+ * Componente DeleteConfirmModal - Modal de confirmación para eliminar usuario
+ *
+ * Propósito: Muestra un modal de confirmación antes de eliminar un usuario,
+ * previniendo eliminaciones accidentales.
+ *
+ * Características:
+ * - Mensaje de advertencia claro con nombre del usuario
+ * - Advertencia de que la acción es irreversible
+ * - Dos opciones: Cancelar o Confirmar eliminación
+ * - Diseño visual con indicador de peligro (rojo)
+ * - Fondo oscuro semi-transparente
+ *
+ * Props:
+ * - isOpen: boolean - Controla visibilidad del modal
+ * - userName: string - Nombre del usuario a eliminar
+ * - onConfirm: function - Callback cuando se confirma la eliminación
+ * - onCancel: function - Callback cuando se cancela la eliminación
+ */
 export default function DeleteConfirmModal({
   isOpen,
   userName,

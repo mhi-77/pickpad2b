@@ -3,6 +3,25 @@ import { User, Lock, Shield, Save, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
+/**
+ * Componente PerfilView - Vista de perfil y configuración de usuario
+ *
+ * Propósito: Proporciona una interfaz para que los usuarios gestionen su perfil personal
+ * y configuración de seguridad (cambio de contraseña).
+ *
+ * Funcionalidades principales:
+ * - Visualización y edición de datos de perfil (nombre, DNI, información adicional)
+ * - Cambio de contraseña con validación
+ * - Mostrar/ocultar contraseñas con toggle visual
+ * - Dos pestañas: Perfil y Seguridad
+ * - Validación de campos obligatorios
+ * - Feedback visual de operaciones exitosas y errores
+ *
+ * Características de seguridad:
+ * - Validación de contraseña actual antes de cambiar
+ * - Verificación de coincidencia de nueva contraseña
+ * - Longitud mínima de contraseña requerida
+ */
 export default function PerfilView() {
   const { user, refreshUserProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('perfil');

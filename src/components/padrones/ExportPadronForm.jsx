@@ -10,6 +10,27 @@ import {
 } from '../../utils/exportUtils';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 
+/**
+ * Componente ExportPadronForm - Exportación de datos del padrón electoral
+ *
+ * Propósito: Proporciona una interfaz completa para exportar datos del padrón electoral
+ * con múltiples opciones de filtrado y formatos de salida (CSV y Excel).
+ *
+ * Funcionalidades principales:
+ * - Exportación completa o filtrada del padrón electoral
+ * - Dos modos de exportación: Básico (todos los campos) y Extendido (campos personalizados)
+ * - Filtros por: estado de voto, emopick, rango de mesas, rango de clases (años)
+ * - Soporte para grandes volúmenes de datos con procesamiento por lotes
+ * - Exportación a formatos CSV y Excel con formato personalizado
+ * - Indicador de progreso en tiempo real
+ * - Contador de registros que serán exportados según filtros aplicados
+ *
+ * Características técnicas:
+ * - Procesamiento por lotes de 5000 registros para evitar problemas de memoria
+ * - Generación de nombres de archivo automáticos con timestamp
+ * - Validación de rangos de filtros
+ * - Feedback visual del progreso de exportación
+ */
 export default function ExportPadronForm() {
   const [isBasicMode, setIsBasicMode] = useState(false);
   const [voteStatus, setVoteStatus] = useState('all');
@@ -34,6 +55,10 @@ export default function ExportPadronForm() {
     loadRecordCount();
   }, [isBasicMode, voteStatus, selectedEmopick, mesaDesde, mesaHasta, claseDesde, claseHasta]);
 
+  /**
+   * Carga la lista de emopicks (listas electorales) disponibles
+   * Incluye el conteo de registros por cada emopick
+   */
   const loadEmopicks = async () => {
     try {
       const data = await loadEmopicksWithCount();
@@ -43,7 +68,10 @@ export default function ExportPadronForm() {
     }
   };
 
-
+  /**
+   * Obtiene el conteo de registros que coinciden con los filtros actuales
+   * Se actualiza automáticamente cada vez que cambian los filtros
+   */
   const loadRecordCount = async () => {
     try {
       let query = supabase
@@ -64,6 +92,13 @@ export default function ExportPadronForm() {
     }
   };
 
+  /**
+   * Aplica los filtros seleccionados a una consulta de Supabase
+   * Filtra por estado de voto, emopick, rangos de mesa y clase
+   *
+   * @param {SupabaseQueryBuilder} query - Consulta de Supabase a la que aplicar filtros
+   * @returns {SupabaseQueryBuilder} Consulta con filtros aplicados
+   */
   const applyFilters = (query) => {
     if (voteStatus === 'voted') {
       query = query.eq('voto_emitido', true);
@@ -94,7 +129,13 @@ export default function ExportPadronForm() {
     return query;
   };
 
-
+  /**
+   * Obtiene los datos del padrón desde la base de datos aplicando filtros
+   * Procesa los datos en lotes de 5000 registros para optimizar memoria
+   * Actualiza el progreso en tiempo real durante la exportación
+   *
+   * @returns {Promise<Array>} Array con todos los registros filtrados
+   */
   const fetchPadronData = async () => {
     let query = supabase
       .from('padron')

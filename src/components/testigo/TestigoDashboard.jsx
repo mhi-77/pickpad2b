@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Users, Percent, Target, Activity } from 'lucide-react';
 
+/**
+ * Componente TestigoDashboard - Dashboard de análisis y estadísticas de mesas testigo
+ *
+ * Propósito: Proporciona un panel de control completo para analizar datos de mesas testigo,
+ * mostrando estadísticas de participación, tendencias y análisis de calidad de muestras.
+ *
+ * Funcionalidades principales:
+ * - Estadísticas generales de participación (votaron vs no votaron)
+ * - Análisis de calidad de muestras con clasificación por niveles
+ * - Comparación entre datos testigo y datos oficiales
+ * - Filtros por localidad para análisis específicos
+ * - Visualización de tendencias con indicadores porcentuales
+ * - Listado detallado de todas las mesas testigo con sus métricas
+ *
+ * Métricas calculadas:
+ * - Porcentaje de participación total
+ * - Desviación entre pila faltante y votos diferencia
+ * - Clasificación de calidad de muestra (Excelente/Buena/Aceptable/Problemática)
+ * - Estadísticas agregadas por localidad
+ */
+
 // Mock data para demostración
 const mockTestigosData = [
   { id: 1, mesa_numero: 1234, pila_inicio: 20, pila_faltante: 18, votos_diferencia: 20, muestra_valida: true, localidad: 'Centro' },

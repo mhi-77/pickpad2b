@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import { Search, RefreshCw, Hash, Users } from 'lucide-react';
 
+/**
+ * Componente FiscalizarSearchForm - Formulario de búsqueda para fiscalización
+ *
+ * Propósito: Proporciona un formulario simple para buscar votantes específicos
+ * en una mesa electoral durante el proceso de fiscalización.
+ *
+ * Funcionalidades:
+ * - Búsqueda por número de documento u orden de votante
+ * - Botón para mostrar todos los registros de la mesa
+ * - Muestra número de mesa actual en el encabezado
+ * - Limpieza automática del campo después de búsqueda
+ * - Validación para prevenir búsquedas vacías
+ *
+ * Props:
+ * - onSearch: function - Callback ejecutado al buscar
+ * - isLoading: boolean - Estado de carga de la búsqueda
+ * - mesaNumero: number - Número de mesa actual
+ * - totalRegistros: number - Total de registros en la mesa
+ */
 export default function FiscalizarSearchForm({ onSearch, isLoading, mesaNumero, totalRegistros }) {
   const [documento, setDocumento] = useState('');
 

@@ -1,6 +1,34 @@
 import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+/**
+ * AuthContext - Contexto de autenticación para la aplicación
+ *
+ * Propósito: Proporciona estado y funciones de autenticación globales a toda la aplicación,
+ * gestionando el ciclo de vida de la sesión del usuario.
+ *
+ * Funcionalidades principales:
+ * - Login con email y contraseña usando Supabase Auth
+ * - Carga automática del perfil de usuario desde la tabla profiles
+ * - Obtención de tipo de usuario y descripción de rol desde usuariost
+ * - Logout con limpieza de estado
+ * - Refresco manual del perfil de usuario
+ * - Estado de carga durante operaciones de autenticación
+ *
+ * Estado del usuario incluye:
+ * - id: ID único del usuario
+ * - email: Email del usuario
+ * - name: Nombre completo
+ * - dni: Documento Nacional de Identidad
+ * - informacion: Información adicional
+ * - usuario_tipo: Tipo numérico del usuario (1=Admin, 2=Operador, 3=General, 4=Fiscal, 5=Colaborador)
+ * - mesa_numero: Mesa asignada al usuario (si aplica)
+ * - roleDescription: Descripción legible del rol
+ *
+ * Hooks exportados:
+ * - useAuth: Hook personalizado para acceder al contexto de autenticación
+ */
+
 const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {

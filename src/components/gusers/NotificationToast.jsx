@@ -1,6 +1,26 @@
 import React, { useEffect } from 'react';
 import { CheckCircle, XCircle, X } from 'lucide-react';
 
+/**
+ * Componente NotificationToast - Notificación flotante temporal
+ *
+ * Propósito: Muestra mensajes de éxito o error en formato toast
+ * que se auto-ocultan después de un tiempo especificado.
+ *
+ * Características:
+ * - Posicionamiento fijo en la esquina superior derecha
+ * - Auto-cierre configurable con temporizador
+ * - Dos tipos: success (verde) y error (rojo)
+ * - Botón de cierre manual
+ * - Animación de entrada suave
+ *
+ * Props:
+ * - isOpen: boolean - Controla visibilidad del toast
+ * - type: string - Tipo de notificación ('success' o 'error')
+ * - message: string - Mensaje a mostrar
+ * - onClose: function - Callback cuando se cierra el toast
+ * - duration: number - Duración en milisegundos antes de auto-cerrar (default: 3000)
+ */
 export default function NotificationToast({
   isOpen,
   type = 'success',

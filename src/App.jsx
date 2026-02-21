@@ -2,10 +2,27 @@ import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
-import useBackButton from './hooks/useBackButton'; // Importa el hook corregido
+import useBackButton from './hooks/useBackButton';
 import packageJson from '../package.json';
 
-// Componente para mostrar el modal de confirmación
+/**
+ * Componente App - Raíz de la aplicación electoral
+ *
+ * Propósito: Componente principal que gestiona el flujo de autenticación
+ * y la navegación entre las vistas de login y dashboard.
+ *
+ * Características:
+ * - Envuelve la aplicación en AuthProvider para contexto global de autenticación
+ * - Muestra LoginForm o Dashboard según estado de autenticación
+ * - Implementa modal de confirmación para salida de la aplicación
+ * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo
+ * - Pasa la versión de la aplicación desde package.json
+ */
+
+/**
+ * Modal de confirmación para salir de la aplicación
+ * Se muestra cuando el usuario intenta retroceder desde la vista principal
+ */
 function ExitConfirmationModal({ onConfirm, onCancel }) {
   return (
     <div style={{
