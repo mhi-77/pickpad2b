@@ -35,7 +35,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
         {/* Contenido del modal */}
         <div className="text-center">
           {/* Logo MHI */}
-          <div className="mb-4 flex justify-center">
+          <div className="pt-4 flex justify-center">
             <img
               src={mhiImage}
               alt="MHI - Mi Havas Ideon"
