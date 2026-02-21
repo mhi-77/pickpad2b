@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Upload, Download, Search, Database } from 'lucide-react';
 import ExportPadronForm from './padrones/ExportPadronForm';
+import ImportPadronForm from './padrones/ImportPadronForm';
 
 export default function PadronesView() {
   const [activeTab, setActiveTab] = useState('consulta');
@@ -65,38 +66,7 @@ export default function PadronesView() {
         );
 
       case 'importar':
-        return (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <Upload className="w-6 h-6 text-green-600" />
-                <div>
-                  <h3 className="font-semibold text-green-800">Importar Padrón</h3>
-                  <p className="text-sm text-green-700">
-                    Carga archivos de padrón electoral en formato CSV o Excel
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="max-w-2xl mx-auto">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">
-                    Arrastra y suelta un archivo aquí o haz clic para seleccionar
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Formatos soportados: CSV, XLS, XLSX
-                  </p>
-                  <button className="mt-4 bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                    Seleccionar Archivo
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <ImportPadronForm />;
 
       case 'exportar':
         return <ExportPadronForm />;
