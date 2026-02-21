@@ -21,7 +21,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl p-8 w-80 max-w-md relative"
+        className="bg-white rounded-2xl shadow-2xl p-6 w-60 max-w-md relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Botón cerrar */}
