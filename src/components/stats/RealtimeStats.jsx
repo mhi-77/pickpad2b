@@ -329,7 +329,7 @@ export default function RealtimeStats() {
             <h3 className="text-sm font-semibold text-yellow-900 flex items-center justify-between">
               {(() => {
                 const activeEmopick = filterEmopick ? availableEmopicks.find(p => String(p.id) === String(filterEmopick)) : null;
-                return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Picks'}`;
+                return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Pick'}`;
               })()}
             </h3>
             <p className="text-xl font-bold text-yellow-800">{metrics.pendientesConEmopick}</p>
