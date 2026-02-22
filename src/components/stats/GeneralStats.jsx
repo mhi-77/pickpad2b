@@ -11,6 +11,7 @@ import {
   PieChart,
   Clock,
   AlertCircle,
+  TrendingUp,
   SmartphoneNfc,
   RefreshCw,
   TableProperties,
