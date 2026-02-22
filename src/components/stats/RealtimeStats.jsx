@@ -255,7 +255,7 @@ export default function RealtimeStats() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-white rounded-xl shadow-lg p-2">
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Votantes Pendientes</h2>
         <p className="text-gray-600 mb-4">Electorado que aún no ha emitido su voto.</p>
 
@@ -387,7 +387,7 @@ export default function RealtimeStats() {
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {voter.pick_nota || '-'}
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{voter.mesa_numero}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-center text-gray-900">{voter.mesa_numero}</td>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {voter.mesas?.establecimientos?.circuitos?.localidad || 'N/A'}
                     </td>
