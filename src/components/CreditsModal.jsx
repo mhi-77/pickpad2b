@@ -21,7 +21,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl p-4 w-70 max-w-md relative"
+        className="bg-white rounded-2xl shadow-2xl p-6 w-80 max-w-md relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Botón cerrar */}
@@ -35,16 +35,16 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
         {/* Contenido del modal */}
         <div className="text-center">
           {/* Logo MHI */}
-          <div className="pt-2 flex justify-center">
+          <div className="mb-0 flex justify-center">
             <img
               src={mhiImage}
               alt="MHI - Mi Havas Ideon"
-              className="w-24 h-24 object-contain"
+              className="w-36 h-32 object-contain"
             />
           </div>
 
           {/* Información de contacto y detalles */}
-          <div className="space-y-3 text-gray-700">
+          <div className="space-y-2 text-gray-700">
             <div>
               <p className="text-sm font-medium text-gray-500">Contacto</p>
               <p className="text-base">contacto@mihavasideon.com</p>

@@ -33,7 +33,12 @@ export default function RealtimeStats() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Filter states
+  // Filter input states (controlled inputs, not yet applied)
+  const [filterMesaInput, setFilterMesaInput] = useState('');
+  const [filterEmopickInput, setFilterEmopickInput] = useState('');
+  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
+
+  // Filter states (applied on button click)
   const [filterLocality, setFilterLocality] = useState('');
   const [filterMesa, setFilterMesa] = useState('');
   const [filterApellido, setFilterApellido] = useState('');
@@ -192,77 +197,37 @@ export default function RealtimeStats() {
 
   const fetchMetrics = async () => {
     try {
-      // Query to get all unvoted voters for metrics (without pagination)
-      let metricsQuery = supabase
+      const applyBaseFiltersWithoutEmopick = (q) => {
+        if (filterLocality) {
+          q = q.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
+        }
+        if (filterMesa) {
+          const mesaNumber = parseInt(filterMesa);
+          if (!isNaN(mesaNumber)) q = q.eq('mesa_numero', mesaNumber);
+        }
+        if (filterApellido) {
+          q = q.ilike('apellido', `%${filterApellido}%`);
+        }
+        return q;
+      };
+
+      let totalQuery = supabase
         .from('padron')
-        .select('emopick_id', { count: 'exact' })
+        .select('emopick_id', { count: 'exact', head: true })
         .or('voto_emitido.is.null,voto_emitido.eq.false');
+      totalQuery = applyBaseFiltersWithoutEmopick(totalQuery);
+      const { count: total } = await totalQuery;
 
-      // Apply same filters as main query
-      if (filterLocality) {
-        metricsQuery = metricsQuery.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
-      }
-
-      if (filterMesa) {
-        const mesaNumber = parseInt(filterMesa);
-        if (!isNaN(mesaNumber)) {
-          metricsQuery = metricsQuery.eq('mesa_numero', mesaNumber);
-        }
-      }
-
-      if (filterApellido) {
-        metricsQuery = metricsQuery.ilike('apellido', `%${filterApellido}%`);
-      }
-
-      if (filterEmopick) {
-        const emopickId = parseInt(filterEmopick);
-        if (!isNaN(emopickId)) {
-          metricsQuery = metricsQuery.eq('emopick_id', emopickId);
-        }
-      }
-
-      // Apply metric filter
-      if (filterMetricType === 'conPicks') {
-        metricsQuery = metricsQuery.not('emopick_id', 'is', null);
-      }
-
-      const { data: metricsData, count: total } = await metricsQuery;
-
-      // Count with emopick
       let conEmopickQuery = supabase
         .from('padron')
         .select('emopick_id', { count: 'exact', head: true })
         .or('voto_emitido.is.null,voto_emitido.eq.false')
         .not('emopick_id', 'is', null);
-
-      // Apply same filters
-      if (filterLocality) {
-        conEmopickQuery = conEmopickQuery.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
-      }
-
-      if (filterMesa) {
-        const mesaNumber = parseInt(filterMesa);
-        if (!isNaN(mesaNumber)) {
-          conEmopickQuery = conEmopickQuery.eq('mesa_numero', mesaNumber);
-        }
-      }
-
-      if (filterApellido) {
-        conEmopickQuery = conEmopickQuery.ilike('apellido', `%${filterApellido}%`);
-      }
-
+      conEmopickQuery = applyBaseFiltersWithoutEmopick(conEmopickQuery);
       if (filterEmopick) {
         const emopickId = parseInt(filterEmopick);
-        if (!isNaN(emopickId)) {
-          conEmopickQuery = conEmopickQuery.eq('emopick_id', emopickId);
-        }
+        if (!isNaN(emopickId)) conEmopickQuery = conEmopickQuery.eq('emopick_id', emopickId);
       }
-
-      // Apply metric filter
-      if (filterMetricType === 'conPicks') {
-        conEmopickQuery = conEmopickQuery.not('emopick_id', 'is', null);
-      }
-
       const { count: conEmopick } = await conEmopickQuery;
 
       setMetrics({
@@ -277,16 +242,22 @@ export default function RealtimeStats() {
   };
 
   const handleApplyFilters = () => {
+    setFilterMesa(filterMesaInput);
+    setFilterEmopick(filterEmopickInput);
     setCurrentPage(1);
+    setHasUnappliedChanges(false);
   };
 
   const handleClearFilters = () => {
+    setFilterMesaInput('');
+    setFilterEmopickInput('');
     setFilterLocality('');
     setFilterMesa('');
     setFilterApellido('');
     setFilterEmopick('');
     setFilterMetricType(null);
     setCurrentPage(1);
+    setHasUnappliedChanges(false);
   };
 
   const handleMetricClick = (metricType) => {
@@ -327,7 +298,8 @@ export default function RealtimeStats() {
             <span>Filtros</span>
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
- {/*          <div>
+    {/*        
+           <div>
               <label htmlFor="filterLocality" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
               <select
                 id="filterLocality"
@@ -340,14 +312,15 @@ export default function RealtimeStats() {
                   <option key={loc} value={loc}>{loc}</option>
                 ))}
               </select>
-            </div> */}
+            </div> 
+     */}       
             <div>
               <label htmlFor="filterMesa" className="block text-sm font-medium text-gray-700 mb-1">Mesa</label>
               <input
                 id="filterMesa"
                 type="number"
-                value={filterMesa}
-                onChange={(e) => setFilterMesa(e.target.value)}
+                value={filterMesaInput}
+                onChange={(e) => { setFilterMesaInput(e.target.value); setHasUnappliedChanges(true); }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Ej: 123"
               />
@@ -367,8 +340,8 @@ export default function RealtimeStats() {
               <label htmlFor="filterEmopick" className="block text-sm font-medium text-gray-700 mb-1">Pick</label>
               <select
                 id="filterEmopick"
-                value={filterEmopick}
-                onChange={(e) => setFilterEmopick(e.target.value)}
+                value={filterEmopickInput}
+                onChange={(e) => { setFilterEmopickInput(e.target.value); setHasUnappliedChanges(true); }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Todos</option>
@@ -389,8 +362,8 @@ export default function RealtimeStats() {
             </button>
             <button
               onClick={handleApplyFilters}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={isLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !hasUnappliedChanges}
             >
               <Filter className="w-4 h-4" />
               <span>Aplicar Filtros</span>
@@ -401,20 +374,10 @@ export default function RealtimeStats() {
 
         {/* Metrics Section */}
         <div className="grid grid-cols-2 gap-4 mb-6 max-w-md mx-auto">
-          <button
-            onClick={() => handleMetricClick('all')}
-            className={`rounded-lg p-3 transition-all duration-200 text-left ${
-              filterMetricType === 'all'
-                ? 'bg-blue-100 border-2 border-blue-500 shadow-md ring-2 ring-blue-300'
-                : 'bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:shadow-sm'
-            }`}
-          >
-            <h3 className="text-sm font-semibold text-blue-900 flex items-center justify-between">
-              Total Pendientes
-              {filterMetricType === 'all' && <span className="text-blue-600">✓</span>}
-            </h3>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <h3 className="text-sm font-semibold text-blue-900">Total Pendientes</h3>
             <p className="text-xl font-bold text-blue-800">{metrics.totalPendientes}</p>
-          </button>
+          </div>
           <button
             onClick={() => handleMetricClick('conPicks')}
             className={`rounded-lg p-3 transition-all duration-200 text-left ${
@@ -424,7 +387,10 @@ export default function RealtimeStats() {
             }`}
           >
             <h3 className="text-sm font-semibold text-yellow-900 flex items-center justify-between">
-              Pendientes con picks
+              {(() => {
+                const activeEmopick = filterEmopick ? availableEmopicks.find(p => String(p.id) === String(filterEmopick)) : null;
+                return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Picks'}`;
+              })()}
               {filterMetricType === 'conPicks' && <span className="text-yellow-600">✓</span>}
             </h3>
             <p className="text-xl font-bold text-yellow-800">{metrics.pendientesConEmopick}</p>
