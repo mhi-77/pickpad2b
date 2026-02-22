@@ -304,6 +304,7 @@ export default function RealtimeStats() {
           emopick_id,
           pick_nota,
           pick_check,
+          pick_check_user,
           mesas!inner(
             numero,
             establecimientos!inner(
@@ -318,6 +319,9 @@ export default function RealtimeStats() {
           emopicks(
             id,
             display
+          ),
+          pick_check_user_profile:profiles!padron_pick_check_user_fkey(
+            full_name
           )
         `, { count: 'exact' })
         .or('voto_emitido.is.null,voto_emitido.eq.false');
@@ -798,7 +802,13 @@ export default function RealtimeStats() {
 
                     {/* Columna: Nota del pick */}
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {voter.pick_nota || '-'}
+                      {
+                        voter.pick_check && voter.pick_check_user_profile?.full_name
+                          ? `[✓: ${voter.pick_check_user_profile.full_name}]`
+                          : voter.pick_check && !voter.pick_check_user_profile
+                          ? '-'
+                          : voter.pick_nota || '-'
+                      }
                     </td>
 
                     {/* Columna: Número de mesa */}
