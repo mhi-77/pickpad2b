@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Filter, RefreshCw, User, MapPin, Hash, SquarePen, AlertCircle } from 'lucide-react';
+import { Filter, RefreshCw, User, AlertCircle } from 'lucide-react';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 import Pagination from '../shared/Pagination';
 
@@ -39,14 +39,11 @@ export default function RealtimeStats() {
   const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false);
 
   // Filter states (applied on button click)
-  const [filterLocality, setFilterLocality] = useState('');
   const [filterMesa, setFilterMesa] = useState('');
-  const [filterApellido, setFilterApellido] = useState('');
   const [filterEmopick, setFilterEmopick] = useState('');
   const [filterMetricType, setFilterMetricType] = useState(null);
 
   // Available filter options (e.g., from database)
-  const [availableLocalities, setAvailableLocalities] = useState([]);
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
 
   // Pagination states
@@ -86,19 +83,6 @@ export default function RealtimeStats() {
 
   const loadFilterOptions = async () => {
     try {
-      // Load localities
-      const { data: localities, error: localitiesError } = await supabase
-        .from('circuitos')
-        .select('localidad')
-        .not('localidad', 'is', null)
-        .order('localidad');
-
-      if (!localitiesError) {
-        const uniqueLocalities = [...new Set(localities.map(item => item.localidad))];
-        setAvailableLocalities(uniqueLocalities);
-      }
-
-      // Cargar emopicks - solo aquellos con count > 0
       const emopicks = await loadEmopicksWithCount();
       setAvailableEmopicks(emopicks || []);
     } catch (error) {
@@ -138,19 +122,11 @@ export default function RealtimeStats() {
         .or('voto_emitido.is.null,voto_emitido.eq.false');
 
       // Apply filters
-      if (filterLocality) {
-        query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
-      }
-
       if (filterMesa) {
         const mesaNumber = parseInt(filterMesa);
         if (!isNaN(mesaNumber)) {
           query = query.eq('mesa_numero', mesaNumber);
         }
-      }
-
-      if (filterApellido) {
-        query = query.ilike('apellido', `%${filterApellido}%`);
       }
 
       if (filterEmopick) {
@@ -198,15 +174,9 @@ export default function RealtimeStats() {
   const fetchMetrics = async () => {
     try {
       const applyBaseFiltersWithoutEmopick = (q) => {
-        if (filterLocality) {
-          q = q.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocality}%`);
-        }
         if (filterMesa) {
           const mesaNumber = parseInt(filterMesa);
           if (!isNaN(mesaNumber)) q = q.eq('mesa_numero', mesaNumber);
-        }
-        if (filterApellido) {
-          q = q.ilike('apellido', `%${filterApellido}%`);
         }
         return q;
       };
@@ -251,9 +221,7 @@ export default function RealtimeStats() {
   const handleClearFilters = () => {
     setFilterMesaInput('');
     setFilterEmopickInput('');
-    setFilterLocality('');
     setFilterMesa('');
-    setFilterApellido('');
     setFilterEmopick('');
     setFilterMetricType(null);
     setCurrentPage(1);
@@ -283,38 +251,22 @@ export default function RealtimeStats() {
   useEffect(() => {
     setIsLoading(true);
     fetchUnvotedVoters().finally(() => setIsLoading(false));
-  }, [currentPage, pageSize, filterLocality, filterMesa, filterApellido, filterEmopick, filterMetricType]);
+  }, [currentPage, pageSize, filterMesa, filterEmopick, filterMetricType]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Tiempo Real: Votantes Pendientes</h2>
-        <p className="text-gray-600 mb-6">Visualización de votantes que aún no han emitido su voto.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">Votantes Pendientes</h2>
+        <p className="text-gray-600 mb-4">Electorado que aún no ha emitido su voto.</p>
 
         {/* Filter Section */}
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+        <div className="bg-gray-100 p-4 rounded-lg mb-2">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center space-x-2">
             <Filter className="w-5 h-5" />
             <span>Filtros</span>
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    {/*        
-           <div>
-              <label htmlFor="filterLocality" className="block text-sm font-medium text-gray-700 mb-1">Localidad</label>
-              <select
-                id="filterLocality"
-                value={filterLocality}
-                onChange={(e) => setFilterLocality(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todas</option>
-                {availableLocalities.map(loc => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
-            </div> 
-     */}       
-            <div>
+          <div className="flex gap-2">
+            <div className="flex-1">
               <label htmlFor="filterMesa" className="block text-sm font-medium text-gray-700 mb-1">Mesa</label>
               <input
                 id="filterMesa"
@@ -325,18 +277,7 @@ export default function RealtimeStats() {
                 placeholder="Ej: 123"
               />
             </div>
-    {/*       <div>
-              <label htmlFor="filterApellido" className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-              <input
-                id="filterApellido"
-                type="text"
-                value={filterApellido}
-                onChange={(e) => setFilterApellido(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ej: García"
-              />
-            </div> */}
-            <div>
+            <div className="flex-1">
               <label htmlFor="filterEmopick" className="block text-sm font-medium text-gray-700 mb-1">Pick</label>
               <select
                 id="filterEmopick"
@@ -351,36 +292,35 @@ export default function RealtimeStats() {
               </select>
             </div>
           </div>
-          <div className="mt-6 flex space-x-3">
+          <div className="mt-4 flex gap-2">
             <button
               onClick={handleClearFilters}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
               disabled={isLoading}
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Limpiar Filtros</span>
+              <span>Limpiar</span>
             </button>
             <button
               onClick={handleApplyFilters}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading || !hasUnappliedChanges}
             >
               <Filter className="w-4 h-4" />
-              <span>Aplicar Filtros</span>
+              <span>Aplicar</span>
             </button>
- 
           </div>
         </div>
 
         {/* Metrics Section */}
-        <div className="grid grid-cols-2 gap-4 mb-6 max-w-md mx-auto">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
             <h3 className="text-sm font-semibold text-blue-900">Total Pendientes</h3>
             <p className="text-xl font-bold text-blue-800">{metrics.totalPendientes}</p>
           </div>
           <button
             onClick={() => handleMetricClick('conPicks')}
-            className={`rounded-lg p-3 transition-all duration-200 text-left ${
+            className={`rounded-lg p-2 transition-all duration-200 text-left ${
               filterMetricType === 'conPicks'
                 ? 'bg-yellow-100 border-2 border-yellow-500 shadow-md ring-2 ring-yellow-300'
                 : 'bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 hover:shadow-sm'
@@ -391,7 +331,6 @@ export default function RealtimeStats() {
                 const activeEmopick = filterEmopick ? availableEmopicks.find(p => String(p.id) === String(filterEmopick)) : null;
                 return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Picks'}`;
               })()}
-              {filterMetricType === 'conPicks' && <span className="text-yellow-600">✓</span>}
             </h3>
             <p className="text-xl font-bold text-yellow-800">{metrics.pendientesConEmopick}</p>
           </button>
@@ -420,12 +359,12 @@ export default function RealtimeStats() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Doc.</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido, Nombre</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check</th>
+                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">✓</th>
+                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
@@ -439,11 +378,11 @@ export default function RealtimeStats() {
                     <td className={`px-2 py-2 whitespace-nowrap text-sm text-gray-900 ${voter.emopick_id && !voter.pick_check ? 'font-bold' : ''}`}>
                       {voter.apellido}, {voter.nombre}
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {voter.emopicks?.display || '-'}
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-center font-bold">
+                      {voter.emopick_id && voter.pick_check && <span className="text-green-600 text-base">✓</span>}
                     </td>
-                    <td className="px-2 py-2 whitespace-nowrap text-sm text-center">
-                      {voter.emopick_id && voter.pick_check && <span className="text-green-600">✓</span>}
+                    <td className="px-2 py-2 whitespace-nowrap text-sm text-center text-gray-900">
+                      {voter.emopicks?.display || '-'}
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {voter.pick_nota || '-'}
