@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Grid3x3, UserCheck } from 'lucide-react';
+import { UserCheck, Archive } from 'lucide-react';
 import MesasView from './control/MesasView';
 import FiscalesList from './gusers/FiscalesList';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +60,7 @@ export default function ControlView() {
   };
 
   const tabs = [
-    { id: 'mesas', label: 'Mesas', icon: Grid3x3 },
+    { id: 'mesas', label: 'Mesas', icon: Archive },
     { id: 'fiscales', label: 'Fiscales', icon: UserCheck },
   ];
 

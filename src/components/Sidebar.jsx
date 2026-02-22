@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog, ClipboardList } from 'lucide-react';
+import { Search, ScreenShare, Database, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { FEATURES } from '../config/features';
 import CreditsModal from './CreditsModal';
@@ -12,8 +12,8 @@ const menuItems = [
   { id: 'fiscalizar', label: 'Fiscalizar', icon: ListChecks, maxRole: 4, disabled: false },
   { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4, disabled: !FEATURES.MESA_TESTIGO_ENABLED },
   { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3, disabled: false },
-  { id: 'stats', label: 'Estadísticas', icon: Calculator, maxRole: 3, disabled: false },
-  { id: 'control', label: 'Control', icon: ClipboardList, maxRole: 2, disabled: false },
+  { id: 'stats', label: 'Estadísticas', icon: Database, maxRole: 3, disabled: false },
+  { id: 'control', label: 'Control', icon: ScreenShare, maxRole: 2, disabled: false },
   { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2, disabled: false },
   { id: 'padrones', label: 'Padrones', icon: FileText, maxRole: 2, disabled: false },
   { id: 'settings', label: 'Configuración', icon: Settings, maxRole: 2, disabled: false },
@@ -81,9 +81,9 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
         </div>
 
         <div className="flex flex-col h-full">
-          <div className="flex-1 px-4 py-6">
+          <div className="flex-1 px-4 py-4">
             {/* Sección de información del usuario */}
-            <div className="mb-8">
+            <div className="mb-6">
               <button
                 onClick={() => {
                   if (user?.usuario_tipo && user.usuario_tipo <= 4) {
