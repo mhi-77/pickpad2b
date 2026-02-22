@@ -696,7 +696,7 @@ export default function RealtimeStats() {
               {/* Título dinámico: muestra pick específico si hay filtro activo */}
               {(() => {
                 const activeEmopick = filterEmopick ? availableEmopicks.find(p => String(p.id) === String(filterEmopick)) : null;
-                return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Picks'}`;
+                return `Pendientes con ${activeEmopick ? activeEmopick.display : 'Pick'}`;
               })()}
             </h3>
             <p className="text-xl font-bold text-yellow-800 flex items-center justify-between">
@@ -766,14 +766,21 @@ export default function RealtimeStats() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {unvotedVoters.map(voter => (
-                  <tr key={voter.documento}>
+                  <tr key={voter.documento} className={voter.emopick_id && !voter.pick_check ? 'bg-yellow-50' : ''}>
                     {/* Columna: Número de documento */}
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{voter.documento}</td>
 
                     {/* Columna: Apellido y Nombre
-                        Resaltado en negrita si tiene emopick asignado pero sin check de confirmación
+                        Negrita si tiene emopick asignado
+                        Color amarillo oscuro si tiene emopick sin confirmación
                     */}
-                    <td className={`px-2 py-2 whitespace-nowrap text-sm text-gray-900 ${voter.emopick_id && !voter.pick_check ? 'font-bold' : ''}`}>
+                    <td className={`px-2 py-2 whitespace-nowrap text-sm ${
+                      voter.emopick_id
+                        ? voter.pick_check
+                          ? 'font-bold text-gray-900'
+                          : 'font-bold text-yellow-800'
+                        : 'text-gray-900'
+                    }`}>
                       {voter.apellido}, {voter.nombre}
                     </td>
 
