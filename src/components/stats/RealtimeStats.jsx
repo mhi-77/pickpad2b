@@ -800,7 +800,7 @@ export default function RealtimeStats() {
                       {voter.emopicks?.display || '-'}
                     </td>
 
-                    {/* Columna: Nota del pick */}
+                    {/* Columna: Nota del pick - Si tiene Check de confirmación, en lugar de la nota muestra el user que lo chequeó */}
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                       {
                         voter.pick_check && voter.pick_check_user_profile?.full_name

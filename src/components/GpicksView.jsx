@@ -3,34 +3,42 @@ import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircl
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../utils/emopicksUtils';
+import Pagination from './shared/Pagination';
 
 /**
  * Componente GpicksView - Vista para mostrar votantes con emopicks asignados
- * 
+ *
  * Propósito: Permite visualizar todos los votantes que tienen un emopick asignado
- * (emopick_id no es NULL), filtrados por el usuario autenticado que los asignó.
- * 
+ * (emopick_id no es NULL), con filtros por usuario, emopick, estado de votación y verificación.
+ *
  * Funcionalidades:
  * - Carga automática de votantes con emopicks del usuario actual
- * - Muestra información completa del votante y su emopick
- * - Paginación limitada a 50 resultados
+ * - Usuarios con tipo <= 3 pueden ver picks de todos los usuarios
+ * - Paginación de 25 registros por página
+ * - Filtros avanzados (usuario, emopick, votación, verificación)
  * - Ordenamiento por emopick y apellido
  */
 export default function GpicksView() {
   // Obtener datos del usuario autenticado
   const { user } = useAuth();
-  
+
   // Estados para el manejo de datos y UI
   const [picksData, setPicksData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
+
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Estados para filtros
   const [filterVoteStatus, setFilterVoteStatus] = useState('all');
   const [filterVerified, setFilterVerified] = useState(null); // null = todos, true = verificados, false = no verificados
   const [filterEmopickId, setFilterEmopickId] = useState('');
-  const [filterAssignedByUserId, setFilterAssignedByUserId] = useState('');
+  // null = no inicializado, '' = todos los usuarios, <uuid> = usuario específico
+  const [filterAssignedByUserId, setFilterAssignedByUserId] = useState(null);
 
   // Estados para datos de los selectores
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
@@ -38,13 +46,25 @@ export default function GpicksView() {
 
   /**
    * Efecto para cargar los datos cuando el componente se monta
+   * Inicializa el filtro de usuario al usuario actual
    */
   useEffect(() => {
     if (user?.id) {
+      setFilterAssignedByUserId(user.id);
       loadFilterData();
-      fetchGpicks();
     }
   }, [user?.id]);
+
+  /**
+   * Efecto para cargar datos cuando cambian los filtros o la paginación
+   * Solo ejecuta fetchGpicks cuando filterAssignedByUserId está inicializado (no es null)
+   * Esto previene la ejecución antes de que se establezca el usuario actual
+   */
+  useEffect(() => {
+    if (user?.id && filterAssignedByUserId !== null) {
+      fetchGpicks();
+    }
+  }, [user?.id, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize]);
 
   /**
    * Carga los datos necesarios para poblar los selectores de filtros
@@ -72,11 +92,12 @@ export default function GpicksView() {
 
   /**
    * Obtiene los votantes con emopicks asignados aplicando los filtros seleccionados
+   * Implementa paginación y obtiene el conteo total
    */
-  const fetchGpicks = async (applyFilters = true) => {
+  const fetchGpicks = async () => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       let query = supabase
         .from('padron')
@@ -93,7 +114,6 @@ export default function GpicksView() {
               )
             )
           ),
-
           emopicks(
             id,
             display
@@ -104,37 +124,40 @@ export default function GpicksView() {
           pick_check_user_profile:profiles!padron_pick_check_user_fkey(
             full_name
           )
-        `)
-        .not('emopick_id', 'is', null)
-        .eq('emopick_user', user.id);
+        `, { count: 'exact' })
+        .not('emopick_id', 'is', null);
 
-      // Aplicar filtros si están activos
-      if (applyFilters) {
-        if (filterVoteStatus === 'voted') {
-          query = query.eq('voto_emitido', true);
-        } else if (filterVoteStatus === 'not_voted') {
-          query = query.eq('voto_emitido', false);
-        }
-
-        if (filterVerified !== null) {
-          query = query.eq('pick_check', filterVerified);
-        }
-
-        if (filterEmopickId) {
-          query = query.eq('emopick_id', parseInt(filterEmopickId));
-        }
-
-        if (filterAssignedByUserId) {
-          query = query.eq('emopick_user', filterAssignedByUserId);
-        }
+      // Aplicar filtros
+      if (filterVoteStatus === 'voted') {
+        query = query.eq('voto_emitido', true);
+      } else if (filterVoteStatus === 'not_voted') {
+        query = query.eq('voto_emitido', false);
       }
+
+      if (filterVerified !== null) {
+        query = query.eq('pick_check', filterVerified);
+      }
+
+      if (filterEmopickId) {
+        query = query.eq('emopick_id', parseInt(filterEmopickId));
+      }
+
+      // Aplica el filtro solo si hay un usuario específico seleccionado
+      // '' = todos los usuarios (no aplica filtro), <uuid> = filtrar por ese usuario
+      if (filterAssignedByUserId && filterAssignedByUserId !== '') {
+        query = query.eq('emopick_user', filterAssignedByUserId);
+      }
+
+      // Aplicar paginación y ordenamiento
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
 
       query = query
         .order('emopick_id', { ascending: true })
         .order('apellido', { ascending: true })
-        .limit(500);
+        .range(from, to);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('Error fetching picks:', error);
@@ -143,6 +166,7 @@ export default function GpicksView() {
       }
 
       setPicksData(data || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error during fetch:', error);
       setError('Error al cargar los picks');
@@ -152,38 +176,50 @@ export default function GpicksView() {
   };
 
   /**
-   * Aplica los filtros seleccionados
-   */
-  const handleApplyFilters = () => {
-    fetchGpicks(true);
-  };
-
-  /**
-   * Limpia todos los filtros y recarga los datos
+   * Limpia todos los filtros y vuelve al usuario actual
    */
   const handleClearFilters = () => {
     setFilterVoteStatus('all');
     setFilterVerified(null);
     setFilterEmopickId('');
-    setFilterAssignedByUserId('');
-    fetchGpicks(false);
+    setFilterAssignedByUserId(user.id);
+    setCurrentPage(1);
+  };
+
+  /**
+   * Maneja el cambio de página
+   */
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  /**
+   * Maneja el cambio de tamaño de página
+   */
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
   };
 
   /**
    * Maneja el toggle del checkbox de verificación
-   * 
+   * Registra pick_check_at con la fecha/hora actual cuando se marca el check
+   * Borra pick_check_at (null) cuando se desmarca el check
+   * Sigue el mismo patrón que voto_pick_at en FiscalizarView
+   *
    * @param {number} documento - Número de documento del votante
    * @param {boolean} newPickCheckStatus - Nuevo estado del checkbox
    */
   const handlePickCheckToggle = async (documento, newPickCheckStatus) => {
     setIsUpdating(true);
-    
+
     try {
       const { error } = await supabase
         .from('padron')
         .update({
           pick_check: newPickCheckStatus,
-          pick_check_user: newPickCheckStatus ? user.id : null
+          pick_check_user: newPickCheckStatus ? user.id : null,
+          pick_check_at: newPickCheckStatus ? new Date().toISOString() : null
         })
         .eq('documento', documento);
 
@@ -194,17 +230,18 @@ export default function GpicksView() {
       }
 
       // Actualizar datos localmente
-      const updatedPicks = picksData.map(record => 
-        record.documento === documento 
-          ? { 
-              ...record, 
+      const updatedPicks = picksData.map(record =>
+        record.documento === documento
+          ? {
+              ...record,
               pick_check: newPickCheckStatus,
               pick_check_user: newPickCheckStatus ? user.id : null,
-              pick_check_user_profile: newPickCheckStatus ? { full_name: user.name } : null
+              pick_check_user_profile: newPickCheckStatus ? { full_name: user.name } : null,
+              pick_check_at: newPickCheckStatus ? new Date().toISOString() : null
             }
           : record
       );
-      
+
       setPicksData(updatedPicks);
 
     } catch (error) {
@@ -236,15 +273,9 @@ export default function GpicksView() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Gestión de Picks</h2>
             <p className="text-gray-800 mt-1">
-              Marcados por {user.name}
+              Total de picks en base de datos: {totalCount}
             </p>
           </div>
-          {/*  <div className="flex items-center space-x-2">
-            <SquarePen className="w-6 h-6 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {picksData.length} registro{picksData.length !== 1 ? 's' : ''}
-            </span>
-          </div>*/}
         </div>
 
         {/* Estadísticas rápidas */}
@@ -253,12 +284,12 @@ export default function GpicksView() {
             <div className="flex items-center space-x-3">
               <SquarePen className="w-8 h-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold text-blue-900">{picksData.length}</p>
+                <p className="text-2xl font-bold text-blue-900">{totalCount}</p>
                 <p className="text-sm text-blue-700">Total Picks</p>
               </div>
             </div>
           </div>
-          
+
           <div className="w-48 bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-8 h-8 text-green-600" />
@@ -266,7 +297,7 @@ export default function GpicksView() {
                 <p className="text-2xl font-bold text-green-900">
                   {picksData.filter(p => p.pick_check).length}
                 </p>
-                <p className="text-sm text-green-700">Checks</p>
+                <p className="text-sm text-green-700">Checks en página</p>
               </div>
             </div>
           </div>
@@ -351,7 +382,10 @@ export default function GpicksView() {
             </label>
             <select
               value={filterAssignedByUserId}
-              onChange={(e) => setFilterAssignedByUserId(e.target.value)}
+              onChange={(e) => {
+                setFilterAssignedByUserId(e.target.value);
+                setCurrentPage(1);
+              }}
               disabled={availableUsers.length === 0}
               className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100"
             >
@@ -367,15 +401,6 @@ export default function GpicksView() {
 
         {/* Botones de acción para filtros */}
         <div className="flex space-x-3">
-          <button
-            onClick={handleApplyFilters}
-            disabled={isLoading}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Aplicar Filtros</span>
-          </button>
-          
           <button
             onClick={handleClearFilters}
             disabled={isLoading}
@@ -536,20 +561,18 @@ export default function GpicksView() {
               </tbody>
             </table>
           </div>
-          
-          {/* Footer con información de paginación */}
-          <div className="bg-gray-50 px-4 py-2 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Mostrando {picksData.length} de {picksData.length === 50 ? '50+' : picksData.length} registros
-              </div>
-              {picksData.length === 50 && (
-                <div className="text-sm text-yellow-600">
-                  ⚠️ Límite de 50 registros alcanzado
-                </div>
-              )}
-            </div>
-          </div>
+
+          {/* Paginación */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalCount / pageSize)}
+            totalItems={totalCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            pageSizeOptions={[10, 25, 50, 100]}
+            loading={isLoading}
+          />
         </div>
       )}
     </div>
