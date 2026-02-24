@@ -57,9 +57,9 @@ export default function LoginForm({ appVersion }) {
   return (
     // Contenedor principal con diseño centrado y fondo degradado
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Header del formulario con logo y título */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <button
             type="button"
             onClick={() => setShowCreditsModal(true)}
@@ -74,7 +74,7 @@ export default function LoginForm({ appVersion }) {
           <button
             type="button"
             onClick={() => setShowCreditsModal(true)}
-            className="text-2xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition-colors cursor-pointer"
+            className="text-2xl font-bold text-gray-900 mb-4 hover:text-blue-600 transition-colors cursor-pointer"
           >
             PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
           </button>
