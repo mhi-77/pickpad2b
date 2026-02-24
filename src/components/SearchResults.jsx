@@ -226,9 +226,9 @@ export default function SearchResults({
 
   // RENDERIZADO PRINCIPAL: Mostrar lista de resultados con información completa
   return (
-    <div className="bg-white rounded-xl shadow-lg p-5">
+    <div className="bg-white rounded-xl shadow-lg p-2">
       {/* Header con contador de resultados */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="text-m  text-gray-800">
           <span>
             Registros encontrados: {totalCount}
@@ -283,7 +283,7 @@ export default function SearchResults({
             {/* NIVEL 5: Indicadores de estado - Solo visible para usuarios con rol <= 3
                 Muestra: nuevo votante, voto obligatorio, y si emitió voto */}
             {userRole && userRole <= 3 && (
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-3 gap-3 mb-2">
                 {/* Indicador: Votante nuevo (primera vez en padrón) */}
                 <div className="flex items-center justify-center">
                   {record.da_es_nuevo && (
@@ -322,7 +322,7 @@ export default function SearchResults({
             {/* NIVEL 6: Clasificación emocional y acciones - Solo visible para usuarios con rol <= 3
                 Incluye: texto libre, emopick asignado, y botón para modificar */}
             {userRole && userRole <= 3 && (
-              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100">
                 {/* Columna 1: Texto libre de observaciones */}
                 <div className="text-xs text-gray-600 text-center">
                   <span className="font-medium"> </span>

@@ -12,7 +12,7 @@ import { Search, Filter, RefreshCw, User, Users, MapPin, Hash } from 'lucide-rea
  * - isLoading: boolean - Indica si se está procesando una búsqueda
  * - availableLocalities: array - Lista de localidades disponibles para el dropdown
  */
-export default function SearchForm({ onSearch, isLoading, availableLocalities = [] }) {
+export default function SearchForm({ onSearch, isLoading, availableLocalities = [], onClear }) {
   // Estado para almacenar todos los filtros de búsqueda
   const [filters, setFilters] = useState({});
   // Estado para controlar si se muestra la búsqueda avanzada o simple
@@ -30,9 +30,13 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
   /**
    * Resetea todos los filtros de búsqueda
    * Limpia el estado de filtros y lo devuelve a un objeto vacío
+   * Notifica al componente padre para que limpie los resultados
    */
   const handleReset = () => {
     setFilters({});
+    if (onClear) {
+      onClear();
+    }
   };
 
   /**
@@ -52,7 +56,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
     } else {
       // Al desactivar búsqueda avanzada, limpiar todos los campos avanzados
       setFilters(prev => {
-        const { apellido, nombre, localidad, mesa, clase, ...rest } = prev;
+        const { apellido, nombre, localidad, mesa_numero, clase, ...rest } = prev;
         return rest;
       });
     }
@@ -61,21 +65,28 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
   /**
    * Actualiza un filtro específico en el estado
    * Si el valor está vacío, elimina la propiedad del objeto de filtros
-   * 
+   *
    * @param {string} key - La clave del filtro a actualizar
    * @param {string|number} value - El nuevo valor del filtro
    */
   const updateFilter = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value || undefined
-    }));
+    setFilters(prev => {
+      const newFilters = { ...prev };
+
+      if (!value || value === '') {
+        delete newFilters[key];
+      } else {
+        newFilters[key] = value;
+      }
+
+      return newFilters;
+    });
   };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-3">
       {/* Header del formulario con título y botón para alternar modo de búsqueda */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900">Buscar en Padrón</h2>
         <button
           onClick={toggleAdvanced}
@@ -83,16 +94,16 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
         >
           <Filter className="w-5 h-5" />
           <span className="text-sm font-medium">
-            {showAdvanced ? 'Búsqueda Simple' : 'Búsqueda Avanzada'}
+            {showAdvanced ? 'Búsqueda Simple' : 'Usar Filtros'}
           </span>
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Modo de búsqueda simple - Solo campo de documento */}
         {!showAdvanced && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <div className="flex items-center space-x-2">
                 <Hash className="w-4 h-4" />
                 <span>Número de Documento</span>
@@ -110,13 +121,13 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
 
         {/* Modo de búsqueda avanzada - Múltiples campos de filtro */}
         {showAdvanced && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900">Búsqueda Avanzada</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Campo de apellido */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4" />
                     <span>Apellido</span>
@@ -133,7 +144,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
 
               {/* Campo de nombre */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4" />
                     <span>Nombre</span>
@@ -150,7 +161,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
 
               {/* Campo de localidad */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-4 h-4" />
                     <span>Localidad</span>
@@ -170,42 +181,45 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
                 </select>
               </div>
 
-              {/* Campo de número de mesa */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-4 h-4" />
-                    <span>Mesa</span>
-                  </div>
-                </label>
-                <input
-                  type="number"
-                  value={filters.mesa_numero || ''}
-                  onChange={(e) => updateFilter('mesa_numero', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  placeholder="Número de mesa"
-                />
-              </div>
+              {/* Campos de Mesa y Clase en una sola fila */}
+              <div className="grid grid-cols-2 gap-3 md:col-span-2 lg:col-span-3">
+                {/* Campo de número de mesa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <div className="flex items-center space-x-2">
+                      <Users className="w-4 h-4" />
+                      <span>Mesa</span>
+                    </div>
+                  </label>
+                  <input
+                    type="number"
+                    value={filters.mesa_numero || ''}
+                    onChange={(e) => updateFilter('mesa_numero', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="N° de mesa"
+                  />
+                </div>
 
-              {/* Campo de clase (año de nacimiento) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Clase (Año)
-                </label>
-                <input
-                  type="number"
-                  value={filters.clase || ''}
-                  onChange={(e) => updateFilter('clase', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                  placeholder="Año de nacimiento"
-                />
+                {/* Campo de clase (año de nacimiento) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Clase (Año)
+                  </label>
+                  <input
+                    type="number"
+                    value={filters.clase || ''}
+                    onChange={(e) => updateFilter('clase', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Ej: 1977"
+                  />
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Botones de acción - Limpiar y Buscar */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {/* Botón para limpiar todos los filtros */}
           <button
             type="button"
