@@ -334,7 +334,7 @@ export default function Dashboard({ appVersion }) {
     switch (activeView) {
       case 'search':
         return (
-          <div className="space-y-10">
+          <div className="space-y-5">
             <SearchForm
               onSearch={handleSearch}
               isLoading={isSearching}
