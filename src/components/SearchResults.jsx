@@ -296,11 +296,11 @@ export default function SearchResults({
                 {/* Indicador: Estado del voto obligatorio */}
                 <div className="flex items-center justify-center">
                   {record.da_voto_obligatorio === false ? (
-                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
                       <span>NO.OBLIGADO</span>
                     </span>
                   ) : record.da_voto_obligatorio === true ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                       <span>OBLIGATORIO</span>
                     </span>
                   ) : null}
@@ -312,7 +312,7 @@ export default function SearchResults({
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {record.voto_emitido ? 'Votó' : 'No.votó'}
+                      {record.voto_emitido ? 'Votó' : 'No.Votó'}
                     </span>
                   )}
                 </div>
