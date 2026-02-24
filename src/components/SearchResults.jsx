@@ -241,17 +241,17 @@ export default function SearchResults({
         {localResults.map((record) => (
           <div
             key={record.documento}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+            className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow duration-200"
           >
             {/* NIVEL 1: Identificación principal - Apellido y Nombre */}
-            <div className="mb-3">
+            <div className="mb-2">
               <h4 className="text-lg font-semibold text-gray-900">
                 {record.apellido}, {record.nombre}
               </h4>
             </div>
 
             {/* NIVEL 2: Ubicación - Domicilio del votante */}
-            <div className="mb-3">
+            <div className="mb-2">
               <div className="flex items-center space-x-2 text-gray-600">
                 <MapPin className="w-4 h-4" />
                 <span>{record.domicilio || 'No especificado'}</span>
@@ -259,7 +259,7 @@ export default function SearchResults({
             </div>
 
             {/* NIVEL 3: Identificación documental - Documento y Clase */}
-            <div className="grid grid-cols-2 gap-4 mb-3">
+            <div className="grid grid-cols-2 gap-3 mb-2">
               <div className="flex items-center space-x-1 font-medium text-gray-600">
                 <Hash className="w-4 h-4" />
                 <span>{formatNumber(record.documento)}</span>
@@ -270,7 +270,7 @@ export default function SearchResults({
             </div>
 
             {/* NIVEL 4: Información electoral - Mesa y Localidad */}
-            <div className="grid grid-cols-2 gap-4 mb-3">
+            <div className="grid grid-cols-2 gap-3 mb-2">
               <div className="flex items-center space-x-2 font-medium text-gray-600">
                 <Users className="w-4 h-4" />
                 <span>Mesa: {record.mesa_numero || '---'}</span>
@@ -283,7 +283,7 @@ export default function SearchResults({
             {/* NIVEL 5: Indicadores de estado - Solo visible para usuarios con rol <= 3
                 Muestra: nuevo votante, voto obligatorio, y si emitió voto */}
             {userRole && userRole <= 3 && (
-              <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="grid grid-cols-3 gap-3 mb-3">
                 {/* Indicador: Votante nuevo (primera vez en padrón) */}
                 <div className="flex items-center justify-center">
                   {record.da_es_nuevo && (
@@ -322,7 +322,7 @@ export default function SearchResults({
             {/* NIVEL 6: Clasificación emocional y acciones - Solo visible para usuarios con rol <= 3
                 Incluye: texto libre, emopick asignado, y botón para modificar */}
             {userRole && userRole <= 3 && (
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
                 {/* Columna 1: Texto libre de observaciones */}
                 <div className="text-xs text-gray-600 text-center">
                   <span className="font-medium"> </span>
