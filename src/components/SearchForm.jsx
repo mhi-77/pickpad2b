@@ -219,7 +219,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
         )}
 
         {/* Botones de acción - Limpiar y Buscar */}
-        <div className="flex flex-wrap gap-2">
+        <div className={`flex flex-wrap gap-2 ${showAdvanced ? 'pl-3' : ''}`}>
           {/* Botón para limpiar todos los filtros */}
           <button
             type="button"
