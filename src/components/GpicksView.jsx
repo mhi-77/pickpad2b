@@ -473,7 +473,7 @@ export default function GpicksView() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {picksData.map((record) => (
-                  <tr key={record.documento} className={` ${record.pick_check ? 'bg-gray-200' : ''}`}>
+                  <tr key={record.documento} className={` ${record.pick_check ? 'bg-gray-100' : ''}`}>
                     <td colSpan={5} className="px-4 py-2">
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-x-2 gap-y-1 items-center text-sm"
                            style={{gridTemplateColumns: '85px 1fr 1fr 1fr 90px'}}>
