@@ -317,7 +317,7 @@ export default function GpicksView() {
       </div>
       
       {/* Panel de filtros */}
-      <div className="bg-white rounded-xl shadow-lg p-4">
+      <div className="bg-white rounded-xl shadow-lg p-3">
         <div className="flex items-center space-x-2 mb-4">
           <Filter className="w-5 h-5 text-gray-600" />
           <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
@@ -408,7 +408,7 @@ export default function GpicksView() {
               <button
                 onClick={handleClearFilters}
                 disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+                className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Limpiar Filtros</span>
