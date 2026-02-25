@@ -522,16 +522,6 @@ export default function GpicksView() {
                           <span className="text-ms text-gray-800">Check</span>
                         </div>
                         <div>
-                          <span className="italic text-gray-900">
-                            {record.pick_nota || '-'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="justify-center text-xs text-gray-700">
-                           ({record.emopick_user_profile?.full_name || 'N/A'})
-                          </span>
-                        </div>
-                        <div>
                           {record.pick_check_user_profile?.full_name ? (
                             <span className="inline-flex items-center px-1 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               <CheckCircle className="w-3 h-3 mr-1" />
@@ -540,6 +530,16 @@ export default function GpicksView() {
                           ) : (
                             <span className="text-xs text-gray-400">Sin verificar</span>
                           )}
+                        </div>
+                        <div>
+                          <span className="italic text-gray-900">
+                            {record.pick_nota || '-'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="justify-center text-xs text-gray-700">
+                           ({record.emopick_user_profile?.full_name || 'N/A'})
+                          </span>
                         </div>
                         <div className="flex items-center justify-center">
                           {record.voto_emitido !== null && (
