@@ -323,59 +323,43 @@ export default function GpicksView() {
           <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {/* Filtro por estado de votación */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado de Votación
-            </label>
-            <select
-              value={filterVoteStatus}
-              onChange={(e) => setFilterVoteStatus(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="all">Todos</option>
-              <option value="voted">Votaron</option>
-              <option value="not_voted">No Votaron</option>
-            </select>
+        <div className="space-y-4">
+          {/* Línea 1: Estado de Votación y Check de acciones */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Filtro por estado de votación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Votación
+              </label>
+              <select
+                value={filterVoteStatus}
+                onChange={(e) => setFilterVoteStatus(e.target.value)}
+                className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="all">Todos</option>
+                <option value="voted">Votaron</option>
+                <option value="not_voted">No Votaron</option>
+              </select>
+            </div>
+
+            {/* Filtro por estado de verificación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check de acciones
+              </label>
+              <select
+                value={filterVerified === null ? '' : filterVerified.toString()}
+                onChange={(e) => setFilterVerified(e.target.value === '' ? null : e.target.value === 'true')}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="">Todos</option>
+                <option value="true">Atendidos</option>
+                <option value="false">Sin gestión</option>
+              </select>
+            </div>
           </div>
 
-          {/* Filtro por estado de verificación */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Check de acciones
-            </label>
-            <select
-              value={filterVerified === null ? '' : filterVerified.toString()}
-              onChange={(e) => setFilterVerified(e.target.value === '' ? null : e.target.value === 'true')}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="">Todos</option>
-              <option value="true">Atendidos</option>
-              <option value="false">Sin gestión</option>
-            </select>
-          </div>
-
-          {/* Filtro por tipo de emopick */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Pick
-            </label>
-            <select
-              value={filterEmopickId}
-              onChange={(e) => setFilterEmopickId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            >
-              <option value="">Todos los picks</option>
-              {availableEmopicks.map((emopick) => (
-                <option key={emopick.id} value={emopick.id}>
-                  {formatEmopickDisplay(emopick.display, emopick.count)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Filtro por usuario que asignó */}
+          {/* Línea 2: Marcados por (ancho completo) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Marcados por
@@ -397,18 +381,40 @@ export default function GpicksView() {
               ))}
             </select>
           </div>
-        </div>
 
-        {/* Botones de acción para filtros */}
-        <div className="flex space-x-3">
-          <button
-            onClick={handleClearFilters}
-            disabled={isLoading}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Limpiar Filtros</span>
-          </button>
+          {/* Línea 3: Tipo de Pick y botón Limpiar Filtros */}
+          <div className="grid grid-cols-2 gap-3 items-end">
+            {/* Filtro por tipo de emopick */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Pick
+              </label>
+              <select
+                value={filterEmopickId}
+                onChange={(e) => setFilterEmopickId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="">Todos los picks</option>
+                {availableEmopicks.map((emopick) => (
+                  <option key={emopick.id} value={emopick.id}>
+                    {formatEmopickDisplay(emopick.display, emopick.count)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Botón de limpiar filtros */}
+            <div>
+              <button
+                onClick={handleClearFilters}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Limpiar Filtros</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
