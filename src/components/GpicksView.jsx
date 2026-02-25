@@ -279,8 +279,8 @@ export default function GpicksView() {
         </div>
 
         {/* Estadísticas rápidas */}
-        <div className="flex space-x-4 mb-3">
-          <div className="w-48 bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="flex space-x-4 mb-2">
+          <div className="w-48 bg-blue-50 border border-blue-200 rounded-lg p-2">
             <div className="flex items-center space-x-3">
               <SquarePen className="w-8 h-8 text-blue-600" />
               <div>
@@ -290,14 +290,14 @@ export default function GpicksView() {
             </div>
           </div>
 
-          <div className="w-48 bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="w-48 bg-green-50 border border-green-200 rounded-lg p-2">
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-8 h-8 text-green-600" />
               <div>
                 <p className="text-2xl font-bold text-green-900">
                   {picksData.filter(p => p.pick_check).length}
                 </p>
-                <p className="text-sm text-green-700">Checks en página</p>
+                <p className="text-sm text-green-700">Checks</p>
               </div>
             </div>
           </div>
@@ -324,42 +324,7 @@ export default function GpicksView() {
         </div>
         
         <div className="space-y-4">
-          {/* Línea 1: Estado de Votación y Check de acciones */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Filtro por estado de votación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado de Votación
-              </label>
-              <select
-                value={filterVoteStatus}
-                onChange={(e) => setFilterVoteStatus(e.target.value)}
-                className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="all">Todos</option>
-                <option value="voted">Votaron</option>
-                <option value="not_voted">No Votaron</option>
-              </select>
-            </div>
-
-            {/* Filtro por estado de verificación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Check de acciones
-              </label>
-              <select
-                value={filterVerified === null ? '' : filterVerified.toString()}
-                onChange={(e) => setFilterVerified(e.target.value === '' ? null : e.target.value === 'true')}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="">Todos</option>
-                <option value="true">Atendidos</option>
-                <option value="false">Sin gestión</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Línea 2: Marcados por (ancho completo) */}
+          {/* Línea 1: Marcados por (ancho completo) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Marcados por
@@ -382,24 +347,59 @@ export default function GpicksView() {
             </select>
           </div>
 
-          {/* Línea 3: Tipo de Pick y botón Limpiar Filtros */}
-          <div className="grid grid-cols-2 gap-3 items-end">
+          {/* Línea 2: Estado de Votación y Tipo de Pick */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Filtro por estado de votación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Votación
+              </label>
+              <select
+                value={filterVoteStatus}
+                onChange={(e) => setFilterVoteStatus(e.target.value)}
+                className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="all">Todos</option>
+                <option value="voted">Votaron</option>
+                <option value="not_voted">No Votaron</option>
+              </select>
+            </div>
+
             {/* Filtro por tipo de emopick */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Pick
+                Pick usado
               </label>
               <select
                 value={filterEmopickId}
                 onChange={(e) => setFilterEmopickId(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
-                <option value="">Todos los picks</option>
+                <option value="">Todos</option>
                 {availableEmopicks.map((emopick) => (
                   <option key={emopick.id} value={emopick.id}>
                     {formatEmopickDisplay(emopick.display, emopick.count)}
                   </option>
                 ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Línea 3: Check de gestión y botón Limpiar Filtros */}
+          <div className="grid grid-cols-2 gap-3 items-end">
+            {/* Filtro por estado de verificación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check de gestión
+              </label>
+              <select
+                value={filterVerified === null ? '' : filterVerified.toString()}
+                onChange={(e) => setFilterVerified(e.target.value === '' ? null : e.target.value === 'true')}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="">Todos</option>
+                <option value="true">Gestionados</option>
+                <option value="false">Sin gestión</option>
               </select>
             </div>
 
