@@ -271,9 +271,9 @@ export default function GpicksView() {
       <div className="bg-white rounded-xl shadow-lg p-2">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Gestión de Picks</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Gestión de Picks & Checks</h2>
             <p className="text-gray-800 mt-1">
-              Total de picks en base de datos: {totalCount}
+              Administra los picks asignados
             </p>
           </div>
         </div>
@@ -285,7 +285,7 @@ export default function GpicksView() {
               <SquarePen className="w-8 h-8 text-blue-600" />
               <div>
                 <p className="text-2xl font-bold text-blue-900">{totalCount}</p>
-                <p className="text-sm text-blue-700">Total Picks</p>
+                <p className="text-sm text-blue-700">Pick(s)</p>
               </div>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function GpicksView() {
                 <p className="text-2xl font-bold text-green-900">
                   {picksData.filter(p => p.pick_check).length}
                 </p>
-                <p className="text-sm text-green-700">Checks</p>
+                <p className="text-sm text-green-700">Check(s)</p>
               </div>
             </div>
           </div>
@@ -318,7 +318,7 @@ export default function GpicksView() {
       
       {/* Panel de filtros */}
       <div className="bg-white rounded-xl shadow-lg p-3">
-        <div className="flex items-center space-x-2 mb-4">
+        <div className="flex items-center space-x-2 mb-2">
           <Filter className="w-5 h-5 text-gray-600" />
           <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
         </div>
@@ -347,28 +347,12 @@ export default function GpicksView() {
             </select>
           </div>
 
-          {/* Línea 2: Estado de Votación y Tipo de Pick */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Filtro por estado de votación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado de Votación
-              </label>
-              <select
-                value={filterVoteStatus}
-                onChange={(e) => setFilterVoteStatus(e.target.value)}
-                className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="all">Todos</option>
-                <option value="voted">Votaron</option>
-                <option value="not_voted">No Votaron</option>
-              </select>
-            </div>
-
+          {/* Línea 2: Tipo de Pick y Estado de Votación*/}
+          <div className="grid grid-cols-2 gap-3">    
             {/* Filtro por tipo de emopick */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pick usado
+                Pick
               </label>
               <select
                 value={filterEmopickId}
@@ -383,6 +367,22 @@ export default function GpicksView() {
                 ))}
               </select>
             </div>
+            
+            {/* Filtro por estado de votación */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Votación
+              </label>
+              <select
+                value={filterVoteStatus}
+                onChange={(e) => setFilterVoteStatus(e.target.value)}
+                className="w-full px-2 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              >
+                <option value="all">Todos</option>
+                <option value="voted">Votó</option>
+                <option value="not_voted">No Votó</option>
+              </select>
+            </div>
           </div>
 
           {/* Línea 3: Check de gestión y botón Limpiar Filtros */}
@@ -390,7 +390,7 @@ export default function GpicksView() {
             {/* Filtro por estado de verificación */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Check de gestión
+                Check
               </label>
               <select
                 value={filterVerified === null ? '' : filterVerified.toString()}
@@ -398,8 +398,8 @@ export default function GpicksView() {
                 className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="">Todos</option>
-                <option value="true">Gestionados</option>
-                <option value="false">Sin gestión</option>
+                <option value="true">✓ Verificado</option>
+                <option value="false">X Pendiente</option>
               </select>
             </div>
 
@@ -461,7 +461,7 @@ export default function GpicksView() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Estado
+                    Pick
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Votante
