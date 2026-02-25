@@ -6,6 +6,33 @@ import { loadEmopicksWithCount, formatEmopickDisplay } from '../utils/emopicksUt
 import Pagination from './shared/Pagination';
 
 /**
+ * Formatea un timestamp a formato "DD/MM HH:mm" o solo "HH:mm" si es hoy
+ * @param {string} timestamp - Timestamp en formato ISO
+ * @returns {string} Fecha formateada
+ */
+const formatPickCheckDateTime = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const today = new Date();
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  // Comparar si es el mismo día
+  const isToday = date.getDate() === today.getDate() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getFullYear() === today.getFullYear();
+
+  if (isToday) {
+    return `${hours}:${minutes}`;
+  }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+};
+
+/**
  * Componente GpicksView - Vista para mostrar votantes con emopicks asignados
  *
  * Propósito: Permite visualizar todos los votantes que tienen un emopick asignado
@@ -123,7 +150,8 @@ export default function GpicksView() {
           ),
           pick_check_user_profile:profiles!padron_pick_check_user_fkey(
             full_name
-          )
+          ),
+          pick_check_at
         `, { count: 'exact' })
         .not('emopick_id', 'is', null);
 
@@ -479,10 +507,10 @@ export default function GpicksView() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {picksData.map((record) => (
-                  <tr key={record.documento} className={` ${record.pick_check ? 'bg-gray-100' : ''}`}>
+                  <tr key={record.documento} className={` ${record.pick_check || record.voto_emitido ? 'bg-gray-100' : ''}`}>
                     <td colSpan={5} className="px-4 py-2">
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-x-2 gap-y-1 items-center text-sm"
-                           style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 80px'}}>
+                           style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
                           <span className="px-1 py-1 bg-yellow-100 rounded-full text-xl">
@@ -505,7 +533,7 @@ export default function GpicksView() {
                           </span>
                         </div>
                         <div>
-                          <span className="flex items-center justify-center text-xs font-medium text-gray-900">
+                          <span className="flex items-center justify-center  text-gray-700">
                             {record.documento}
                           </span>
                         </div>
@@ -517,22 +545,23 @@ export default function GpicksView() {
                             checked={record.pick_check || false}
                             onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked)}
                             disabled={isUpdating}
-                            className="w-4 h-4 accent-green-200 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                            className="w-4 h-4 accent-green-100 bg-gray-100 border-gray-300 rounded focus:ring-green-800 focus:ring-2"
                           />
-                          <span className="text-ms text-gray-800">Check</span>
+                          <span className="text-xs text-gray-800">Check</span>
                         </div>
                         <div>
                           {record.pick_check_user_profile?.full_name ? (
-                            <span className="inline-flex items-center px-1 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex  px-1 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {record.pick_check_user_profile.full_name}
+                              {record.pick_check_at && ` - ${formatPickCheckDateTime(record.pick_check_at)}`}
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-400">Sin verificar</span>
+                            <span className="text-xs text-gray-500">- Sin verificar -</span>
                           )}
                         </div>
                         <div>
-                          <span className="italic text-gray-900">
+                          <span className="italic text-gray-800">
                             {record.pick_nota || '-'}
                           </span>
                         </div>
@@ -548,12 +577,12 @@ export default function GpicksView() {
                             }`}>
                               {record.voto_emitido ? (
                                 <span className="flex items-center space-x-1">
-                                  <CheckCircle className="w-3 h-3" />
+                                  <CheckCircle className="w-4 h-4" />
                                   <span>Votó</span>
                                 </span>
                               ) : (
                                 <span className="flex items-center space-x-1">
-                                  <XCircle className="w-3 h-3" />
+                                  <XCircle className="w-4 h-4" />
                                   <span>No votó</span>
                                 </span>
                               )}
