@@ -50,13 +50,16 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
           <button 
             onClick={onCancel}
+            aria-label="Cancelar y volver a la aplicación"   // ✅ Fix #1
             style={{
                   padding: '10px 20px',
                   backgroundColor: '#0066ff',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  minHeight: '48px',   // ✅ Fix #2: área táctil mínima
+                  minWidth: '48px'
                 }}
           >
             Cancelar
@@ -75,7 +78,8 @@ function AppContent({ appVersion }) {
   const { showModal, handleConfirmExit, handleCancelExit } = useBackButton();
   
   return (
-    <>
+    // ✅ Fix #3: <main> como punto de referencia principal
+    <main>
       {user ? <Dashboard appVersion={appVersion} /> : <LoginForm appVersion={appVersion} />}
       
       {/* Modal de confirmación para salir */}
@@ -85,14 +89,15 @@ function AppContent({ appVersion }) {
           onCancel={handleCancelExit} 
         />
       )}
-    </>
+    </main>
   );
 }
 
 function App() {
   return (
     <AuthProvider>
-      <div className="font-sans antialiased">
+      {/* ✅ Fix #3: role="main" como respaldo para lectores de pantalla antiguos */}
+      <div className="font-sans antialiased" role="main">
         <AppContent appVersion={packageJson.version} />
       </div>
     </AuthProvider>
