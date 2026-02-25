@@ -457,7 +457,7 @@ export default function GpicksView() {
       ) : (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full" style={{minWidth: '650px'}}>
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -482,7 +482,7 @@ export default function GpicksView() {
                   <tr key={record.documento} className={` ${record.pick_check ? 'bg-gray-100' : ''}`}>
                     <td colSpan={5} className="px-4 py-2">
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-x-2 gap-y-1 items-center text-sm"
-                           style={{gridTemplateColumns: '85px 1fr 1fr 1fr 90px'}}>
+                           style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 80px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
                           <span className="px-1 py-1 bg-yellow-100 rounded-full text-xl">
