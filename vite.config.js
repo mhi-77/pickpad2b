@@ -96,10 +96,6 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
-
-  optimizeDeps: {
     // lucide-react se excluye de la optimización de dependencias de Vite
     // para evitar problemas de compatibilidad con su sistema de íconos
     exclude: ['lucide-react'],

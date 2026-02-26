@@ -53,12 +53,12 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             <div>
               <p className="text-sm font-medium text-gray-500">Sitio Web</p>
               <a
-                href="https://www.mehavasidean.com.ar"
+                href="https://www.mihavasideon.com.ar"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-base text-blue-600 hover:text-blue-800 hover:underline transition-colors"
               >
-                www.mihavasideon.com
+                www.mihavasideon.com.ar
               </a>
             </div>
 
