@@ -545,7 +545,7 @@ export default function GpicksView() {
                             checked={record.pick_check || false}
                             onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked)}
                             disabled={isUpdating}
-                            className="w-4 h-4 accent-green-100 bg-gray-100 border-gray-300 rounded focus:ring-green-800 focus:ring-2"
+                            className="w-4 h-4 accent-yellow-100 bg-gray-100 border-gray-300 rounded focus:ring-green-800 focus:ring-2"
                           />
                           <span className="text-xs text-gray-800">Check</span>
                         </div>
