@@ -4,6 +4,8 @@ import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import useBackButton from './hooks/useBackButton';
 import packageJson from '../package.json';
+import { useInstallPWA } from './hooks/useInstallPWA';
+import InstallPWAModal from './components/InstallPWAModal';
 
 /**
  * Componente App - Raíz de la aplicación electoral
@@ -17,6 +19,7 @@ import packageJson from '../package.json';
  * - Implementa modal de confirmación para salida de la aplicación
  * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo
  * - Pasa la versión de la aplicación desde package.json
+ * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
 
 /**
@@ -48,47 +51,70 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
         <h2><strong>SALIR DE LA APLICACIÓN</strong></h2>
         <p>Vuelva a presionar ATRAS para cerrar sesión y salir</p>
         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-          <button 
+          <button
             onClick={onCancel}
-            aria-label="Cancelar y volver a la aplicación"   // ✅ Fix #1
+            aria-label="Cancelar y volver a la aplicación"
             style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#0066ff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  minHeight: '48px',   // ✅ Fix #2: área táctil mínima
-                  minWidth: '48px'
-                }}
+              padding: '10px 20px',
+              backgroundColor: '#0066ff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              minHeight: '48px',
+              minWidth: '48px'
+            }}
           >
             Cancelar
           </button>
-          
         </div>
       </div>
     </div>
   );
 }
 
+/**
+ * Componente AppContent
+ *
+ * Propósito: Gestiona la lógica de renderizado condicional según autenticación
+ * y coordina los tres modales de la app (salida, instalación PWA).
+ *
+ * Props:
+ * - appVersion {string} → versión de la app leída desde package.json
+ */
 function AppContent({ appVersion }) {
   const { user } = useAuth();
-  
-  // Usa el hook corregido
   const { showModal, handleConfirmExit, handleCancelExit } = useBackButton();
-  
+
+  // Desestructura el hook renombrando para evitar colisión con otros estados:
+  // - installOpen  → controla si el modal de instalación está visible
+  // - openInstall  → función para abrirlo manualmente (se pasa al LoginForm)
+  // - closeInstall → función para cerrarlo (la usa el propio modal al confirmar/cancelar)
+  const { isOpen: installOpen, openModal: openInstall, closeModal: closeInstall } = useInstallPWA();
+
   return (
-    // ✅ Fix #3: <main> como punto de referencia principal
+    // Punto de referencia principal para accesibilidad (lectores de pantalla)
     <main>
-      {user ? <Dashboard appVersion={appVersion} /> : <LoginForm appVersion={appVersion} />}
-      
-      {/* Modal de confirmación para salir */}
+      {user
+        // Si está autenticado muestra el Dashboard
+        ? <Dashboard appVersion={appVersion} />
+        // Si no está autenticado muestra el Login y le pasa openInstall
+        // para que pueda abrir el modal desde el botón "Instalá PickPad"
+        : <LoginForm appVersion={appVersion} onInstallClick={openInstall} />
+      }
+
+      {/* Modal de confirmación de salida (botón atrás del dispositivo) */}
       {showModal && (
-        <ExitConfirmationModal 
-          onConfirm={handleConfirmExit} 
-          onCancel={handleCancelExit} 
+        <ExitConfirmationModal
+          onConfirm={handleConfirmExit}
+          onCancel={handleCancelExit}
         />
       )}
+
+      {/* Modal de instrucciones de instalación PWA
+          - Se activa automáticamente en el primer acceso (via useInstallPWA)
+          - Se activa manualmente cuando el usuario toca el botón en LoginForm */}
+      <InstallPWAModal isOpen={installOpen} onClose={closeInstall} />
     </main>
   );
 }
@@ -96,8 +122,7 @@ function AppContent({ appVersion }) {
 function App() {
   return (
     <AuthProvider>
-      {/* ✅ Fix #3: role="main" como respaldo para lectores de pantalla antiguos */}
-      <div className="font-sans antialiased" role="main">
+      <div className="font-sans antialiased">
         <AppContent appVersion={packageJson.version} />
       </div>
     </AuthProvider>
