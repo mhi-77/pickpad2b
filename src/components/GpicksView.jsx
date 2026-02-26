@@ -294,7 +294,7 @@ export default function GpicksView() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg p-2">
         <div className="flex items-center justify-between mb-3">
@@ -306,14 +306,14 @@ export default function GpicksView() {
           </div>
         </div>
 
-        {/* Estadísticas rápidas */}
+        {/* Estadísticas rápidas 600 600 y 900*/}
         <div className="flex space-x-4 mb-2">
-          <div className="w-48 bg-blue-50 border border-blue-200 rounded-lg p-2">
+          <div className="w-48 bg-yellow-50 border border-yellow-200 rounded-lg p-2">
             <div className="flex items-center space-x-3">
-              <SquarePen className="w-8 h-8 text-blue-600" />
+              <SquarePen className="w-8 h-8 text-yellow-600" />
               <div>
-                <p className="text-2xl font-bold text-blue-900">{totalCount}</p>
-                <p className="text-sm text-blue-700">Pick(s)</p>
+                <p className="text-2xl font-bold text-yellow-800">{totalCount}</p>
+                <p className="text-sm text-yellow-700">Pick(s)</p>
               </div>
             </div>
           </div>
@@ -322,7 +322,7 @@ export default function GpicksView() {
             <div className="flex items-center space-x-3">
               <CheckCircle className="w-8 h-8 text-green-600" />
               <div>
-                <p className="text-2xl font-bold text-green-900">
+                <p className="text-2xl font-bold text-green-800">
                   {picksData.filter(p => p.pick_check).length}
                 </p>
                 <p className="text-sm text-green-700">Check(s)</p>
@@ -485,23 +485,44 @@ export default function GpicksView() {
       ) : (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full" style={{minWidth: '650px'}}>
-              <thead className="bg-gray-50">
+            <table className="w-full" style={{minWidth: '670px'}}>
+              <thead className="bg-gray-300">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Pick
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Votante
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Localidad
-                  </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Domicilio
-                  </th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Documento
+                  <th colSpan={5} className="px-4 py-2">
+                    <div className="grid gap-x-2 gap-y-1 items-center text-xs"
+                         style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
+                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                        Pick
+                      </div>
+                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                        Votante
+                      </div>
+                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                        Localidad
+                      </div>
+                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                        Domicilio
+                      </div>
+                      <div className="font-bold text-gray-900 uppercase tracking-wider text-center">
+                        Documento
+                      </div>
+
+                      <div className="font-medium text-gray-600 uppercase tracking-wider text-left">
+                        Check
+                      </div>
+                      <div className="font-medium text-gray-600 uppercase tracking-wider text-left">
+                        Verificado por
+                      </div>
+                      <div className="font-medium text-gray-600 uppercase tracking-wider text-left">
+                        Nota
+                      </div>
+                      <div className="font-medium text-gray-600 uppercase tracking-wider text-left">
+                        Marcado por
+                      </div>
+                      <div className="font-medium text-gray-600 uppercase tracking-wider text-center">
+                        Estado
+                      </div>
+                    </div>
                   </th>
                 </tr>
               </thead>
@@ -509,7 +530,7 @@ export default function GpicksView() {
                 {picksData.map((record) => (
                   <tr key={record.documento} className={` ${record.pick_check || record.voto_emitido ? 'bg-gray-100' : ''}`}>
                     <td colSpan={5} className="px-4 py-2">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-x-2 gap-y-1 items-center text-sm"
+                      <div className="grid gap-x-2 gap-y-1 items-center text-sm"
                            style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
@@ -523,7 +544,7 @@ export default function GpicksView() {
                           </span>
                         </div>
                         <div>
-                          <span className="justify-center text-xs text-gray-700">
+                          <span className="text-xs text-gray-700">
                             {record.mesas?.establecimientos?.circuitos?.localidad || 'No especificada'}
                           </span>
                         </div>
@@ -533,7 +554,7 @@ export default function GpicksView() {
                           </span>
                         </div>
                         <div>
-                          <span className="flex items-center justify-center  text-gray-700">
+                          <span className="flex items-center justify-center text-gray-700">
                             {record.documento}
                           </span>
                         </div>
@@ -551,23 +572,25 @@ export default function GpicksView() {
                         </div>
                         <div>
                           {record.pick_check_user_profile?.full_name ? (
-                            <span className="inline-flex  px-1 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-1 py-1 rounded-full text-xs bg-green-100 text-green-900">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {record.pick_check_user_profile.full_name}
                               {record.pick_check_at && ` - ${formatPickCheckDateTime(record.pick_check_at)}`}
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-500">- Sin verificar -</span>
+                            <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs border border-gray-300 text-gray-500">
+                              - Sin verificar -</span>
                           )}
                         </div>
                         <div>
-                          <span className="italic text-gray-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-50 text-yellow-700 tracking-wider italic">
                             {record.pick_nota || '-'}
                           </span>
                         </div>
                         <div>
-                          <span className="justify-center text-xs text-gray-700">
-                           ({record.emopick_user_profile?.full_name || 'N/A'})
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs border border-gray-300 text-gray-700">
+                            <SquarePen className="w-3 h-3 mr-1" />
+                            {record.emopick_user_profile?.full_name || 'N/A'}
                           </span>
                         </div>
                         <div className="flex items-center justify-center">
