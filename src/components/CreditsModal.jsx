@@ -47,13 +47,13 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
           <div className="space-y-2 text-gray-700">
             <div>
               <p className="text-sm font-medium text-gray-500">Contacto</p>
-              <p className="text-base">contacto@mihavasideon.com</p>
+              <p className="text-base">mail@mihavasideon.com</p>
             </div>
 
             <div>
               <p className="text-sm font-medium text-gray-500">Sitio Web</p>
               <a
-                href="https://www.mehavasidean.com"
+                href="https://www.mehavasidean.com.ar"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-base text-blue-600 hover:text-blue-800 hover:underline transition-colors"
