@@ -19,7 +19,7 @@ export default defineConfig({
       manifest: {
         name: 'PickPad - Gestión Electoral Digital', // nombre completo (ej: splash screen)
         short_name: 'PickPad',                       // nombre corto bajo el ícono
-        description: 'Gestión Electoral Digital',
+        description: 'Gestión y fiscalización pick & check de padrones electorales',
         theme_color: '#2563EA',      // color de la barra de estado del sistema operativo
         background_color: '#2563EA', // color de fondo del splash screen al abrir la app
         display: 'standalone',       // oculta la barra del navegador (se ve como app nativa)
@@ -30,22 +30,25 @@ export default defineConfig({
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             // 'maskable': permite que Android recorte el ícono en formas adaptables
             // (círculo, squircle, etc.) según el launcher del dispositivo
-            src: 'pwa-512x512.png',
+            src: 'pwa-512x512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'maskable'
           }
         ]
+        
       },
 
       // Workbox: biblioteca que gestiona el Service Worker y las estrategias de caché
@@ -91,7 +94,7 @@ export default defineConfig({
       }
     }
   },
-  
+
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
