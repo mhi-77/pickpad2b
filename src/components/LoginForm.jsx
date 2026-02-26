@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff, AlertCircle, CheckCheck } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle, CheckCheck, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import logoImage from '../pblanca.png';
 import CreditsModal from './CreditsModal';
@@ -13,7 +13,7 @@ import CreditsModal from './CreditsModal';
  * Props:
  * - appVersion: string - Versión de la aplicación para mostrar en la UI
  */
-export default function LoginForm({ appVersion, onInstallClick }) {
+export default function LoginForm({ appVersion, onInstallClick, canNativeInstall }) {
   // Estados locales para el manejo del formulario
   const [email, setEmail] = useState('');
   // Estado para almacenar la contraseña ingresada por el usuario
@@ -161,7 +161,7 @@ export default function LoginForm({ appVersion, onInstallClick }) {
         </div>
         */}
         
-        {/* Botón para abrir el modal de instalación PWA */}
+        {/* Botón para abrir el modal de instalación PWA 
         <button
             type="button"
             onClick={onInstallClick}
@@ -170,7 +170,21 @@ export default function LoginForm({ appVersion, onInstallClick }) {
           >
             <CheckCheck className="w-4 h-4" />
             Instalá PickPad en tu dispositivo
-        </button>
+        </button> */}
+
+        {/* Opción de instalación PWA — link discreto secundario */}
+        <div className="mt-6 text-center">
+          <button
+              type="button"
+              onClick={onInstallClick}
+              aria-label="Instalar PickPad en este dispositivo"
+              className="inline-flex items-center gap-1.5 text-sm text-blue-500 hover:text-blue-700 transition-colors"
+            >
+            <Download className="w-4 h-4" />
+            {canNativeInstall ? 'Instalar PickPad' : 'Instalá PickPad en tu dispositivo'}
+          </button>
+        </div>
+      
       </div>
 
       {/* Modal de créditos */}

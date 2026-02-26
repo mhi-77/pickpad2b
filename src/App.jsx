@@ -90,7 +90,7 @@ function AppContent({ appVersion }) {
   // - installOpen  → controla si el modal de instalación está visible
   // - openInstall  → función para abrirlo manualmente (se pasa al LoginForm)
   // - closeInstall → función para cerrarlo (la usa el propio modal al confirmar/cancelar)
-  const { isOpen: installOpen, openModal: openInstall, closeModal: closeInstall } = useInstallPWA();
+  const { isOpen: installOpen, openModal: openInstall, closeModal: closeInstall, canNativeInstall } = useInstallPWA();
 
   return (
     // Punto de referencia principal para accesibilidad (lectores de pantalla)
@@ -100,7 +100,9 @@ function AppContent({ appVersion }) {
         ? <Dashboard appVersion={appVersion} />
         // Si no está autenticado muestra el Login y le pasa openInstall
         // para que pueda abrir el modal desde el botón "Instalá PickPad"
-        : <LoginForm appVersion={appVersion} onInstallClick={openInstall} />
+        : <LoginForm 
+            appVersion={appVersion} onInstallClick={openInstall} canNativeInstall={canNativeInstall}
+            />
       }
 
       {/* Modal de confirmación de salida (botón atrás del dispositivo) */}

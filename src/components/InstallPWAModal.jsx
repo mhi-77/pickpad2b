@@ -4,8 +4,10 @@ import { X, Smartphone, Monitor, Share, MoreVertical, PlusSquare, Download } fro
 /**
  * Componente InstallPWAModal
  *
- * Propósito: Muestra instrucciones paso a paso para instalar PickPad como PWA
- * según la plataforma detectada automáticamente en el dispositivo del usuario.
+ * Propósito: Muestra instrucciones paso a paso para instalar PickPad como PWA.
+ * Este modal es el FALLBACK para plataformas que no soportan instalación nativa
+ * (principalmente iOS Safari). En Android/Chrome y PC/Edge la instalación ocurre
+ * directamente via el diálogo nativo del navegador (gestionado por useInstallPWA).
  *
  * Props:
  * - isOpen  {boolean}  → controla si el modal está visible
@@ -13,8 +15,7 @@ import { X, Smartphone, Monitor, Share, MoreVertical, PlusSquare, Download } fro
  *
  * Características:
  * - Detección automática de plataforma (Android, iOS, PC) al renderizar
- * - Tabs para cambiar manualmente entre las tres plataformas disponibles
- * - Cubre Android/Chrome, iPhone/Safari y PC/Chrome+Edge
+ * - Tabs para cambiar manualmente entre las tres plataformas
  * - Accesible: role="dialog", aria-modal, aria-label en todos los botones
  *
  * Uso en App.jsx:
@@ -127,7 +128,7 @@ export default function InstallPWAModal({ isOpen, onClose }) {
             <div>
               <h2 className="text-lg font-bold">Instalá PickPad</h2>
               <p className="text-blue-100 text-sm mt-0.5">
-                Accedé más rápido desde tu dispositivo
+                Seguí los pasos según tu dispositivo
               </p>
             </div>
             <button
