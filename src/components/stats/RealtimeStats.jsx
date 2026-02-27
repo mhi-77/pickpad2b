@@ -763,7 +763,7 @@ export default function RealtimeStats() {
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellido, Nombre</th>
                   <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">✓</th>
                   <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pick</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nota / [Verificado]</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localidad</th>
                 </tr>
@@ -781,9 +781,9 @@ export default function RealtimeStats() {
                     <td className={`px-2 py-2 whitespace-nowrap text-sm ${
                       voter.emopick_id
                         ? voter.pick_check
-                          ? 'font-bold text-gray-900'
+                          ? 'font-bold text-green-700'
                           : 'font-bold text-yellow-800'
-                        : 'text-gray-900'
+                          : 'text-gray-900'
                     }`}>
                       {voter.apellido}, {voter.nombre}
                     </td>

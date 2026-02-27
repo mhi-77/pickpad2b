@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../utils/emopicksUtils';
 import Pagination from './shared/Pagination';
+import PickModal from './gpicks/PickModal';
 
 /**
  * Formatea un timestamp a formato "DD/MM HH:mm" o solo "HH:mm" si es hoy
@@ -70,6 +71,10 @@ export default function GpicksView() {
   // Estados para datos de los selectores
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+
+  // Estados para el modal de edición de picks
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVoter, setSelectedVoter] = useState(null);
 
   /**
    * Efecto para cargar los datos cuando el componente se monta
@@ -227,6 +232,87 @@ export default function GpicksView() {
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
+  };
+
+  /**
+   * Determina si un registro es clickeable basado en los permisos del usuario
+   * @param {object} record - Registro del votante
+   * @returns {boolean} - true si el registro es clickeable
+   */
+  const isRecordClickable = (record) => {
+    if (user.usuario_tipo < 3) {
+      return true;
+    }
+    return record.emopick_user === user.id;
+  };
+
+  /**
+   * Maneja el click en el nombre de un votante para abrir el modal de edición
+   * @param {object} record - Registro completo del votante
+   */
+  const handleVoterNameClick = (record) => {
+    if (!isRecordClickable(record)) {
+      return;
+    }
+
+    setSelectedVoter({
+      documento: record.documento,
+      fullName: `${record.apellido}, ${record.nombre}`,
+      emopickId: record.emopick_id,
+      pickNota: record.pick_nota || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  /**
+   * Maneja el guardado de cambios desde el modal
+   * @param {number|null} emopickId - ID del emopick seleccionado o null para desmarcar
+   * @param {string} pickNota - Nota del pick
+   */
+  const handleSavePickFromModal = async (emopickId, pickNota) => {
+    if (!selectedVoter) return;
+
+    try {
+      const updateData = emopickId === null
+        ? {
+            emopick_id: null,
+            emopick_user: null,
+            pick_nota: null,
+            pick_check_at: null
+          }
+        : {
+            emopick_id: emopickId,
+            emopick_user: user.id,
+            pick_nota: pickNota || null
+          };
+
+      const { error } = await supabase
+        .from('padron')
+        .update(updateData)
+        .eq('documento', selectedVoter.documento);
+
+      if (error) {
+        console.error('Error updating pick:', error);
+        alert('Error al actualizar el pick');
+        return;
+      }
+
+      setIsModalOpen(false);
+      setSelectedVoter(null);
+      handleClearFilters();
+
+    } catch (error) {
+      console.error('Error saving pick:', error);
+      alert('Error al guardar el pick');
+    }
+  };
+
+  /**
+   * Maneja el cierre del modal
+   */
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedVoter(null);
   };
 
   /**
@@ -534,12 +620,19 @@ export default function GpicksView() {
                            style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
-                          <span className="px-1 py-1 bg-yellow-100 rounded-full text-xl">
+                          <span className="items-center px-1 py-1 bg-yellow-100 rounded-full border border-yellow-200 text-xl">
                             {record.emopicks?.display || '❓'}
                           </span>
                         </div>
                         <div>
-                          <span className="font-medium text-gray-900">
+                          <span
+                            className={`text-gray-900 ${
+                              isRecordClickable(record)
+                                ? 'font-bold cursor-pointer hover:text-blue-600 transition-colors'
+                                : 'font-medium'
+                            }`}
+                            onClick={() => handleVoterNameClick(record)}
+                          >
                             {record.apellido}, {record.nombre}
                           </span>
                         </div>
@@ -572,7 +665,7 @@ export default function GpicksView() {
                         </div>
                         <div>
                           {record.pick_check_user_profile?.full_name ? (
-                            <span className="inline-flex items-center px-1 py-1 rounded-full text-xs bg-green-100 text-green-900">
+                            <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs border border-green-600 bg-gray-100 text-green-800">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               {record.pick_check_user_profile.full_name}
                               {record.pick_check_at && ` - ${formatPickCheckDateTime(record.pick_check_at)}`}
@@ -583,7 +676,7 @@ export default function GpicksView() {
                           )}
                         </div>
                         <div>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-50 text-yellow-700 tracking-wider italic">
+                          <span className="inline-flex items-center px-1.5 py-1 rounded-full border border-yellow-200 text-xs bg-yellow-50 text-yellow-800 tracking-wider italic">
                             {record.pick_nota || '-'}
                           </span>
                         </div>
@@ -633,6 +726,18 @@ export default function GpicksView() {
           />
         </div>
       )}
+
+      {/* Modal de edición de picks */}
+      <PickModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSavePickFromModal}
+        emopicksList={availableEmopicks}
+        initialEmopickId={selectedVoter?.emopickId || null}
+        initialPickNota={selectedVoter?.pickNota || ''}
+        votanteName={selectedVoter?.fullName || ''}
+        currentVoterEmopickId={selectedVoter?.emopickId || null}
+      />
     </div>
   );
 }

@@ -173,7 +173,7 @@ export default function LoginForm({ appVersion, onInstallClick, canNativeInstall
         </button> */}
 
         {/* Opción de instalación PWA — link discreto secundario */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button
               type="button"
               onClick={onInstallClick}
