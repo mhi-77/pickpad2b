@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, SquarePen } from 'lucide-react';
+import { X, Save, SquarePen, AlertTriangle } from 'lucide-react';
 
 /**
  * Componente PickModal - Modal para seleccionar emopick y agregar anotación
@@ -16,6 +16,8 @@ import { X, Save, SquarePen } from 'lucide-react';
  * - initialPickNota: string - Anotación inicial
  * - votanteName: string - Nombre del votante para mostrar en el modal
  * - currentVoterEmopickId: number - ID del emopick que tiene asignado el votante actual (para verificar si tiene emopick)
+ * - isBlocked: boolean - Indica si el modal está bloqueado por voto_emitido
+ * - blockedMessage: string - Mensaje a mostrar cuando el modal está bloqueado
  */
 export default function PickModal({
   isOpen,
@@ -25,7 +27,9 @@ export default function PickModal({
   initialEmopickId = null,
   initialPickNota = '',
   votanteName = '',
-  currentVoterEmopickId = null
+  currentVoterEmopickId = null,
+  isBlocked = false,
+  blockedMessage = ''
 }) {
   // Estados locales del modal
   const [selectedEmopickId, setSelectedEmopickId] = useState(initialEmopickId);
@@ -101,6 +105,14 @@ export default function PickModal({
           </button>
         </div>
 
+        {/* Mensaje de advertencia cuando está bloqueado */}
+        {isBlocked && blockedMessage && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 leading-relaxed">{blockedMessage}</p>
+          </div>
+        )}
+
         {/* Contenido del modal */}
         <div className="space-y-6">
           {/* Selector de emopick */}
@@ -118,7 +130,8 @@ export default function PickModal({
                   setSelectedEmopickId(value ? parseInt(value) : null);
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              disabled={isBlocked}
+              className={`w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${isBlocked ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
             >
               {currentVoterEmopickId ? (
                 <option value="UNMARK" className="font-bold text-red-600">
@@ -146,7 +159,8 @@ export default function PickModal({
               value={pickNota}
               onChange={(e) => setPickNota(e.target.value)}
               maxLength={20}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              disabled={isBlocked}
+              className={`w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${isBlocked ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
               placeholder="Máximo 20 caracteres"
             />
             <div className="text-right text-xs text-gray-500 mt-1">
@@ -167,8 +181,9 @@ export default function PickModal({
           
           <button
             onClick={handleSave}
-            disabled={isSaving || !selectedEmopickId}
+            disabled={isSaving || !selectedEmopickId || isBlocked}
             className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isBlocked ? 'No se puede guardar: ' + blockedMessage : ''}
           >
             {isSaving ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

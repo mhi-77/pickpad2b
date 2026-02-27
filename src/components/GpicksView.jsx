@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { loadEmopicksWithCount, formatEmopickDisplay } from '../utils/emopicksUtils';
+import { loadEmopicksWithCount, loadAllEmopicks, formatEmopickDisplay } from '../utils/emopicksUtils';
 import Pagination from './shared/Pagination';
 import PickModal from './gpicks/PickModal';
+import ConfirmUncheckModal from './gpicks/ConfirmUncheckModal';
+import { canEditPick, getBlockedMessage, updatePadronPick, updatePickCheck } from './gusers/PickService';
 
 /**
  * Formatea un timestamp a formato "DD/MM HH:mm" o solo "HH:mm" si es hoy
@@ -70,11 +72,16 @@ export default function GpicksView() {
 
   // Estados para datos de los selectores
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
+  const [allEmopicks, setAllEmopicks] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
 
   // Estados para el modal de edición de picks
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
+
+  // Estados para el modal de confirmación de desmarcado
+  const [isConfirmUncheckModalOpen, setIsConfirmUncheckModalOpen] = useState(false);
+  const [pendingUncheckData, setPendingUncheckData] = useState(null);
 
   /**
    * Efecto para cargar los datos cuando el componente se monta
@@ -103,9 +110,13 @@ export default function GpicksView() {
    */
   const loadFilterData = async () => {
     try {
-      // Cargar emopicks
+      // Cargar emopicks con count > 0 para el dropdown de filtros
       const emopicks = await loadEmopicksWithCount();
       setAvailableEmopicks(emopicks || []);
+
+      // Cargar TODOS los emopicks para el modal
+      const allEmopicksData = await loadAllEmopicks();
+      setAllEmopicks(allEmopicksData || []);
 
       // Cargar usuarios que han asignado emopicks desde el VIEW users_picks
       const { data: users, error: usersError } = await supabase
@@ -255,11 +266,17 @@ export default function GpicksView() {
       return;
     }
 
+    if (!canEditPick(record.voto_emitido, user.usuario_tipo)) {
+      alert('No puedes editar picks de votantes que ya emitieron su voto.');
+      return;
+    }
+
     setSelectedVoter({
       documento: record.documento,
       fullName: `${record.apellido}, ${record.nombre}`,
       emopickId: record.emopick_id,
-      pickNota: record.pick_nota || ''
+      pickNota: record.pick_nota || '',
+      votoEmitido: record.voto_emitido
     });
     setIsModalOpen(true);
   };
@@ -273,37 +290,17 @@ export default function GpicksView() {
     if (!selectedVoter) return;
 
     try {
-      const updateData = emopickId === null
-        ? {
-            emopick_id: null,
-            emopick_user: null,
-            pick_nota: null,
-            pick_check_at: null
-          }
-        : {
-            emopick_id: emopickId,
-            emopick_user: user.id,
-            pick_nota: pickNota || null
-          };
-
-      const { error } = await supabase
-        .from('padron')
-        .update(updateData)
-        .eq('documento', selectedVoter.documento);
-
-      if (error) {
-        console.error('Error updating pick:', error);
-        alert('Error al actualizar el pick');
-        return;
-      }
+      await updatePadronPick(selectedVoter.documento, emopickId, pickNota, user.id);
 
       setIsModalOpen(false);
       setSelectedVoter(null);
-      handleClearFilters();
+
+      // Recargar los datos manteniendo los filtros actuales
+      await fetchGpicks();
 
     } catch (error) {
       console.error('Error saving pick:', error);
-      alert('Error al guardar el pick');
+      alert(error.message || 'Error al guardar el pick');
     }
   };
 
@@ -323,47 +320,67 @@ export default function GpicksView() {
    *
    * @param {number} documento - Número de documento del votante
    * @param {boolean} newPickCheckStatus - Nuevo estado del checkbox
+   * @param {object} record - Registro completo del votante
    */
-  const handlePickCheckToggle = async (documento, newPickCheckStatus) => {
+  const handlePickCheckToggle = async (documento, newPickCheckStatus, record) => {
+    if (user.usuario_tipo >= 3 && record.voto_emitido) {
+      alert('No puedes modificar la verificación de votantes que ya emitieron su voto.');
+      return;
+    }
+
+    if (!newPickCheckStatus && record.pick_check_user_profile) {
+      setPendingUncheckData({
+        documento,
+        verifierName: record.pick_check_user_profile.full_name,
+        verificationDate: record.pick_check_at
+      });
+      setIsConfirmUncheckModalOpen(true);
+      return;
+    }
+
+    await performPickCheckUpdate(documento, newPickCheckStatus);
+  };
+
+  const performPickCheckUpdate = async (documento, newPickCheckStatus) => {
     setIsUpdating(true);
 
     try {
-      const { error } = await supabase
-        .from('padron')
-        .update({
-          pick_check: newPickCheckStatus,
-          pick_check_user: newPickCheckStatus ? user.id : null,
-          pick_check_at: newPickCheckStatus ? new Date().toISOString() : null
-        })
-        .eq('documento', documento);
+      await updatePickCheck(documento, newPickCheckStatus, user.id);
 
-      if (error) {
-        console.error('Error updating pick_check:', error);
-        alert('Error al actualizar la verificación');
-        return;
-      }
-
-      // Actualizar datos localmente
       const updatedPicks = picksData.map(record =>
         record.documento === documento
           ? {
               ...record,
               pick_check: newPickCheckStatus,
               pick_check_user: newPickCheckStatus ? user.id : null,
-              pick_check_user_profile: newPickCheckStatus ? { full_name: user.name } : null,
-              pick_check_at: newPickCheckStatus ? new Date().toISOString() : null
+              pick_check_at: newPickCheckStatus ? new Date().toISOString() : null,
+              pick_check_user_profile: newPickCheckStatus
+                ? { full_name: user.full_name }
+                : null
             }
           : record
       );
 
       setPicksData(updatedPicks);
-
     } catch (error) {
-      console.error('Error toggling pick check:', error);
-      alert('Error al actualizar la verificación');
+      console.error('Error in handlePickCheckToggle:', error);
+      alert(error.message || 'Error al procesar la verificación');
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleConfirmUncheck = async () => {
+    if (pendingUncheckData) {
+      await performPickCheckUpdate(pendingUncheckData.documento, false);
+      setIsConfirmUncheckModalOpen(false);
+      setPendingUncheckData(null);
+    }
+  };
+
+  const handleCancelUncheck = () => {
+    setIsConfirmUncheckModalOpen(false);
+    setPendingUncheckData(null);
   };
 
   // Verificar permisos del usuario
@@ -657,9 +674,9 @@ export default function GpicksView() {
                           <input
                             type="checkbox"
                             checked={record.pick_check || false}
-                            onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked)}
-                            disabled={isUpdating}
-                            className="w-4 h-4 accent-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                            onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked, record)}
+                            disabled={isUpdating || (user.usuario_tipo >= 3 && record.voto_emitido)}
+                            className={`w-4 h-4 accent-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 ${(user.usuario_tipo >= 3 && record.voto_emitido) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                           <span className="text-xs text-gray-800">Check</span>
                         </div>
@@ -732,11 +749,21 @@ export default function GpicksView() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSavePickFromModal}
-        emopicksList={availableEmopicks}
+        emopicksList={allEmopicks}
         initialEmopickId={selectedVoter?.emopickId || null}
         initialPickNota={selectedVoter?.pickNota || ''}
         votanteName={selectedVoter?.fullName || ''}
         currentVoterEmopickId={selectedVoter?.emopickId || null}
+        isBlocked={selectedVoter ? !canEditPick(selectedVoter.votoEmitido, user.usuario_tipo) : false}
+        blockedMessage={selectedVoter ? getBlockedMessage(selectedVoter.votoEmitido) : ''}
+      />
+
+      <ConfirmUncheckModal
+        isOpen={isConfirmUncheckModalOpen}
+        onClose={handleCancelUncheck}
+        onConfirm={handleConfirmUncheck}
+        verifierName={pendingUncheckData?.verifierName || ''}
+        verificationDate={pendingUncheckData?.verificationDate || ''}
       />
     </div>
   );
