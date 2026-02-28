@@ -20,6 +20,25 @@ export const loadEmopicksWithCount = async () => {
   }
 };
 
+export const loadAllEmopicks = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('emopicks')
+      .select('id, display, count')
+      .order('id');
+
+    if (error) {
+      console.error('Error loading all emopicks:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in loadAllEmopicks:', error);
+    return [];
+  }
+};
+
 export const formatEmopickDisplay = (display, count) => {
   return `${display} (${count})`;
 };
