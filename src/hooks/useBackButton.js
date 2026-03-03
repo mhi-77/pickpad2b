@@ -8,23 +8,37 @@ La solución implica manipular el historial del navegador para evitar que el bot
 
 */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Hook useBackButton
- * 
+ *
  * Intercepta el botón "Atrás" del navegador/dispositivo con dos niveles:
  * - Primer atrás: ejecuta onFirstBack (ej: abrir sidebar). Si retorna true,
  *   considera el evento manejado y no muestra el modal de salida.
  * - Segundo atrás (o primero si onFirstBack retorna false): muestra el modal
  *   de confirmación de salida.
- * 
+ *
+ * Usa useRef para almacenar el callback onFirstBack en lugar de usarlo como
+ * dependencia del useEffect. Esto permite que el listener de popstate se
+ * registre una sola vez pero siempre lea el valor actualizado del callback,
+ * evitando el problema de closures desactualizados.
+ *
  * @param {Function} onFirstBack - Callback opcional para el primer "atrás".
  *   Debe retornar true si manejó el evento, false si no.
  */
 const useBackButton = (onFirstBack) => {
   const [showModal, setShowModal] = useState(false);
   const historyCount = useRef(1);
+
+  // Ref para mantener siempre la versión actualizada del callback
+  // sin necesidad de re-registrar el listener de popstate
+  const onFirstBackRef = useRef(onFirstBack);
+
+  // Sincronizar la ref cada vez que el callback cambia
+  useEffect(() => {
+    onFirstBackRef.current = onFirstBack;
+  }, [onFirstBack]);
 
   useEffect(() => {
     // Agregar estado inicial al historial para poder interceptar el primer "atrás"
@@ -33,14 +47,15 @@ const useBackButton = (onFirstBack) => {
     const handlePopState = (event) => {
       if (event.state && event.state.custom) {
         historyCount.current--;
-        
+
         if (historyCount.current === 0) {
           // Reincorporar entrada al historial para seguir interceptando
           window.history.pushState({ id: Date.now(), custom: true }, "");
           historyCount.current = 1;
 
-          // Si hay un callback de primer nivel y lo maneja, no continuar
-          if (onFirstBack && onFirstBack()) {
+          // Usar la ref para leer siempre el valor actualizado de sidebarOpen
+          // Si el callback maneja el evento, no mostrar el modal de salida
+          if (onFirstBackRef.current && onFirstBackRef.current()) {
             return;
           }
 
@@ -52,7 +67,7 @@ const useBackButton = (onFirstBack) => {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyCount.current = 1;
 
-        if (onFirstBack && onFirstBack()) {
+        if (onFirstBackRef.current && onFirstBackRef.current()) {
           return;
         }
 
@@ -60,12 +75,14 @@ const useBackButton = (onFirstBack) => {
       }
     };
 
+    // Registrar el listener una sola vez (sin dependencias)
+    // La ref garantiza que siempre se use el callback más reciente
     window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [onFirstBack]);
+  }, []); // Sin dependencias intencional: ver comentario arriba
 
   /**
    * Confirma la salida: navega hacia atrás en el historial y redirige
