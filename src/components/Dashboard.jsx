@@ -21,20 +21,24 @@ import ControlView from './ControlView';
 
 /**
  * Componente Dashboard - Panel principal de la aplicación
- * 
+ *
  * Propósito: Actúa como el contenedor principal de la aplicación una vez que el usuario
  * está autenticado. Maneja la navegación entre diferentes vistas, el auto-logout por
  * inactividad y la búsqueda en el padrón electoral.
- * 
+ *
  * Props:
  * - appVersion: string - Versión de la aplicación
+ * - sidebarOpen: boolean - Estado del sidebar, controlado desde App.jsx para
+ *   permitir que el botón "atrás" del dispositivo lo abra (via useBackButton)
+ * - setSidebarOpen: function - Setter del estado del sidebar
  */
-export default function Dashboard({ appVersion }) {
+export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
   // Obtener datos del usuario y función de logout del contexto de autenticación
   const { user, logout } = useAuth();
-  
-  // Estados locales para el manejo de la UI
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Nota: sidebarOpen y setSidebarOpen ya no se declaran aquí como estado local,
+  // sino que se reciben como props desde App.jsx. Esto permite que useBackButton
+  // pueda abrir el sidebar al presionar "atrás" desde fuera del Dashboard.
 
   /**
    * Obtiene las iniciales del tipo de usuario
@@ -43,9 +47,9 @@ export default function Dashboard({ appVersion }) {
    */
   const getUserInitials = (roleDescription) => {
     if (!roleDescription) return '';
-    
+
     const words = roleDescription.trim().split(/\s+/);
-    
+
     if (words.length >= 2) {
       return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
     } else {
@@ -63,6 +67,7 @@ export default function Dashboard({ appVersion }) {
       setActiveView('search');
     }
   }, [activeView]);
+  
   // Estado para almacenar los resultados de búsqueda en el padrón
   const [searchResults, setSearchResults] = useState([]);
   // Estado para indicar si se está realizando una búsqueda

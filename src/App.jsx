@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
@@ -17,7 +17,9 @@ import InstallPWAModal from './components/InstallPWAModal';
  * - Envuelve la aplicación en AuthProvider para contexto global de autenticación
  * - Muestra LoginForm o Dashboard según estado de autenticación
  * - Implementa modal de confirmación para salida de la aplicación
- * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo
+ * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo:
+ *     · Primer atrás: abre el sidebar si está cerrado
+ *     · Segundo atrás: muestra modal de confirmación de salida
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -25,6 +27,7 @@ import InstallPWAModal from './components/InstallPWAModal';
 /**
  * Modal de confirmación para salir de la aplicación
  * Se muestra cuando el usuario intenta retroceder desde la vista principal
+ * y el sidebar ya estaba abierto
  */
 function ExitConfirmationModal({ onConfirm, onCancel }) {
   return (
@@ -84,7 +87,28 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
  */
 function AppContent({ appVersion }) {
   const { user } = useAuth();
-  const { showModal, handleConfirmExit, handleCancelExit } = useBackButton();
+
+  // Estado del sidebar compartido entre AppContent y Dashboard
+  // Se maneja aquí para que useBackButton pueda abrirlo al presionar "atrás"
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /**
+   * Callback para el primer nivel del botón "atrás"
+   * Si el sidebar está cerrado, lo abre y retorna true (evento manejado)
+   * Si el sidebar ya está abierto, retorna false (deja pasar al modal de salida)
+   * 
+   * useCallback evita que se recree en cada render, lo cual es importante
+   * porque se pasa como dependencia al useEffect de useBackButton
+   */
+  const handleFirstBack = useCallback(() => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      return true; // evento manejado, no mostrar modal de salida
+    }
+    return false; // sidebar ya abierto, mostrar modal de salida
+  }, [sidebarOpen]);
+
+  const { showModal, handleConfirmExit, handleCancelExit } = useBackButton(handleFirstBack);
 
   // Desestructura el hook renombrando para evitar colisión con otros estados:
   // - installOpen  → controla si el modal de instalación está visible
@@ -96,13 +120,20 @@ function AppContent({ appVersion }) {
     // Punto de referencia principal para accesibilidad (lectores de pantalla)
     <main>
       {user
-        // Si está autenticado muestra el Dashboard
-        ? <Dashboard appVersion={appVersion} />
+        // Si está autenticado muestra el Dashboard, pasándole el estado
+        // del sidebar para que useBackButton pueda controlarlo
+        ? <Dashboard
+            appVersion={appVersion}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+          />
         // Si no está autenticado muestra el Login y le pasa openInstall
         // para que pueda abrir el modal desde el botón "Instalá PickPad"
-        : <LoginForm 
-            appVersion={appVersion} onInstallClick={openInstall} canNativeInstall={canNativeInstall}
-            />
+        : <LoginForm
+            appVersion={appVersion}
+            onInstallClick={openInstall}
+            canNativeInstall={canNativeInstall}
+          />
       }
 
       {/* Modal de confirmación de salida (botón atrás del dispositivo) */}
