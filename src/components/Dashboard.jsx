@@ -93,6 +93,14 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
   // Estado para manejar el intervalo de advertencia de sesión
   const [warningInterval, setWarningInterval] = useState(null);
   
+  // Cada vez que el sidebar se abre, agregar una entrada al historial
+  // para que el botón "atrás" pueda cerrarlo o mostrar el modal
+  useEffect(() => {
+    if (sidebarOpen) {
+      window.history.pushState({ id: Date.now(), custom: true }, "");
+    }
+  }, [sidebarOpen]);
+
   /**
    * Callback para manejar la advertencia de sesión por inactividad
    * Se ejecuta cuando el usuario ha estado inactivo por un tiempo determinado
