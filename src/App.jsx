@@ -133,15 +133,18 @@ function AppContent({ appVersion }) {
    * innecesariamente
    */
   const handleFirstBack = useCallback(() => {
-    if (!sidebarOpenRef.current) {
-      setSidebarOpen(true);
-      // Agregar entrada al historial para garantizar que el próximo
-      // "atrás" sea interceptado por el listener de popstate
-      window.history.pushState({ id: Date.now(), custom: true }, "");
-      return true; // evento manejado, no mostrar modal
-    }
+      // Si no hay usuario autenticado (pantalla de login), no interceptar
+      // y dejar que el navegador maneje el "atrás" normalmente
+      if (!user) return false;
+      if (!sidebarOpenRef.current) {
+          setSidebarOpen(true);
+          // Agregar entrada al historial para garantizar que el próximo
+          // "atrás" sea interceptado por el listener de popstate
+          window.history.pushState({ id: Date.now(), custom: true }, "");
+          return true; // evento manejado, no mostrar modal
+        }
     return false; // sidebar ya abierto, mostrar modal de cierre de sesión
-  }, []); // Sin dependencias: la ref siempre tiene el valor actualizado
+  }, [user]); // Sin dependencias: la ref siempre tiene el valor actualizado
 
   /**
    * Ejecuta el logout cuando el usuario confirma en el modal
