@@ -149,6 +149,7 @@ function AppContent({ appVersion }) {
    * por lo que el comportamiento correcto es cerrar la sesión y volver al login
    */
   const handleConfirmExit = () => {
+    handleCancelExit(); // cierra el modal primero
     logout();
   };
 
