@@ -55,8 +55,10 @@ const useBackButton = (onFirstBack) => {
           // Usar la ref para leer siempre el valor actualizado de sidebarOpen
           // Si el callback maneja el evento, no mostrar el modal de salida
           if (onFirstBackRef.current && onFirstBackRef.current()) {
+
             // El callback abrió el sidebar: agregamos una entrada EXTRA
             // para que el próximo "atrás" también sea interceptado
+            window.history.pushState({ id: Date.now(), custom: true }, "");
             historyCount.current = 2;
             return;
           }
