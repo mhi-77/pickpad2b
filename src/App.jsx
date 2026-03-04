@@ -146,6 +146,8 @@ function AppContent({ appVersion }) {
     return false; // sidebar ya abierto, mostrar modal de cierre de sesión
   }, [user]); // Sin dependencias: la ref siempre tiene el valor actualizado
 
+  const { showModal, handleCancelExit } = useBackButton(handleFirstBack);
+  
   /**
    * Ejecuta el logout cuando el usuario confirma en el modal
    * En PWA y Chrome Android no es posible cerrar la ventana programáticamente,
@@ -155,8 +157,6 @@ function AppContent({ appVersion }) {
     handleCancelExit(); // cierra el modal primero
     logout();
   };
-
-  const { showModal, handleCancelExit } = useBackButton(handleFirstBack);
 
   // Desestructura el hook renombrando para evitar colisión con otros estados:
   // - installOpen  → controla si el modal de instalación está visible
