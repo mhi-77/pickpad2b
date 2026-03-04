@@ -21,7 +21,7 @@ import { useState, useEffect, useRef } from 'react';
  * Intercepta el botón "Atrás" del navegador/dispositivo con lógica de dos niveles:
  *
  * 1. (botón atrás) + (sidebar cerrado) → abre el sidebar, no muestra modal
- * 2. (botón atrás) + (sidebar abierto) → muestra modal de confirmación de salida
+ * 2. (botón atrás) + (sidebar abierto) → muestra modal de confirmación de cierre de sesión
  *
  * Cubre dos contextos:
  * - Chrome desktop y Chrome Android: via evento popstate
@@ -33,7 +33,8 @@ import { useState, useEffect, useRef } from 'react';
  *
  * @param {Function} onFirstBack - Callback que evalúa el estado del sidebar:
  *   - Retorna true si el sidebar estaba cerrado y lo abrió (evento manejado)
- *   - Retorna false si el sidebar ya estaba abierto (proceder con modal de salida)
+ *   - Retorna false si el sidebar ya estaba abierto (proceder con modal de cierre)
+ *   - Retorna false si no hay usuario autenticado (pantalla de login, no interceptar)
  */
 const useBackButton = (onFirstBack) => {
   const [showModal, setShowModal] = useState(false);
@@ -60,14 +61,14 @@ const useBackButton = (onFirstBack) => {
       // futuros eventos de "atrás"
       window.history.pushState({ id: Date.now(), custom: true }, "");
 
-      // Si el callback maneja el evento (sidebar estaba cerrado y se abrió),
-      // no hacer nada más. El próximo "atrás" volverá a pasar por aquí
-      // y como sidebarOpen será true, retornará false y mostrará el modal.
+      // Si el callback maneja el evento (sidebar estaba cerrado y se abrió,
+      // o no hay usuario autenticado), no hacer nada más.
       if (onFirstBackRef.current && onFirstBackRef.current()) {
         return;
       }
 
-      // Sidebar ya estaba abierto: mostrar modal de confirmación de salida
+      // Sidebar ya estaba abierto y hay usuario autenticado:
+      // mostrar modal de confirmación de cierre de sesión
       setShowModal(true);
     };
 
@@ -107,16 +108,9 @@ const useBackButton = (onFirstBack) => {
   }, []); // Sin dependencias intencional: la ref garantiza valores actualizados
 
   /**
-   * Confirma la salida: navega hacia atrás en el historial y redirige
-   * a una página en blanco para cerrar la sesión y salir de la app
-   */
-  const handleConfirmExit = () => {
-    //window.history.go(-1);
-    window.location.href = 'about:blank';
-  };
-
-  /**
-   * Cancela el modal de salida y vuelve a la aplicación
+   * Cancela el modal y vuelve a la aplicación sin hacer nada
+   * También se llama desde App.jsx antes del logout para limpiar
+   * el estado del modal antes de que React desmonte el Dashboard
    */
   const handleCancelExit = () => {
     setShowModal(false);
@@ -124,7 +118,6 @@ const useBackButton = (onFirstBack) => {
 
   return {
     showModal,
-    handleConfirmExit,
     handleCancelExit
   };
 };
