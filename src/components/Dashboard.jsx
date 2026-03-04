@@ -70,13 +70,15 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
   
   // Estado para almacenar los resultados de búsqueda en el padrón
   const [searchResults, setSearchResults] = useState([]);
+
   // Estado para indicar si se está realizando una búsqueda
   const [isSearching, setIsSearching] = useState(false);
+
   // Estado para saber si ya se realizó al menos una búsqueda
   const [hasSearched, setHasSearched] = useState(false);
+
   // Estado para controlar la visibilidad del modal de advertencia de sesión
   const [showWarning, setShowWarning] = useState(false);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     const saved = localStorage.getItem('padronSearchPageSize');
@@ -87,20 +89,13 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
 
   // Estado para almacenar las localidades disponibles
   const [availableLocalities, setAvailableLocalities] = useState([]);
+
   // Estado para almacenar los emopicks disponibles
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
 
   // Estado para manejar el intervalo de advertencia de sesión
   const [warningInterval, setWarningInterval] = useState(null);
   
-  // Cada vez que el sidebar se abre, agregar una entrada al historial
-  // para que el botón "atrás" pueda cerrarlo o mostrar el modal
-  useEffect(() => {
-    if (sidebarOpen) {
-      window.history.pushState({ id: Date.now(), custom: true }, "");
-    }
-  }, [sidebarOpen]);
-
   /**
    * Callback para manejar la advertencia de sesión por inactividad
    * Se ejecuta cuando el usuario ha estado inactivo por un tiempo determinado

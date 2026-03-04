@@ -30,7 +30,6 @@ import { useState, useEffect, useRef } from 'react';
 const useBackButton = (onFirstBack) => {
   const [showModal, setShowModal] = useState(false);
   const historyCount = useRef(1);
-
   // Ref para mantener siempre la versión actualizada del callback
   // sin necesidad de re-registrar el listener de popstate
   const onFirstBackRef = useRef(onFirstBack);
@@ -56,6 +55,9 @@ const useBackButton = (onFirstBack) => {
           // Usar la ref para leer siempre el valor actualizado de sidebarOpen
           // Si el callback maneja el evento, no mostrar el modal de salida
           if (onFirstBackRef.current && onFirstBackRef.current()) {
+            // El callback abrió el sidebar: agregamos una entrada EXTRA
+            // para que el próximo "atrás" también sea interceptado
+            historyCount.current = 2;
             return;
           }
 
@@ -68,6 +70,8 @@ const useBackButton = (onFirstBack) => {
         historyCount.current = 1;
 
         if (onFirstBackRef.current && onFirstBackRef.current()) {
+          window.history.pushState({ id: Date.now(), custom: true }, "");
+          historyCount.current = 2;
           return;
         }
 
@@ -101,9 +105,7 @@ const useBackButton = (onFirstBack) => {
   };
 
   return {
-    showModal,
-    handleConfirmExit,
-    handleCancelExit
+    showModal, handleConfirmExit, handleCancelExit
   };
 };
 
