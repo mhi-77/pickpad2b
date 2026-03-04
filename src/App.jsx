@@ -117,6 +117,9 @@ function AppContent({ appVersion }) {
   const handleFirstBack = useCallback(() => {
     if (!sidebarOpenRef.current) {
       setSidebarOpen(true);
+      // Agregar entrada al historial para garantizar que el próximo
+      // "atrás" sea interceptado por el listener de popstate
+      window.history.pushState({ id: Date.now(), custom: true }, "");
       return true; // evento manejado, no mostrar modal de salida
     }
     return false; // sidebar ya abierto, mostrar modal de salida
