@@ -13,23 +13,21 @@ import { useState, useEffect, useRef } from 'react';
 /**
  * Hook useBackButton
  *
- * Intercepta el botón "Atrás" del navegador/dispositivo con dos niveles:
- * - Primer atrás: ejecuta onFirstBack (ej: abrir sidebar). Si retorna true,
- *   considera el evento manejado y no muestra el modal de salida.
- * - Segundo atrás (o primero si onFirstBack retorna false): muestra el modal
- *   de confirmación de salida.
+ * Intercepta el botón "Atrás" del navegador/dispositivo con lógica de dos niveles:
  *
- * Usa useRef para almacenar el callback onFirstBack en lugar de usarlo como
- * dependencia del useEffect. Esto permite que el listener de popstate se
- * registre una sola vez pero siempre lea el valor actualizado del callback,
- * evitando el problema de closures desactualizados.
+ * 1. (botón atrás) + (sidebar cerrado) → abre el sidebar, no muestra modal
+ * 2. (botón atrás) + (sidebar abierto) → muestra modal de confirmación de salida
  *
- * @param {Function} onFirstBack - Callback opcional para el primer "atrás".
- *   Debe retornar true si manejó el evento, false si no.
+ * El estado del sidebar se lee desde una ref para evitar closures desactualizados,
+ * ya que el listener de popstate se registra una sola vez.
+ *
+ * @param {Function} onFirstBack - Callback que evalúa el estado del sidebar:
+ *   - Retorna true si el sidebar estaba cerrado y lo abrió (evento manejado)
+ *   - Retorna false si el sidebar ya estaba abierto (proceder con modal de salida)
  */
 const useBackButton = (onFirstBack) => {
   const [showModal, setShowModal] = useState(false);
-  const historyCount = useRef(1);
+
   // Ref para mantener siempre la versión actualizada del callback
   // sin necesidad de re-registrar el listener de popstate
   const onFirstBackRef = useRef(onFirstBack);
@@ -43,42 +41,20 @@ const useBackButton = (onFirstBack) => {
     // Agregar estado inicial al historial para poder interceptar el primer "atrás"
     window.history.pushState({ id: 1, custom: true }, "");
 
-    const handlePopState = (event) => {
-      if (event.state && event.state.custom) {
-        historyCount.current--;
+    const handlePopState = () => {
+      // Siempre reincorporar una entrada al historial para seguir interceptando
+      // futuros eventos de "atrás"
+      window.history.pushState({ id: Date.now(), custom: true }, "");
 
-        if (historyCount.current === 0) {
-          // Reincorporar entrada al historial para seguir interceptando
-          window.history.pushState({ id: Date.now(), custom: true }, "");
-          historyCount.current = 1;
-
-          // Usar la ref para leer siempre el valor actualizado de sidebarOpen
-          // Si el callback maneja el evento, no mostrar el modal de salida
-          if (onFirstBackRef.current && onFirstBackRef.current()) {
-
-            // El callback abrió el sidebar: agregamos una entrada EXTRA
-            // para que el próximo "atrás" también sea interceptado
-            window.history.pushState({ id: Date.now(), custom: true }, "");
-            historyCount.current = 2;
-            return;
-          }
-
-          // Si no fue manejado, mostrar modal de salida
-          setShowModal(true);
-        }
-      } else {
-        // Estado inesperado: restaurar y evaluar igual
-        window.history.pushState({ id: Date.now(), custom: true }, "");
-        historyCount.current = 1;
-
-        if (onFirstBackRef.current && onFirstBackRef.current()) {
-          window.history.pushState({ id: Date.now(), custom: true }, "");
-          historyCount.current = 2;
-          return;
-        }
-
-        setShowModal(true);
+      // Si el callback maneja el evento (sidebar estaba cerrado y se abrió),
+      // no hacer nada más. El próximo "atrás" volverá a pasar por aquí
+      // y como sidebarOpen ya será true, retornará false y mostrará el modal.
+      if (onFirstBackRef.current && onFirstBackRef.current()) {
+        return;
       }
+
+      // Sidebar ya estaba abierto: mostrar modal de confirmación de salida
+      setShowModal(true);
     };
 
     // Registrar el listener una sola vez (sin dependencias)
@@ -95,7 +71,7 @@ const useBackButton = (onFirstBack) => {
    * a una página en blanco para cerrar la sesión y salir de la app
    */
   const handleConfirmExit = () => {
-    window.history.go(-historyCount.current);
+    window.history.go(-1);
     window.location.href = 'about:blank';
   };
 
@@ -107,7 +83,9 @@ const useBackButton = (onFirstBack) => {
   };
 
   return {
-    showModal, handleConfirmExit, handleCancelExit
+    showModal,
+    handleConfirmExit,
+    handleCancelExit
   };
 };
 
