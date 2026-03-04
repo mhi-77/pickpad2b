@@ -44,7 +44,11 @@ const useBackButton = (onFirstBack) => {
     const handlePopState = () => {
       // Siempre reincorporar una entrada al historial para seguir interceptando
       // futuros eventos de "atrás"
-      window.history.pushState({ id: Date.now(), custom: true }, "");
+          // Diferir el pushState para que Chrome Android lo registre
+          // como una entrada real, fuera del contexto del evento popstate
+          setTimeout(() => {
+          window.history.pushState({ id: Date.now(), custom: true }, "");
+      }, 0);
 
       // Si el callback maneja el evento (sidebar estaba cerrado y se abrió),
       // no hacer nada más. El próximo "atrás" volverá a pasar por aquí
