@@ -103,6 +103,9 @@ function AppContent({ appVersion }) {
   const handleFirstBack = useCallback(() => {
     if (!sidebarOpen) {
       setSidebarOpen(true);
+      // Agregar entrada extra al historial para que el segundo "atrás"
+      // también sea interceptado y muestre el modal de salida
+      window.history.pushState({ id: Date.now(), custom: true }, "");
       return true; // evento manejado, no mostrar modal de salida
     }
     return false; // sidebar ya abierto, mostrar modal de salida
