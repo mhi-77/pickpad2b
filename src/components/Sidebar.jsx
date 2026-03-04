@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, ScreenShare, Database, Calculator, ListChecks, FileText, FileStack, ScanEye, Settings, Menu, X, CheckCheck, User, SquarePen, UserCog } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { FEATURES } from '../config/features';
@@ -21,10 +21,10 @@ const menuItems = [
 
 /**
  * Componente Sidebar - Barra lateral de navegación
- * 
+ *
  * Propósito: Proporciona navegación entre las diferentes secciones de la aplicación.
  * Incluye control de permisos basado en el rol del usuario y diseño responsivo.
- * 
+ *
  * Props:
  * - isOpen: boolean - Controla si el sidebar está abierto (importante para móviles)
  * - setIsOpen: function - Función para cambiar el estado de apertura
@@ -38,11 +38,25 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
   // Estado para controlar el modal de créditos
   const [showCreditsModal, setShowCreditsModal] = useState(false);
 
+  // Ref al contenedor principal del sidebar
+  // Se usa para forzar el foco cuando se abre, garantizando que el listener
+  // de popstate en useBackButton intercepte correctamente el botón "atrás"
+  const sidebarRef = useRef(null);
+
+  // Cuando el sidebar se abre, forzar el foco hacia su contenedor
+  // Sin esto, el foco queda en el dashboard y el botón "atrás" no es
+  // interceptado correctamente hasta que el usuario toca el sidebar
+  useEffect(() => {
+    if (isOpen && sidebarRef.current) {
+      sidebarRef.current.focus();
+    }
+  }, [isOpen]);
+
   /**
    * Filtrar elementos del menú basado en el rol del usuario
    * Solo muestra elementos donde el usuario_tipo sea menor o igual al maxRole
    */
-  const visibleMenuItems = menuItems.filter(item => 
+  const visibleMenuItems = menuItems.filter(item =>
     user?.usuario_tipo && user.usuario_tipo <= item.maxRole
   );
 
@@ -50,16 +64,22 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
     <>
       {/* Fondo oscuro para dispositivos móviles cuando el sidebar está abierto */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
-      
-      {/* Contenedor principal del sidebar con animaciones de transición */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+
+      {/* Contenedor principal del sidebar con animaciones de transición
+          tabIndex={-1} lo hace focuseable programáticamente sin afectar
+          la navegación por teclado natural del usuario */}
+      <div
+        ref={sidebarRef}
+        tabIndex={-1}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 outline-none ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
+
         {/* Header del sidebar con logo y botón de cierre */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <button
@@ -156,7 +176,7 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
 
                 // Renderizar ítems administrativos dentro del contenedor
                 if (isFirstAdminItem) {
-                  // Obtener todos los ítems administrativos
+                  // Obtener todos los ítems administrativos visibles
                   const adminItems = visibleMenuItems.filter(i =>
                     ['gusers', 'padrones', 'settings'].includes(i.id)
                   );
@@ -166,7 +186,7 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
                       { /*
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-3">
                       Administración
-                      </p>   */ }
+                      </p> */ }
                       <div className="bg-gray-200 rounded-lg p-2 space-y-1">
                         {adminItems.map(adminItem => {
                           const AdminIcon = adminItem.icon;

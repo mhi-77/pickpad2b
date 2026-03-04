@@ -38,7 +38,9 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
 
   // Nota: sidebarOpen y setSidebarOpen ya no se declaran aquí como estado local,
   // sino que se reciben como props desde App.jsx. Esto permite que useBackButton
-  // pueda abrir el sidebar al presionar "atrás" desde fuera del Dashboard.
+  // pueda abrir el sidebar al presionar "atrás" desde fuera del Dashboard,
+  // y que Sidebar.jsx pueda forzar el foco al abrirse para que el listener
+  // de popstate intercepte correctamente el siguiente "atrás"
 
   /**
    * Obtiene las iniciales del tipo de usuario
