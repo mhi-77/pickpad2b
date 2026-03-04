@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
@@ -92,21 +92,35 @@ function AppContent({ appVersion }) {
   // Se maneja aquí para que useBackButton pueda abrirlo al presionar "atrás"
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Ref que espeja el estado del sidebar
+  // Permite que handleFirstBack siempre lea el valor actual sin necesidad
+  // de recrearse cuando sidebarOpen cambia, evitando el problema de
+  // closures desactualizados en useBackButton
+  const sidebarOpenRef = useRef(sidebarOpen);
+  useEffect(() => {
+    sidebarOpenRef.current = sidebarOpen;
+  }, [sidebarOpen]);
+
   /**
    * Callback para el primer nivel del botón "atrás"
-   * Si el sidebar está cerrado, lo abre y retorna true (evento manejado)
-   * Si el sidebar ya está abierto, retorna false (deja pasar al modal de salida)
+   * Lee el estado del sidebar desde la ref para tener siempre el valor actual.
    * 
-   * useCallback evita que se recree en cada render, lo cual es importante
-   * porque se pasa como dependencia al useEffect de useBackButton
+   * - Si el sidebar está cerrado: lo abre y retorna true (evento manejado,
+   *   useBackButton agregará una entrada extra al historial)
+   * - Si el sidebar está abierto: retorna false (useBackButton mostrará
+   *   el modal de confirmación de salida)
+   * 
+   * Sin dependencias en useCallback porque la ref siempre está actualizada,
+   * lo que evita que onFirstBackRef en useBackButton se actualice
+   * innecesariamente y desestabilice el conteo del historial
    */
   const handleFirstBack = useCallback(() => {
-    if (!sidebarOpen) {
+    if (!sidebarOpenRef.current) {
       setSidebarOpen(true);
       return true; // evento manejado, no mostrar modal de salida
     }
     return false; // sidebar ya abierto, mostrar modal de salida
-  }, [sidebarOpen]);
+  }, []); // Sin dependencias: la ref siempre tiene el valor actualizado
 
   const { showModal, handleConfirmExit, handleCancelExit } = useBackButton(handleFirstBack);
 
