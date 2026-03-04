@@ -18,8 +18,9 @@ import InstallPWAModal from './components/InstallPWAModal';
  * - Muestra LoginForm o Dashboard según estado de autenticación
  * - Implementa modal de confirmación de cierre de sesión
  * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo:
- *     · Primer atrás: abre el sidebar si está cerrado
- *     · Segundo atrás: muestra modal de confirmación de cierre de sesión
+ *     · En login: no intercepta, deja que el navegador lo maneje
+ *     · Primer atrás en dashboard: abre el sidebar si está cerrado
+ *     · Segundo atrás en dashboard: muestra modal de confirmación de cierre de sesión
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -98,7 +99,7 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
  * Componente AppContent
  *
  * Propósito: Gestiona la lógica de renderizado condicional según autenticación
- * y coordina los tres modales de la app (cierre de sesión, instalación PWA).
+ * y coordina los modales de la app (cierre de sesión, instalación PWA).
  *
  * Props:
  * - appVersion {string} → versión de la app leída desde package.json
@@ -112,49 +113,57 @@ function AppContent({ appVersion }) {
 
   // Ref que espeja el estado del sidebar
   // Permite que handleFirstBack siempre lea el valor actual sin necesidad
-  // de recrearse cuando sidebarOpen cambia, evitando el problema de
-  // closures desactualizados en useBackButton
+  // de recrearse cuando sidebarOpen cambia, evitando closures desactualizados
   const sidebarOpenRef = useRef(sidebarOpen);
   useEffect(() => {
     sidebarOpenRef.current = sidebarOpen;
   }, [sidebarOpen]);
 
   /**
-   * Callback para el primer nivel del botón "atrás"
-   * Lee el estado del sidebar desde la ref para tener siempre el valor actual.
+   * Callback para el botón "atrás", retorna tres valores posibles:
    *
-   * - Si el sidebar está cerrado: lo abre, agrega una entrada al historial
-   *   para que el próximo "atrás" sea interceptado, y retorna true
-   * - Si el sidebar está abierto: retorna false para que useBackButton
-   *   muestre el modal de confirmación de cierre de sesión
+   * - 'ignore'    → no hay usuario autenticado (pantalla de login), no hacer nada
+   * - 'handled'   → sidebar estaba cerrado, se abrió correctamente
+   * - 'showModal' → sidebar ya estaba abierto, useBackButton mostrará el modal
    *
-   * Sin dependencias en useCallback porque la ref siempre está actualizada,
-   * lo que evita que onFirstBackRef en useBackButton se actualice
-   * innecesariamente
+   * Usa una ref para leer sidebarOpen sin necesidad de recrear el callback,
+   * evitando que onFirstBackRef en useBackButton se desincronice
    */
   const handleFirstBack = useCallback(() => {
-      // Si no hay usuario autenticado (pantalla de login), no interceptar
-      // y dejar que el navegador maneje el "atrás" normalmente
-      if (!user) return false;
-      if (!sidebarOpenRef.current) {
-          setSidebarOpen(true);
-          // Agregar entrada al historial para garantizar que el próximo
-          // "atrás" sea interceptado por el listener de popstate
-          window.history.pushState({ id: Date.now(), custom: true }, "");
-          return true; // evento manejado, no mostrar modal
-        }
-    return false; // sidebar ya abierto, mostrar modal de cierre de sesión
-  }, [user]); // Sin dependencias: la ref siempre tiene el valor actualizado
+    // Pantalla de login: no interceptar, ignorar el evento
+    if (!user) return 'ignore';
+
+    if (!sidebarOpenRef.current) {
+      setSidebarOpen(true);
+      // Agregar entrada al historial para garantizar que el próximo
+      // "atrás" sea interceptado por el listener de popstate
+      window.history.pushState({ id: Date.now(), custom: true }, "");
+      return 'handled'; // sidebar abierto, no mostrar modal
+    }
+
+    return 'showModal'; // sidebar ya abierto, mostrar modal de cierre de sesión
+  }, [user]); // user como dependencia para detectar cambios de sesión
 
   const { showModal, handleCancelExit } = useBackButton(handleFirstBack);
-  
+
+  // Resetear estado del sidebar y cerrar modal cuando el usuario cierra sesión
+  // Evita que el modal quede visible al volver a la pantalla de login
+  useEffect(() => {
+    if (!user) {
+      setSidebarOpen(false);
+      handleCancelExit();
+    }
+  }, [user]);
+
   /**
-   * Ejecuta el logout cuando el usuario confirma en el modal
+   * Ejecuta el logout cuando el usuario confirma en el modal.
+   * Cierra el modal primero para evitar que quede visible durante
+   * la transición al login.
    * En PWA y Chrome Android no es posible cerrar la ventana programáticamente,
-   * por lo que el comportamiento correcto es cerrar la sesión y volver al login
+   * por lo que el comportamiento correcto es cerrar sesión y volver al login.
    */
   const handleConfirmExit = () => {
-    handleCancelExit(); // cierra el modal primero
+    handleCancelExit(); // cerrar modal antes del logout
     logout();
   };
 

@@ -20,21 +20,22 @@ import { useState, useEffect, useRef } from 'react';
  *
  * Intercepta el botón "Atrás" del navegador/dispositivo con lógica de dos niveles:
  *
- * 1. (botón atrás) + (sidebar cerrado) → abre el sidebar, no muestra modal
- * 2. (botón atrás) + (sidebar abierto) → muestra modal de confirmación de cierre de sesión
+ * 1. (botón atrás) + (sin usuario autenticado) → ignorar, no hacer nada
+ * 2. (botón atrás) + (usuario autenticado) + (sidebar cerrado) → abrir sidebar
+ * 3. (botón atrás) + (usuario autenticado) + (sidebar abierto) → mostrar modal
  *
  * Cubre dos contextos:
  * - Chrome desktop y Chrome Android: via evento popstate
  * - PWA instalada en Android: via Navigation API (window.navigation),
  *   ya que el botón "atrás" del sistema no siempre dispara popstate en PWAs
  *
- * El estado del sidebar se lee desde una ref para evitar closures desactualizados,
- * ya que el listener se registra una sola vez.
+ * El callback retorna tres valores posibles:
+ * - 'ignore'    → no hay usuario autenticado, no hacer nada
+ * - 'handled'   → sidebar estaba cerrado y se abrió, no mostrar modal
+ * - 'showModal' → sidebar ya estaba abierto, mostrar modal de cierre de sesión
  *
- * @param {Function} onFirstBack - Callback que evalúa el estado del sidebar:
- *   - Retorna true si el sidebar estaba cerrado y lo abrió (evento manejado)
- *   - Retorna false si el sidebar ya estaba abierto (proceder con modal de cierre)
- *   - Retorna false si no hay usuario autenticado (pantalla de login, no interceptar)
+ * @param {Function} onFirstBack - Callback que evalúa el estado actual y retorna
+ *   'ignore', 'handled' o 'showModal'
  */
 const useBackButton = (onFirstBack) => {
   const [showModal, setShowModal] = useState(false);
@@ -61,14 +62,16 @@ const useBackButton = (onFirstBack) => {
       // futuros eventos de "atrás"
       window.history.pushState({ id: Date.now(), custom: true }, "");
 
-      // Si el callback maneja el evento (sidebar estaba cerrado y se abrió,
-      // o no hay usuario autenticado), no hacer nada más.
-      if (onFirstBackRef.current && onFirstBackRef.current()) {
+      // Evaluar el estado actual via callback
+      const result = onFirstBackRef.current ? onFirstBackRef.current() : 'showModal';
+
+      // 'ignore'  → pantalla de login, no hacer nada
+      // 'handled' → sidebar se abrió, no hacer nada
+      if (result === 'ignore' || result === 'handled') {
         return;
       }
 
-      // Sidebar ya estaba abierto y hay usuario autenticado:
-      // mostrar modal de confirmación de cierre de sesión
+      // 'showModal' → sidebar ya estaba abierto, mostrar modal de cierre de sesión
       setShowModal(true);
     };
 
