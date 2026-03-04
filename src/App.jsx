@@ -16,18 +16,18 @@ import InstallPWAModal from './components/InstallPWAModal';
  * Características:
  * - Envuelve la aplicación en AuthProvider para contexto global de autenticación
  * - Muestra LoginForm o Dashboard según estado de autenticación
- * - Implementa modal de confirmación para salida de la aplicación
+ * - Implementa modal de confirmación de cierre de sesión
  * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo:
  *     · Primer atrás: abre el sidebar si está cerrado
- *     · Segundo atrás: muestra modal de confirmación de salida
+ *     · Segundo atrás: muestra modal de confirmación de cierre de sesión
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
 
 /**
- * Modal de confirmación para salir de la aplicación
- * Se muestra cuando el usuario intenta retroceder desde la vista principal
- * y el sidebar ya estaba abierto
+ * Modal de confirmación de cierre de sesión
+ * Se muestra cuando el usuario presiona "atrás" con el sidebar ya abierto.
+ * Ofrece dos opciones: confirmar el logout o cancelar y volver a la app.
  */
 function ExitConfirmationModal({ onConfirm, onCancel }) {
   return (
@@ -51,15 +51,16 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
         width: '90%',
         textAlign: 'center'
       }}>
-        <h2><strong>SALIR DE LA APLICACIÓN</strong></h2>
-        <p>Vuelva a presionar ATRAS para cerrar sesión y salir</p>
+        <h2><strong>Cerrar Sesión</strong></h2>
+        <p style={{ marginTop: '10px' }}>¿Confirmás que deseas cerrar sesión?</p>
         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          {/* Botón cancelar: vuelve a la app sin hacer nada */}
           <button
             onClick={onCancel}
             aria-label="Cancelar y volver a la aplicación"
             style={{
               padding: '10px 20px',
-              backgroundColor: '#0066ff',
+              backgroundColor: '#6b7280',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -69,6 +70,23 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
             }}
           >
             Cancelar
+          </button>
+          {/* Botón confirmar: ejecuta el logout */}
+          <button
+            onClick={onConfirm}
+            aria-label="Confirmar cierre de sesión"
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              minHeight: '48px',
+              minWidth: '48px'
+            }}
+          >
+            Cerrar Sesión
           </button>
         </div>
       </div>
@@ -80,13 +98,13 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
  * Componente AppContent
  *
  * Propósito: Gestiona la lógica de renderizado condicional según autenticación
- * y coordina los tres modales de la app (salida, instalación PWA).
+ * y coordina los tres modales de la app (cierre de sesión, instalación PWA).
  *
  * Props:
  * - appVersion {string} → versión de la app leída desde package.json
  */
 function AppContent({ appVersion }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Estado del sidebar compartido entre AppContent y Dashboard
   // Se maneja aquí para que useBackButton pueda abrirlo al presionar "atrás"
@@ -104,15 +122,15 @@ function AppContent({ appVersion }) {
   /**
    * Callback para el primer nivel del botón "atrás"
    * Lee el estado del sidebar desde la ref para tener siempre el valor actual.
-   * 
-   * - Si el sidebar está cerrado: lo abre y retorna true (evento manejado,
-   *   useBackButton agregará una entrada extra al historial)
-   * - Si el sidebar está abierto: retorna false (useBackButton mostrará
-   *   el modal de confirmación de salida)
-   * 
+   *
+   * - Si el sidebar está cerrado: lo abre, agrega una entrada al historial
+   *   para que el próximo "atrás" sea interceptado, y retorna true
+   * - Si el sidebar está abierto: retorna false para que useBackButton
+   *   muestre el modal de confirmación de cierre de sesión
+   *
    * Sin dependencias en useCallback porque la ref siempre está actualizada,
    * lo que evita que onFirstBackRef en useBackButton se actualice
-   * innecesariamente y desestabilice el conteo del historial
+   * innecesariamente
    */
   const handleFirstBack = useCallback(() => {
     if (!sidebarOpenRef.current) {
@@ -120,12 +138,21 @@ function AppContent({ appVersion }) {
       // Agregar entrada al historial para garantizar que el próximo
       // "atrás" sea interceptado por el listener de popstate
       window.history.pushState({ id: Date.now(), custom: true }, "");
-      return true; // evento manejado, no mostrar modal de salida
+      return true; // evento manejado, no mostrar modal
     }
-    return false; // sidebar ya abierto, mostrar modal de salida
+    return false; // sidebar ya abierto, mostrar modal de cierre de sesión
   }, []); // Sin dependencias: la ref siempre tiene el valor actualizado
 
-  const { showModal, handleConfirmExit, handleCancelExit } = useBackButton(handleFirstBack);
+  /**
+   * Ejecuta el logout cuando el usuario confirma en el modal
+   * En PWA y Chrome Android no es posible cerrar la ventana programáticamente,
+   * por lo que el comportamiento correcto es cerrar la sesión y volver al login
+   */
+  const handleConfirmExit = () => {
+    logout();
+  };
+
+  const { showModal, handleCancelExit } = useBackButton(handleFirstBack);
 
   // Desestructura el hook renombrando para evitar colisión con otros estados:
   // - installOpen  → controla si el modal de instalación está visible
@@ -153,7 +180,8 @@ function AppContent({ appVersion }) {
           />
       }
 
-      {/* Modal de confirmación de salida (botón atrás del dispositivo) */}
+      {/* Modal de confirmación de cierre de sesión
+          Se activa cuando el usuario presiona "atrás" con el sidebar abierto */}
       {showModal && (
         <ExitConfirmationModal
           onConfirm={handleConfirmExit}
