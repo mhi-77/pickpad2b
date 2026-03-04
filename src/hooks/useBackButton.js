@@ -111,7 +111,7 @@ const useBackButton = (onFirstBack) => {
    * a una página en blanco para cerrar la sesión y salir de la app
    */
   const handleConfirmExit = () => {
-    window.history.go(-1);
+    //window.history.go(-1);
     window.location.href = 'about:blank';
   };
 
