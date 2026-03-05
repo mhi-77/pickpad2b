@@ -25,6 +25,8 @@ import InstallPWAModal from './components/InstallPWAModal';
  *   usando un flag para que solo se ejecute una vez. Esto cubre dos casos:
  *     · Usuario que presiona "atrás" sin tocar la pantalla tras loguearse
  *     · Usuario que toca la pantalla antes de que Chrome habilite popstate
+ * - Al hacer logout, limpia el historial acumulado durante la sesión para que
+ *   el primer "atrás" en el login pueda salir de la app directamente
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -167,14 +169,25 @@ function AppContent({ appVersion }) {
     };
   }, [user]);
 
-  // Resetear el flag y el estado del sidebar cuando el usuario cierra sesión.
-  // Evita que el modal quede visible y garantiza que la próxima sesión
-  // agregue una nueva entrada al historial correctamente.
+  /**
+   * Limpieza al hacer logout:
+   * - Resetea el flag de historial para que la próxima sesión funcione igual
+   * - Cierra el sidebar y el modal por si quedaron abiertos
+   * - Limpia todas las entradas que agregamos al historial durante la sesión
+   *   (pushState inicial + aperturas del sidebar) para que en el login
+   *   el primer "atrás" pueda salir de la app directamente sin consumir
+   *   entradas acumuladas
+   */
   useEffect(() => {
     if (!user) {
       historyPushedRef.current = false;
       setSidebarOpen(false);
       handleCancelExit();
+      // Retroceder todas las entradas del historial acumuladas durante la sesión
+      // window.history.length - 1 indica cuántas entradas hay por encima del origen
+      if (window.history.length > 1) {
+        window.history.go(-(window.history.length - 1));
+      }
     }
   }, [user]);
 
