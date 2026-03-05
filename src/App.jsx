@@ -21,9 +21,10 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · En login: ignora completamente el evento, permite salir de la app
  *     · Primer atrás en dashboard: abre el sidebar si está cerrado
  *     · Segundo atrás en dashboard: muestra modal de confirmación de cierre de sesión
- * - Agrega entrada al historial solo después del primer gesto del usuario
- *   y solo si está autenticado, para evitar que Chrome Android consuma
- *   entradas silenciosamente antes de que el usuario interactúe
+ * - Agrega entrada al historial al autenticarse Y al primer gesto del usuario,
+ *   usando un flag para que solo se ejecute una vez. Esto cubre dos casos:
+ *     · Usuario que presiona "atrás" sin tocar la pantalla tras loguearse
+ *     · Usuario que toca la pantalla antes de que Chrome habilite popstate
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -122,24 +123,37 @@ function AppContent({ appVersion }) {
     sidebarOpenRef.current = sidebarOpen;
   }, [sidebarOpen]);
 
-  // Ref para saber si ya se agregó la entrada al historial tras el primer gesto.
-  // Se resetea cuando el usuario hace logout para que al volver a loguearse
-  // se agregue una nueva entrada al primer gesto.
+  // Flag para garantizar que el pushState al historial se ejecute
+  // una sola vez por sesión, sin importar cuál de los dos disparadores
+  // (autenticación o primer gesto) ocurra primero.
+  // Se resetea al hacer logout para que la próxima sesión funcione igual.
   const historyPushedRef = useRef(false);
 
-  // Registrar listener para el primer gesto del usuario (touch o click).
-  // Chrome Android solo habilita el manejo de popstate después de un gesto,
-  // por lo que el pushState debe hacerse en ese momento y no antes.
-  // Solo se agrega la entrada si el usuario está autenticado, para no
-  // interferir con la navegación nativa en la pantalla de login.
+  /**
+   * Disparador 1: agregar entrada al historial al autenticarse.
+   * Cubre el caso donde el usuario presiona "atrás" inmediatamente
+   * después de loguearse, sin tocar ninguna otra parte de la pantalla.
+   */
+  useEffect(() => {
+    if (user && !historyPushedRef.current) {
+      window.history.pushState({ id: Date.now(), custom: true }, "");
+      historyPushedRef.current = true;
+    }
+  }, [user]);
+
+  /**
+   * Disparador 2: agregar entrada al historial al primer gesto del usuario.
+   * Cubre el caso donde el usuario toca la pantalla antes de loguearse,
+   * activando el manejo de popstate en Chrome Android. El flag evita que
+   * se agregue una segunda entrada si el disparador 1 ya lo hizo.
+   * Los listeners se remueven después del primer gesto, ya no hacen falta.
+   */
   useEffect(() => {
     const handleFirstGesture = () => {
-      // Solo agregar entrada si hay usuario autenticado y no se agregó antes
       if (user && !historyPushedRef.current) {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyPushedRef.current = true;
       }
-      // Remover listeners después del primer gesto, ya no hacen falta
       document.removeEventListener('touchstart', handleFirstGesture);
       document.removeEventListener('mousedown', handleFirstGesture);
     };
@@ -153,8 +167,9 @@ function AppContent({ appVersion }) {
     };
   }, [user]);
 
-  // Resetear el flag de historial cuando el usuario cierra sesión,
-  // para que al volver a loguearse se agregue una nueva entrada al historial
+  // Resetear el flag y el estado del sidebar cuando el usuario cierra sesión.
+  // Evita que el modal quede visible y garantiza que la próxima sesión
+  // agregue una nueva entrada al historial correctamente.
   useEffect(() => {
     if (!user) {
       historyPushedRef.current = false;
