@@ -17,6 +17,12 @@ Nota importante sobre el ciclo de vida:
   siempre está activo. El parámetro isAuthenticated controla si el listener
   debe actuar o ignorar el evento, evitando que funcione en la pantalla de login.
 
+Nota importante sobre el pushState inicial:
+- El pushState inicial NO se hace aquí sino en App.jsx cuando el usuario
+  se autentica. Esto evita que Chrome Android consuma esa entrada silenciosamente
+  cuando el usuario toca la pantalla en el login, causando que el primer "atrás"
+  sea ignorado y el segundo salga sin pasar por el listener.
+
 Nota importante sobre la Navigation API:
 - El chequeo de autenticación debe hacerse ANTES de llamar a event.preventDefault()
   en el handler de Navigation API. Si se previene la navegación y luego se ignora
@@ -75,8 +81,10 @@ const useBackButton = (onFirstBack, isAuthenticated) => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Agregar estado inicial al historial para poder interceptar el primer "atrás"
-    window.history.pushState({ id: 1, custom: true }, "");
+    // NOTA: el pushState inicial NO se hace aquí.
+    // Se hace en App.jsx cuando el usuario se autentica, para evitar que
+    // Chrome Android consuma la entrada silenciosamente al tocar la pantalla
+    // en el login, lo que causaría que el primer "atrás" sea ignorado.
 
     /**
      * Lógica central de interceptación del botón "atrás"
