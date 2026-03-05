@@ -21,8 +21,9 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · En login: ignora completamente el evento, permite salir de la app
  *     · Primer atrás en dashboard: abre el sidebar si está cerrado
  *     · Segundo atrás en dashboard: muestra modal de confirmación de cierre de sesión
- * - Agrega entrada al historial cuando el usuario se autentica, no antes,
- *   para evitar que Chrome Android consuma la entrada silenciosamente en el login
+ * - Agrega entrada al historial solo después del primer gesto del usuario
+ *   y solo si está autenticado, para evitar que Chrome Android consuma
+ *   entradas silenciosamente antes de que el usuario interactúe
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -121,13 +122,44 @@ function AppContent({ appVersion }) {
     sidebarOpenRef.current = sidebarOpen;
   }, [sidebarOpen]);
 
-  // Agregar entrada al historial cuando el usuario se autentica.
-  // Se hace aquí y no en useBackButton para evitar que Chrome Android
-  // consuma la entrada silenciosamente al tocar la pantalla en el login,
-  // lo que causaría que el primer "atrás" en el dashboard sea ignorado.
+  // Ref para saber si ya se agregó la entrada al historial tras el primer gesto.
+  // Se resetea cuando el usuario hace logout para que al volver a loguearse
+  // se agregue una nueva entrada al primer gesto.
+  const historyPushedRef = useRef(false);
+
+  // Registrar listener para el primer gesto del usuario (touch o click).
+  // Chrome Android solo habilita el manejo de popstate después de un gesto,
+  // por lo que el pushState debe hacerse en ese momento y no antes.
+  // Solo se agrega la entrada si el usuario está autenticado, para no
+  // interferir con la navegación nativa en la pantalla de login.
   useEffect(() => {
-    if (user) {
-      window.history.pushState({ id: Date.now(), custom: true }, "");
+    const handleFirstGesture = () => {
+      // Solo agregar entrada si hay usuario autenticado y no se agregó antes
+      if (user && !historyPushedRef.current) {
+        window.history.pushState({ id: Date.now(), custom: true }, "");
+        historyPushedRef.current = true;
+      }
+      // Remover listeners después del primer gesto, ya no hacen falta
+      document.removeEventListener('touchstart', handleFirstGesture);
+      document.removeEventListener('mousedown', handleFirstGesture);
+    };
+
+    document.addEventListener('touchstart', handleFirstGesture);
+    document.addEventListener('mousedown', handleFirstGesture);
+
+    return () => {
+      document.removeEventListener('touchstart', handleFirstGesture);
+      document.removeEventListener('mousedown', handleFirstGesture);
+    };
+  }, [user]);
+
+  // Resetear el flag de historial cuando el usuario cierra sesión,
+  // para que al volver a loguearse se agregue una nueva entrada al historial
+  useEffect(() => {
+    if (!user) {
+      historyPushedRef.current = false;
+      setSidebarOpen(false);
+      handleCancelExit();
     }
   }, [user]);
 
@@ -159,15 +191,6 @@ function AppContent({ appVersion }) {
   // de "atrás" cuando no hay usuario autenticado, incluso si el listener
   // sigue registrado (AppContent nunca se desmonta)
   const { showModal, handleCancelExit } = useBackButton(handleFirstBack, !!user);
-
-  // Resetear estado del sidebar y cerrar modal cuando el usuario cierra sesión.
-  // Evita que el modal quede visible al volver a la pantalla de login.
-  useEffect(() => {
-    if (!user) {
-      setSidebarOpen(false);
-      handleCancelExit();
-    }
-  }, [user]);
 
   /**
    * Ejecuta el logout cuando el usuario confirma en el modal.
