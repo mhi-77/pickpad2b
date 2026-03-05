@@ -21,11 +21,12 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · En login: ignora completamente el evento, permite salir de la app
  *     · Primer atrás en dashboard: abre el sidebar si está cerrado
  *     · Segundo atrás en dashboard: muestra modal de confirmación de cierre de sesión
- * - Agrega entrada al historial al autenticarse Y al primer gesto del usuario,
- *   usando un flag para que solo se ejecute una vez.
- * - Lleva la cuenta de las entradas propias agregadas al historial para que
- *   al hacer logout solo se limpien las nuestras, sin afectar el historial
- *   previo del navegador (importante en Chrome navegador vs PWA)
+ * - Estrategia de historial:
+ *     · Al autenticarse: agrega UNA sola entrada con pushState
+ *     · Durante la sesión: useBackButton usa replaceState, nunca pushState
+ *     · Al abrir sidebar: usa replaceState, no agrega entradas nuevas
+ *     · Al hacer logout: retrocede exactamente 1 posición (la entrada propia)
+ *     · Esto garantiza que el historial del navegador previo no sea afectado
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -129,23 +130,16 @@ function AppContent({ appVersion }) {
   // ocurra primero. Se resetea al hacer logout.
   const historyPushedRef = useRef(false);
 
-  // Contador de entradas propias agregadas al historial durante la sesión.
-  // A diferencia de window.history.length (que incluye todo el historial
-  // del navegador), este contador solo cuenta las entradas que nosotros
-  // agregamos, permitiendo limpiar solo las nuestras al hacer logout
-  // sin afectar el historial previo del navegador en Chrome navegador.
-  const historyCountRef = useRef(0);
-
   /**
-   * Disparador 1: agregar entrada al historial al autenticarse.
+   * Disparador 1: agregar UNA entrada al historial al autenticarse.
    * Cubre el caso donde el usuario presiona "atrás" inmediatamente
    * después de loguearse, sin tocar ninguna otra parte de la pantalla.
+   * Es el único pushState de toda la sesión; el resto usa replaceState.
    */
   useEffect(() => {
     if (user && !historyPushedRef.current) {
       window.history.pushState({ id: Date.now(), custom: true }, "");
       historyPushedRef.current = true;
-      historyCountRef.current = 1;
     }
   }, [user]);
 
@@ -161,7 +155,6 @@ function AppContent({ appVersion }) {
       if (user && !historyPushedRef.current) {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyPushedRef.current = true;
-        historyCountRef.current = 1;
       }
       document.removeEventListener('touchstart', handleFirstGesture);
       document.removeEventListener('mousedown', handleFirstGesture);
@@ -178,23 +171,22 @@ function AppContent({ appVersion }) {
 
   /**
    * Limpieza al hacer logout:
-   * - Resetea el flag y el contador de historial para la próxima sesión
+   * - Resetea el flag de historial para la próxima sesión
    * - Cierra el sidebar y el modal por si quedaron abiertos
-   * - Retrocede en el historial solo las entradas que nosotros agregamos,
-   *   sin tocar el historial previo del navegador. Esto es crítico para
-   *   Chrome navegador donde window.history incluye páginas anteriores a la app.
+   * - Retrocede exactamente 1 posición en el historial (la única entrada
+   *   propia que agregamos con pushState al autenticarse). El resto de
+   *   operaciones durante la sesión usaron replaceState, por lo que no
+   *   acumularon entradas adicionales.
    */
   useEffect(() => {
     if (!user) {
-      const count = historyCountRef.current;
       historyPushedRef.current = false;
-      historyCountRef.current = 0;
       setSidebarOpen(false);
       handleCancelExit();
-      // Retroceder solo las entradas propias, no el historial del navegador
-      if (count > 0) {
-        window.history.go(-count);
-      }
+      // Retroceder exactamente 1 posición: la entrada que agregamos
+      // al autenticarse con pushState. Durante la sesión solo se usó
+      // replaceState, por lo que no hay entradas acumuladas.
+      window.history.go(-1);
     }
   }, [user]);
 
@@ -205,19 +197,17 @@ function AppContent({ appVersion }) {
    * - 'handled'   → sidebar estaba cerrado, se abrió correctamente
    * - 'showModal' → sidebar ya estaba abierto, useBackButton mostrará el modal
    *
-   * Usa una ref para leer sidebarOpen sin necesidad de recrear el callback,
-   * evitando que onFirstBackRef en useBackButton se desincronice.
+   * Usa replaceState en lugar de pushState al abrir el sidebar para no
+   * acumular entradas adicionales en el historial durante la sesión.
    */
   const handleFirstBack = useCallback(() => {
     if (!user) return 'ignore'; // doble seguro, el hook ya filtra por isAuthenticated
 
     if (!sidebarOpenRef.current) {
       setSidebarOpen(true);
-      // Agregar entrada al historial para garantizar que el próximo
-      // "atrás" sea interceptado por el listener de popstate
-      window.history.pushState({ id: Date.now(), custom: true }, "");
-      // Incrementar el contador de entradas propias
-      historyCountRef.current++;
+      // Reemplazar la entrada actual en lugar de agregar una nueva,
+      // manteniendo exactamente una entrada propia en el historial
+      window.history.replaceState({ id: Date.now(), custom: true }, "");
       return 'handled'; // sidebar abierto, no mostrar modal
     }
 

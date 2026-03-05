@@ -17,11 +17,11 @@ Nota importante sobre el ciclo de vida:
   siempre está activo. El parámetro isAuthenticated controla si el listener
   debe actuar o ignorar el evento, evitando que funcione en la pantalla de login.
 
-Nota importante sobre el pushState inicial:
-- El pushState inicial NO se hace aquí sino en App.jsx cuando el usuario
-  se autentica. Esto evita que Chrome Android consuma esa entrada silenciosamente
-  cuando el usuario toca la pantalla en el login, causando que el primer "atrás"
-  sea ignorado y el segundo salga sin pasar por el listener.
+Nota importante sobre replaceState vs pushState:
+- En handleBack usamos replaceState en lugar de pushState para reemplazar
+  la entrada actual del historial sin agregar una nueva. Esto garantiza que
+  siempre haya exactamente una entrada nuestra, simplificando la limpieza
+  al hacer logout (siempre retroceder exactamente 1 posición).
 
 Nota importante sobre la Navigation API:
 - El chequeo de autenticación debe hacerse ANTES de llamar a event.preventDefault()
@@ -45,6 +45,12 @@ import { useState, useEffect, useRef } from 'react';
  * - Chrome desktop y Chrome Android: via evento popstate
  * - PWA instalada en Android: via Navigation API (window.navigation),
  *   ya que el botón "atrás" del sistema no siempre dispara popstate en PWAs
+ *
+ * Estrategia de historial:
+ * - App.jsx agrega UNA sola entrada con pushState al autenticarse
+ * - Este hook usa replaceState (no pushState) para reemplazar esa entrada
+ *   sin acumular nuevas, manteniendo siempre exactamente una entrada propia
+ * - Al hacer logout, App.jsx retrocede exactamente 1 posición
  *
  * El callback retorna tres valores posibles:
  * - 'ignore'    → no hay usuario autenticado, no hacer nada
@@ -81,20 +87,17 @@ const useBackButton = (onFirstBack, isAuthenticated) => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // NOTA: el pushState inicial NO se hace aquí.
-    // Se hace en App.jsx cuando el usuario se autentica, para evitar que
-    // Chrome Android consuma la entrada silenciosamente al tocar la pantalla
-    // en el login, lo que causaría que el primer "atrás" sea ignorado.
-
     /**
      * Lógica central de interceptación del botón "atrás"
      * Compartida entre popstate y Navigation API para evitar duplicación.
-     * Solo se llama cuando ya se confirmó que hay usuario autenticado.
+     * Usa replaceState para mantener exactamente una entrada en el historial,
+     * evitando la acumulación de entradas que luego hay que limpiar al logout.
      */
     const handleBack = () => {
-      // Reincorporar una entrada al historial para seguir interceptando
-      // futuros eventos de "atrás"
-      window.history.pushState({ id: Date.now(), custom: true }, "");
+      // Reemplazar la entrada actual del historial en lugar de agregar una nueva.
+      // Esto mantiene exactamente una entrada propia durante toda la sesión,
+      // simplificando la limpieza al hacer logout (siempre retroceder 1 posición).
+      window.history.replaceState({ id: Date.now(), custom: true }, "");
 
       // Evaluar el estado actual via callback
       const result = onFirstBackRef.current ? onFirstBackRef.current() : 'showModal';
