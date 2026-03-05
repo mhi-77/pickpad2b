@@ -26,7 +26,8 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · Durante la sesión: useBackButton usa replaceState, nunca pushState
  *     · Al abrir sidebar: usa replaceState, no agrega entradas nuevas
  *     · Al hacer logout: retrocede exactamente 1 posición (la entrada propia)
- *     · Esto garantiza que el historial del navegador previo no sea afectado
+ *     · Solo limpia el historial si hubo sesión previa, evitando que el
+ *       primer render en Chrome navegador retroceda a la página anterior
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -130,16 +131,24 @@ function AppContent({ appVersion }) {
   // ocurra primero. Se resetea al hacer logout.
   const historyPushedRef = useRef(false);
 
+  // Flag para saber si hubo una sesión activa previamente.
+  // Evita que window.history.go(-1) se ejecute en el primer render
+  // cuando user es null sin que haya habido un login previo, lo que
+  // en Chrome navegador retrocedería a la página anterior y cerraría la app.
+  const hadSessionRef = useRef(false);
+
   /**
    * Disparador 1: agregar UNA entrada al historial al autenticarse.
    * Cubre el caso donde el usuario presiona "atrás" inmediatamente
    * después de loguearse, sin tocar ninguna otra parte de la pantalla.
    * Es el único pushState de toda la sesión; el resto usa replaceState.
+   * También marca hadSessionRef para que el logout sepa que hubo sesión.
    */
   useEffect(() => {
     if (user && !historyPushedRef.current) {
       window.history.pushState({ id: Date.now(), custom: true }, "");
       historyPushedRef.current = true;
+      hadSessionRef.current = true; // marcar que hubo sesión activa
     }
   }, [user]);
 
@@ -155,6 +164,7 @@ function AppContent({ appVersion }) {
       if (user && !historyPushedRef.current) {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyPushedRef.current = true;
+        hadSessionRef.current = true; // marcar que hubo sesión activa
       }
       document.removeEventListener('touchstart', handleFirstGesture);
       document.removeEventListener('mousedown', handleFirstGesture);
@@ -171,18 +181,26 @@ function AppContent({ appVersion }) {
 
   /**
    * Limpieza al hacer logout:
-   * - Resetea el flag de historial para la próxima sesión
-   * - Cierra el sidebar y el modal por si quedaron abiertos
-   * - Retrocede exactamente 1 posición en el historial (la única entrada
-   *   propia que agregamos con pushState al autenticarse). El resto de
-   *   operaciones durante la sesión usaron replaceState, por lo que no
-   *   acumularon entradas adicionales.
+   * - Si no hubo sesión previa (primer render), no hacer nada. Esto evita
+   *   que en Chrome navegador se retroceda a la página anterior al cargar
+   *   la app por primera vez con user = null.
+   * - Si hubo sesión: resetea flags, cierra sidebar y modal, y retrocede
+   *   exactamente 1 posición en el historial (la única entrada propia que
+   *   agregamos con pushState al autenticarse). El resto de operaciones
+   *   durante la sesión usaron replaceState, por lo que no acumularon
+   *   entradas adicionales.
    */
   useEffect(() => {
     if (!user) {
+      // Primer render sin sesión previa: no tocar el historial
+      if (!hadSessionRef.current) return;
+
+      // Hubo sesión: limpiar estado y retroceder la entrada propia
+      hadSessionRef.current = false;
       historyPushedRef.current = false;
       setSidebarOpen(false);
       handleCancelExit();
+
       // Retroceder exactamente 1 posición: la entrada que agregamos
       // al autenticarse con pushState. Durante la sesión solo se usó
       // replaceState, por lo que no hay entradas acumuladas.
