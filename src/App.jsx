@@ -22,11 +22,10 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · Primer atrás en dashboard: abre el sidebar si está cerrado
  *     · Segundo atrás en dashboard: muestra modal de confirmación de cierre de sesión
  * - Agrega entrada al historial al autenticarse Y al primer gesto del usuario,
- *   usando un flag para que solo se ejecute una vez. Esto cubre dos casos:
- *     · Usuario que presiona "atrás" sin tocar la pantalla tras loguearse
- *     · Usuario que toca la pantalla antes de que Chrome habilite popstate
- * - Al hacer logout, limpia el historial acumulado durante la sesión para que
- *   el primer "atrás" en el login pueda salir de la app directamente
+ *   usando un flag para que solo se ejecute una vez.
+ * - Lleva la cuenta de las entradas propias agregadas al historial para que
+ *   al hacer logout solo se limpien las nuestras, sin afectar el historial
+ *   previo del navegador (importante en Chrome navegador vs PWA)
  * - Pasa la versión de la aplicación desde package.json
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
@@ -125,11 +124,17 @@ function AppContent({ appVersion }) {
     sidebarOpenRef.current = sidebarOpen;
   }, [sidebarOpen]);
 
-  // Flag para garantizar que el pushState al historial se ejecute
-  // una sola vez por sesión, sin importar cuál de los dos disparadores
-  // (autenticación o primer gesto) ocurra primero.
-  // Se resetea al hacer logout para que la próxima sesión funcione igual.
+  // Flag para garantizar que el pushState inicial se ejecute una sola vez
+  // por sesión, sin importar cuál disparador (autenticación o primer gesto)
+  // ocurra primero. Se resetea al hacer logout.
   const historyPushedRef = useRef(false);
+
+  // Contador de entradas propias agregadas al historial durante la sesión.
+  // A diferencia de window.history.length (que incluye todo el historial
+  // del navegador), este contador solo cuenta las entradas que nosotros
+  // agregamos, permitiendo limpiar solo las nuestras al hacer logout
+  // sin afectar el historial previo del navegador en Chrome navegador.
+  const historyCountRef = useRef(0);
 
   /**
    * Disparador 1: agregar entrada al historial al autenticarse.
@@ -140,6 +145,7 @@ function AppContent({ appVersion }) {
     if (user && !historyPushedRef.current) {
       window.history.pushState({ id: Date.now(), custom: true }, "");
       historyPushedRef.current = true;
+      historyCountRef.current = 1;
     }
   }, [user]);
 
@@ -155,6 +161,7 @@ function AppContent({ appVersion }) {
       if (user && !historyPushedRef.current) {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyPushedRef.current = true;
+        historyCountRef.current = 1;
       }
       document.removeEventListener('touchstart', handleFirstGesture);
       document.removeEventListener('mousedown', handleFirstGesture);
@@ -171,22 +178,22 @@ function AppContent({ appVersion }) {
 
   /**
    * Limpieza al hacer logout:
-   * - Resetea el flag de historial para que la próxima sesión funcione igual
+   * - Resetea el flag y el contador de historial para la próxima sesión
    * - Cierra el sidebar y el modal por si quedaron abiertos
-   * - Limpia todas las entradas que agregamos al historial durante la sesión
-   *   (pushState inicial + aperturas del sidebar) para que en el login
-   *   el primer "atrás" pueda salir de la app directamente sin consumir
-   *   entradas acumuladas
+   * - Retrocede en el historial solo las entradas que nosotros agregamos,
+   *   sin tocar el historial previo del navegador. Esto es crítico para
+   *   Chrome navegador donde window.history incluye páginas anteriores a la app.
    */
   useEffect(() => {
     if (!user) {
+      const count = historyCountRef.current;
       historyPushedRef.current = false;
+      historyCountRef.current = 0;
       setSidebarOpen(false);
       handleCancelExit();
-      // Retroceder todas las entradas del historial acumuladas durante la sesión
-      // window.history.length - 1 indica cuántas entradas hay por encima del origen
-      if (window.history.length > 1) {
-        window.history.go(-(window.history.length - 1));
+      // Retroceder solo las entradas propias, no el historial del navegador
+      if (count > 0) {
+        window.history.go(-count);
       }
     }
   }, [user]);
@@ -209,6 +216,8 @@ function AppContent({ appVersion }) {
       // Agregar entrada al historial para garantizar que el próximo
       // "atrás" sea interceptado por el listener de popstate
       window.history.pushState({ id: Date.now(), custom: true }, "");
+      // Incrementar el contador de entradas propias
+      historyCountRef.current++;
       return 'handled'; // sidebar abierto, no mostrar modal
     }
 
