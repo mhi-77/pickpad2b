@@ -346,22 +346,7 @@ export default function GpicksView() {
 
     try {
       await updatePickCheck(documento, newPickCheckStatus, user.id);
-
-      const updatedPicks = picksData.map(record =>
-        record.documento === documento
-          ? {
-              ...record,
-              pick_check: newPickCheckStatus,
-              pick_check_user: newPickCheckStatus ? user.id : null,
-              pick_check_at: newPickCheckStatus ? new Date().toISOString() : null,
-              pick_check_user_profile: newPickCheckStatus
-                ? { full_name: user.full_name }
-                : null
-            }
-          : record
-      );
-
-      setPicksData(updatedPicks);
+      await fetchGpicks();
     } catch (error) {
       console.error('Error in handlePickCheckToggle:', error);
       alert(error.message || 'Error al procesar la verificación');
