@@ -165,16 +165,23 @@ const useBackButton = (onFirstBack, isAuthenticated) => {
   }, []); // Sin dependencias intencional: las refs garantizan valores actualizados
 
   /**
+   * Abre el modal de confirmación de cierre de sesión.
+   * Se expone para que App.jsx pueda pasarlo como prop al Dashboard,
+   * permitiendo que el botón "Cerrar Sesión" del header también use
+   * el mismo modal que el botón "atrás".
+   */
+  const openModal = () => setShowModal(true);
+
+  /**
    * Cancela el modal y vuelve a la aplicación sin hacer nada.
    * También se llama desde App.jsx antes del logout para limpiar
    * el estado del modal antes de que React desmonte el Dashboard.
    */
-  const handleCancelExit = () => {
-    setShowModal(false);
-  };
+  const handleCancelExit = () => setShowModal(false);
 
   return {
     showModal,
+    openModal,
     handleCancelExit
   };
 };

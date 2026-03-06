@@ -31,8 +31,10 @@ import ControlView from './ControlView';
  * - sidebarOpen: boolean - Estado del sidebar, controlado desde App.jsx para
  *   permitir que el botón "atrás" del dispositivo lo abra (via useBackButton)
  * - setSidebarOpen: function - Setter del estado del sidebar
+ * - onLogoutRequest: function - Abre el modal de confirmación de cierre de
+ *   sesión definido en App.jsx, compartido con el botón "atrás" del dispositivo
  */
-export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
+export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen, onLogoutRequest }) {
   // Obtener datos del usuario y función de logout del contexto de autenticación
   const { user, logout } = useAuth();
 
@@ -444,9 +446,10 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen }) {
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Botón de cerrar sesión */}
+              {/* Botón de cerrar sesión: abre el modal de confirmación en lugar de
+                hacer logout directo, para consistencia con el botón "atrás" */}
               <button
-                onClick={logout}
+                onClick={onLogoutRequest}
                 className="flex items-center space-x-2 px-3 py-2 text-gray-700 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all duration-200"
                 title="Cerrar Sesión"
               >

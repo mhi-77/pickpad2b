@@ -16,7 +16,8 @@ import InstallPWAModal from './components/InstallPWAModal';
  * Características:
  * - Envuelve la aplicación en AuthProvider para contexto global de autenticación
  * - Muestra LoginForm o Dashboard según estado de autenticación
- * - Implementa modal de confirmación de cierre de sesión
+ * - Implementa modal de confirmación de cierre de sesión compartido entre
+ *   el botón "atrás" del dispositivo y el botón "Cerrar Sesión" del Dashboard
  * - Gestiona el comportamiento del botón "atrás" del navegador/dispositivo:
  *     · En login: ignora completamente el evento, permite salir de la app
  *     · Primer atrás en dashboard: abre el sidebar si está cerrado
@@ -34,7 +35,8 @@ import InstallPWAModal from './components/InstallPWAModal';
 
 /**
  * Modal de confirmación de cierre de sesión
- * Se muestra cuando el usuario presiona "atrás" con el sidebar ya abierto.
+ * Se muestra cuando el usuario presiona "atrás" con el sidebar ya abierto,
+ * o cuando presiona el botón "Cerrar Sesión" del header del Dashboard.
  * Ofrece dos opciones: confirmar el logout o cancelar y volver a la app.
  */
 function ExitConfirmationModal({ onConfirm, onCancel }) {
@@ -148,7 +150,7 @@ function AppContent({ appVersion }) {
     if (user && !historyPushedRef.current) {
       window.history.pushState({ id: Date.now(), custom: true }, "");
       historyPushedRef.current = true;
-      hadSessionRef.current = true; // marcar que hubo sesión activa
+      hadSessionRef.current = true;
     }
   }, [user]);
 
@@ -164,7 +166,7 @@ function AppContent({ appVersion }) {
       if (user && !historyPushedRef.current) {
         window.history.pushState({ id: Date.now(), custom: true }, "");
         historyPushedRef.current = true;
-        hadSessionRef.current = true; // marcar que hubo sesión activa
+        hadSessionRef.current = true;
       }
       document.removeEventListener('touchstart', handleFirstGesture);
       document.removeEventListener('mousedown', handleFirstGesture);
@@ -234,8 +236,10 @@ function AppContent({ appVersion }) {
 
   // Pasar !!user como isAuthenticated para que el hook ignore eventos
   // de "atrás" cuando no hay usuario autenticado, incluso si el listener
-  // sigue registrado (AppContent nunca se desmonta)
-  const { showModal, handleCancelExit } = useBackButton(handleFirstBack, !!user);
+  // sigue registrado (AppContent nunca se desmonta).
+  // openModal se pasa al Dashboard para que el botón "Cerrar Sesión"
+  // del header abra el mismo modal que el botón "atrás".
+  const { showModal, openModal, handleCancelExit } = useBackButton(handleFirstBack, !!user);
 
   /**
    * Ejecuta el logout cuando el usuario confirma en el modal.
@@ -261,15 +265,16 @@ function AppContent({ appVersion }) {
   } = useInstallPWA();
 
   return (
-    // Punto de referencia principal para accesibilidad (lectores de pantalla)
     <main>
       {user
         // Si está autenticado muestra el Dashboard, pasándole el estado
-        // del sidebar para que useBackButton pueda controlarlo
+        // del sidebar y openModal para que el botón "Cerrar Sesión" del
+        // header abra el modal de confirmación en lugar de hacer logout directo
         ? <Dashboard
             appVersion={appVersion}
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            onLogoutRequest={openModal}
           />
         // Si no está autenticado muestra el Login y le pasa openInstall
         // para que pueda abrir el modal desde el botón "Instalá PickPad"
@@ -281,7 +286,8 @@ function AppContent({ appVersion }) {
       }
 
       {/* Modal de confirmación de cierre de sesión
-          Se activa cuando el usuario presiona "atrás" con el sidebar abierto */}
+          Se activa cuando el usuario presiona "atrás" con el sidebar abierto
+          o cuando presiona el botón "Cerrar Sesión" del header del Dashboard */}
       {showModal && (
         <ExitConfirmationModal
           onConfirm={handleConfirmExit}
