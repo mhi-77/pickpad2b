@@ -1,8 +1,11 @@
+let navigationInitialized = false;
+
 function initializeNavigation() {
+    if (navigationInitialized) return;
+    navigationInitialized = true;
+
     const sidebar = document.getElementById('sidebar');
     const menuToggle = document.getElementById('menuToggle');
-    const navItems = document.querySelectorAll('.nav-item');
-    const sections = document.querySelectorAll('.section');
     const breadcrumb = document.getElementById('breadcrumb');
     const searchInput = document.getElementById('searchInput');
 
@@ -20,8 +23,9 @@ function initializeNavigation() {
     });
 
     function showSection(sectionId) {
-        sections.forEach(section => section.classList.remove('active'));
-        navItems.forEach(item => item.classList.remove('active'));
+        // Query en el momento de uso para incluir secciones cargadas dinámicamente
+        document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
@@ -33,7 +37,6 @@ function initializeNavigation() {
             }
 
             updateBreadcrumb(sectionId);
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
             if (window.innerWidth <= 768) {
@@ -82,7 +85,7 @@ function initializeNavigation() {
         breadcrumb.innerHTML = html;
     }
 
-    navItems.forEach(item => {
+    document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             const href = this.getAttribute('href');
@@ -104,38 +107,26 @@ function initializeNavigation() {
         const searchTerm = e.target.value.toLowerCase().trim();
 
         if (searchTerm.length === 0) {
-            navItems.forEach(item => {
-                item.style.display = 'block';
-            });
-            document.querySelectorAll('.nav-section').forEach(section => {
-                section.style.display = 'block';
-            });
+            document.querySelectorAll('.nav-item').forEach(item => { item.style.display = 'block'; });
+            document.querySelectorAll('.nav-section').forEach(section => { section.style.display = 'block'; });
             return;
         }
 
-        navItems.forEach(item => {
+        document.querySelectorAll('.nav-item').forEach(item => {
             const text = item.textContent.toLowerCase();
-            if (text.includes(searchTerm)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = text.includes(searchTerm) ? 'block' : 'none';
         });
 
         document.querySelectorAll('.nav-section').forEach(section => {
             const visibleItems = section.querySelectorAll('.nav-item[style="display: block"], .nav-item:not([style])');
-            if (visibleItems.length === 0) {
-                section.style.display = 'none';
-            } else {
-                section.style.display = 'block';
-            }
+            section.style.display = visibleItems.length === 0 ? 'none' : 'block';
         });
     });
 
     document.querySelectorAll('.feature-link, .btn-secondary, a[href^="#"]').forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            if (href.startsWith('#')) {
+            if (href && href.startsWith('#')) {
                 e.preventDefault();
                 const sectionId = href.substring(1);
                 showSection(sectionId);
@@ -151,8 +142,6 @@ document.addEventListener('contentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
-        if (document.querySelectorAll('.section').length > 1) {
-            initializeNavigation();
-        }
+        initializeNavigation();
     }, 500);
 });
