@@ -9,6 +9,58 @@ function initializeNavigation() {
     const breadcrumb = document.getElementById('breadcrumb');
     const searchInput = document.getElementById('searchInput');
 
+    // Mapa de sección padre → primer ítem de esa sección (para el link del breadcrumb)
+    const sectionParents = {
+        'que-es':            { label: 'Introducción', target: 'que-es' },
+        'roles':             { label: 'Introducción', target: 'que-es' },
+        'acceso':            { label: 'Introducción', target: 'que-es' },
+        'instalacion-pwa':   { label: 'Introducción', target: 'que-es' },
+        'glosario':          { label: 'Introducción', target: 'que-es' },
+        'modulo-busqueda':   { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-fiscalizar': { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-testigo':    { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-picks':      { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-estadisticas':{ label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-control':    { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-usuarios':   { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-padrones':   { label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-configuracion':{ label: 'Módulos', target: 'modulo-busqueda' },
+        'modulo-perfil':     { label: 'Módulos', target: 'modulo-busqueda' },
+        'flujo-preelectoral':{ label: 'Guías de Uso', target: 'flujo-preelectoral' },
+        'flujo-jornada':     { label: 'Guías de Uso', target: 'flujo-preelectoral' },
+        'flujo-postelectoral':{ label: 'Guías de Uso', target: 'flujo-preelectoral' },
+        'coordinacion':      { label: 'Guías de Uso', target: 'flujo-preelectoral' },
+        'faq':               { label: 'Ayuda', target: 'faq' },
+        'troubleshooting':   { label: 'Ayuda', target: 'faq' },
+        'soporte':           { label: 'Ayuda', target: 'faq' },
+    };
+
+    const sectionTitles = {
+        'inicio': 'Inicio',
+        'que-es': '¿Qué es PickPad?',
+        'roles': 'Roles y Permisos',
+        'acceso': 'Acceso al Sistema',
+        'instalacion-pwa': 'Instalación PWA',
+        'glosario': 'Glosario',
+        'modulo-busqueda': 'Búsqueda',
+        'modulo-fiscalizar': 'Fiscalizar',
+        'modulo-testigo': 'Mesa Testigo',
+        'modulo-picks': 'Picks',
+        'modulo-estadisticas': 'Estadísticas',
+        'modulo-control': 'Control',
+        'modulo-usuarios': 'Usuarios',
+        'modulo-padrones': 'Padrones',
+        'modulo-configuracion': 'Configuración',
+        'modulo-perfil': 'Perfil',
+        'flujo-preelectoral': 'Preparación Pre-Electoral',
+        'flujo-jornada': 'Jornada Electoral',
+        'flujo-postelectoral': 'Cierre y Análisis',
+        'coordinacion': 'Coordinación de Roles',
+        'faq': 'Preguntas Frecuentes',
+        'troubleshooting': 'Solución de Problemas',
+        'soporte': 'Contacto y Soporte'
+    };
+
     menuToggle.addEventListener('click', function() {
         sidebar.classList.toggle('open');
     });
@@ -23,7 +75,6 @@ function initializeNavigation() {
     });
 
     function showSection(sectionId) {
-        // Query en el momento de uso para incluir secciones cargadas dinámicamente
         document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
@@ -46,43 +97,32 @@ function initializeNavigation() {
     }
 
     function updateBreadcrumb(sectionId) {
-        const sectionTitles = {
-            'inicio': 'Inicio',
-            'que-es': 'Introducción / ¿Qué es PickPad?',
-            'roles': 'Introducción / Roles y Permisos',
-            'acceso': 'Introducción / Acceso al Sistema',
-            'instalacion-pwa': 'Introducción / Instalación PWA',
-            'glosario': 'Introducción / Glosario',
-            'modulo-busqueda': 'Módulos / Búsqueda',
-            'modulo-fiscalizar': 'Módulos / Fiscalizar',
-            'modulo-testigo': 'Módulos / Mesa Testigo',
-            'modulo-picks': 'Módulos / Picks',
-            'modulo-estadisticas': 'Módulos / Estadísticas',
-            'modulo-control': 'Módulos / Control',
-            'modulo-usuarios': 'Módulos / Usuarios',
-            'modulo-padrones': 'Módulos / Padrones',
-            'modulo-configuracion': 'Módulos / Configuración',
-            'modulo-perfil': 'Módulos / Perfil',
-            'flujo-preelectoral': 'Guías de Uso / Preparación Pre-Electoral',
-            'flujo-jornada': 'Guías de Uso / Jornada Electoral',
-            'flujo-postelectoral': 'Guías de Uso / Cierre y Análisis',
-            'coordinacion': 'Guías de Uso / Coordinación de Roles',
-            'faq': 'Ayuda / Preguntas Frecuentes',
-            'troubleshooting': 'Ayuda / Solución de Problemas',
-            'soporte': 'Ayuda / Contacto y Soporte'
-        };
+        const pageTitle = sectionTitles[sectionId] || sectionId;
+        const parent = sectionParents[sectionId];
 
-        const title = sectionTitles[sectionId] || 'Inicio';
-        const parts = title.split(' / ');
+        let html = '<a href="#inicio" class="bc-link">Inicio</a>';
 
-        let html = '<a href="#inicio">Inicio</a>';
-        if (parts.length > 1) {
-            html += ' <span>›</span> <span>' + parts.join(' <span>›</span> ') + '</span>';
+        if (parent) {
+            html += ' <span>›</span> <a href="#' + parent.target + '" class="bc-link">' + parent.label + '</a>';
+            // Solo mostrar el título de la página si es distinto al label del padre
+            if (parent.target !== sectionId) {
+                html += ' <span>›</span> <span>' + pageTitle + '</span>';
+            }
         } else if (sectionId !== 'inicio') {
-            html += ' <span>›</span> <span>' + title + '</span>';
+            html += ' <span>›</span> <span>' + pageTitle + '</span>';
         }
 
         breadcrumb.innerHTML = html;
+
+        // Agregar listeners a los links del breadcrumb
+        breadcrumb.querySelectorAll('.bc-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = this.getAttribute('href').substring(1);
+                showSection(target);
+                history.pushState(null, null, '#' + target);
+            });
+        });
     }
 
     document.querySelectorAll('.nav-item').forEach(item => {
