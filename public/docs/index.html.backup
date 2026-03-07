@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PickPad - Documentación del Sistema de Gestión Electoral</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="../mhi.png">
+</head>
+<body>
+    <div class="layout">
+        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <img src="../mhi.png" alt="Logo" class="logo">
+                <h1>PickPad</h1>
+                <p class="version">v3.2.2</p>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar en la documentación..." aria-label="Buscar">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#inicio" class="nav-item active">Inicio</a>
+
+                <div class="nav-section">
+                    <h3>Introducción</h3>
+                    <a href="#que-es" class="nav-item">¿Qué es PickPad?</a>
+                    <a href="#roles" class="nav-item">Roles y Permisos</a>
+                    <a href="#acceso" class="nav-item">Acceso al Sistema</a>
+                    <a href="#instalacion-pwa" class="nav-item">Instalación PWA</a>
+                    <a href="#glosario" class="nav-item">Glosario</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Módulos</h3>
+                    <a href="#modulo-busqueda" class="nav-item">Búsqueda</a>
+                    <a href="#modulo-fiscalizar" class="nav-item">Fiscalizar</a>
+                    <a href="#modulo-testigo" class="nav-item">Mesa Testigo</a>
+                    <a href="#modulo-picks" class="nav-item">Picks</a>
+                    <a href="#modulo-estadisticas" class="nav-item">Estadísticas</a>
+                    <a href="#modulo-control" class="nav-item">Control</a>
+                    <a href="#modulo-usuarios" class="nav-item">Usuarios</a>
+                    <a href="#modulo-padrones" class="nav-item">Padrones</a>
+                    <a href="#modulo-configuracion" class="nav-item">Configuración</a>
+                    <a href="#modulo-perfil" class="nav-item">Perfil</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Guías de Uso</h3>
+                    <a href="#flujo-preelectoral" class="nav-item">Preparación Pre-Electoral</a>
+                    <a href="#flujo-jornada" class="nav-item">Jornada Electoral</a>
+                    <a href="#flujo-postelectoral" class="nav-item">Cierre y Análisis</a>
+                    <a href="#coordinacion" class="nav-item">Coordinación de Roles</a>
+                </div>
+
+                <div class="nav-section">
+                    <h3>Ayuda</h3>
+                    <a href="#faq" class="nav-item">Preguntas Frecuentes</a>
+                    <a href="#troubleshooting" class="nav-item">Solución de Problemas</a>
+                    <a href="#soporte" class="nav-item">Contacto y Soporte</a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="content" id="content">
+            <div class="breadcrumb" id="breadcrumb">
+                <a href="#inicio">Inicio</a>
+            </div>
+
+            <section id="inicio" class="section active">
+                <div class="hero">
+                    <h1 class="hero-title">PickPad</h1>
+                    <p class="hero-subtitle">Sistema de Gestión Electoral y Fiscalización</p>
+                    <p class="hero-version">Versión 3.2.2</p>
+                </div>
+
+                <div class="intro-card">
+                    <h2>Bienvenido a la Documentación de PickPad</h2>
+                    <p>Esta guía completa le ayudará a comprender y utilizar todas las funcionalidades del sistema PickPad, diseñado específicamente para la gestión electoral, fiscalización de mesas y seguimiento de votantes.</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon blue">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                        </div>
+                        <h3>Búsqueda Avanzada</h3>
+                        <p>Localice votantes rápidamente con filtros personalizados y búsqueda en tiempo real.</p>
+                        <a href="#modulo-busqueda" class="feature-link">Ver módulo →</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon green">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </div>
+                        <h3>Fiscalización</h3>
+                        <p>Controle la asistencia en tiempo real y gestione el padrón de su mesa asignada.</p>
+                        <a href="#modulo-fiscalizar" class="feature-link">Ver módulo →</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon purple">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <line x1="19" y1="8" x2="19" y2="14"></line>
+                                <line x1="22" y1="11" x2="16" y2="11"></line>
+                            </svg>
+                        </div>
+                        <h3>Gestión de Usuarios</h3>
+                        <p>Administre fiscales y usuarios con diferentes niveles de acceso y permisos.</p>
+                        <a href="#modulo-usuarios" class="feature-link">Ver módulo →</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon orange">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                        </div>
+                        <h3>Estadísticas en Vivo</h3>
+                        <p>Monitoree participación, tendencias y resultados en tiempo real con gráficos interactivos.</p>
+                        <a href="#modulo-estadisticas" class="feature-link">Ver módulo →</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon red">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </div>
+                        <h3>Importar/Exportar</h3>
+                        <p>Gestione padrones electorales con herramientas de importación y exportación masiva.</p>
+                        <a href="#modulo-padrones" class="feature-link">Ver módulo →</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon teal">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                        <h3>Configuración</h3>
+                        <p>Configure comicios, circuitos y ajustes del sistema según sus necesidades.</p>
+                        <a href="#modulo-configuracion" class="feature-link">Ver módulo →</a>
+                    </div>
+                </div>
+
+                <div class="quick-start">
+                    <h2>Inicio Rápido</h2>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Conozca los Roles</h4>
+                                <p>Familiarícese con los 5 niveles de permisos y las funcionalidades disponibles para su rol.</p>
+                                <a href="#roles" class="btn-secondary">Ver roles →</a>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Acceda al Sistema</h4>
+                                <p>Aprenda cómo ingresar y configure la aplicación en su dispositivo móvil.</p>
+                                <a href="#acceso" class="btn-secondary">Ver guía →</a>
+                            </div>
+                        </div>
+
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Explore los Módulos</h4>
+                                <p>Descubra todas las funcionalidades disponibles según su nivel de acceso.</p>
+                                <a href="#modulo-busqueda" class="btn-secondary">Ver módulos →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-boxes">
+                    <div class="info-box info">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <div>
+                            <strong>Aplicación Web Progresiva (PWA)</strong>
+                            <p>PickPad puede instalarse en su dispositivo móvil para funcionar como una aplicación nativa con acceso offline limitado.</p>
+                        </div>
+                    </div>
+
+                    <div class="info-box success">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <div>
+                            <strong>Actualizaciones en Tiempo Real</strong>
+                            <p>Los datos se sincronizan automáticamente, permitiendo que múltiples usuarios trabajen simultáneamente sin conflictos.</p>
+                        </div>
+                    </div>
+
+                    <div class="info-box warning">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <div>
+                            <strong>Seguridad y Permisos</strong>
+                            <p>El sistema implementa sesiones con tiempo límite y control de acceso estricto basado en roles. Proteja sus credenciales.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="footer">
+                <p>&copy; 2025 PickPad v3.2.2 - Sistema de Gestión Electoral</p>
+                <p>Documentación actualizada: Marzo 2026</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

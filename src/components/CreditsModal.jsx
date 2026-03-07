@@ -66,6 +66,14 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
               <p className="text-lg font-bold text-gray-900">PickPad</p>
               <p className="text-sm text-gray-600">Versión {appVersion}</p>
               <p className="text-xs text-gray-500 mt-1">Última actualización: Febrero 2026</p>
+              <a
+                href="/docs/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 mt-3 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              >
+                📄 Ver documentación
+              </a>
             </div>
 
             <div className="pt-4 border-t border-gray-200">
