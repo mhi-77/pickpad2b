@@ -47,11 +47,6 @@ export default function ImportPadronForm() {
    * Modo actual de operación (SELECTION, VALIDATION, IMPORTING, COMPLETED)
    */
   const [mode, setMode] = useState(MODES.SELECTION);
-  
-  /**
-   * Archivo seleccionado por el usuario
-   * @type {File | null}
-   */
   const [selectedFile, setSelectedFile] = useState(null);
   
   /**
