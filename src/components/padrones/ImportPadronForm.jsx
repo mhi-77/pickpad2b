@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, AlertCircle, CheckCircle, XCircle, Loader2, Download, FileText, AlertTriangle, Info } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle, XCircle, Loader2, Info } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import {
   parseCSVFile,
@@ -8,15 +8,16 @@ import {
   validateRecordIntegrity,
   checkDuplicateDocuments,
   normalizeRecord,
-  downloadTemplate,
   downloadErrorReport,
-  ALL_COLUMNS,
   REQUIRED_COLUMNS
 } from '../../utils/importUtils';
 
+import FileSelector from './FileSelector';
+import { ValidationPanel, ImportProgressPanel } from './ImportModes';
+import { CompletionScreen, ConfirmationModal } from './ImportRenders';
+
 /**
- * MODOS DE OPERACIÓN DEL COMPONENTE
- * Define los diferentes estados por los que pasa el proceso de importación
+ * MODOS DE OPERACIÓN
  */
 const MODES = {
   SELECTION: 'selection',    // Selección de archivo
@@ -27,18 +28,16 @@ const MODES = {
 
 /**
  * ImportPadronForm - Componente principal para importación de padrón electoral
- * 
- * Funcionalidad:
- * 1. Permite subir archivos CSV o Excel con datos del padrón
- * 2. Valida la estructura y los datos antes de importar
- * 3. Importa en lotes (batch) para optimizar performance
- * 4. Actualiza estadísticas de mesas automáticamente
- * 5. Proporciona feedback visual del progreso
- * 
- * Flujo:
- * SELECTION → VALIDATION → IMPORTING → COMPLETED
- * 
- * Permisos: Solo usuarios tipo 1 (Superusuario) o tipo 2 (Administrador)
+ *
+ * Responsabilidad: solo estado, lógica y coordinación.
+ * El render está delegado a:
+ *   - FileSelector      → selección y preview del archivo
+ *   - ValidationPanel   → resultados de validación
+ *   - ImportProgressPanel → barra de progreso durante importación
+ *   - CompletionScreen  → pantalla de éxito
+ *   - ConfirmationModal → modal de confirmación por email
+ *
+ * Flujo: SELECTION → VALIDATION → (modal) → IMPORTING → COMPLETED
  */
 export default function ImportPadronForm() {
   // ====== ESTADO PRINCIPAL ======
@@ -47,12 +46,12 @@ export default function ImportPadronForm() {
    * Modo actual de operación (SELECTION, VALIDATION, IMPORTING, COMPLETED)
    */
   const [mode, setMode] = useState(MODES.SELECTION);
-  const [selectedFile, setSelectedFile] = useState(null);
   
   /**
-   * Datos parseados del archivo
-   * @type {{ headers: string[], records: Object[] } | null}
+   * Archivo seleccionado por el usuario
+   * @type {File | null}
    */
+  const [selectedFile, setSelectedFile] = useState(null);
   const [parsedData, setParsedData] = useState(null);
   
   /**
@@ -100,37 +99,33 @@ export default function ImportPadronForm() {
    * @type {boolean | null}
    */
   const [userPermissions, setUserPermissions] = useState(null);
-  
-  /**
-   * Referencia al input file oculto
-   */
+  const [userEmail, setUserEmail] = useState('');
+
+  // Modal de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState('');
+
+  // Opción eliminar no incluidos
+  const [deleteNonMatching, setDeleteNonMatching] = useState(false);
+  const [toDeleteCount, setToDeleteCount] = useState(0);
+
   const fileInputRef = useRef(null);
 
-  // ====== EFECTOS ======
-  
-  /**
-   * Verifica los permisos del usuario al montar el componente
-   */
+  // ── Efectos ─────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     checkUserPermissions();
   }, []);
 
-  // ====== FUNCIONES DE PERMISOS ======
-  
-  /**
-   * Verifica si el usuario actual tiene permisos para importar
-   * Solo usuarios tipo 1 (Superusuario) y tipo2 (Administrador) pueden importar
-   */
+  // ── Permisos ─────────────────────────────────────────────────────────────────
+
   const checkUserPermissions = async () => {
     try {
-      // Obtener usuario autenticado
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setUserPermissions(false);
-        return;
-      }
+      if (!user) { setUserPermissions(false); return; }
 
-      // Obtener perfil con tipo de usuario
+      setUserEmail(user.email || '');
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('usuario_tipo')
@@ -147,30 +142,10 @@ export default function ImportPadronForm() {
     }
   };
 
-  // ====== FUNCIONES DE DRAG & DROP ======
-  
-  /**
-   * Maneja el evento dragover para permitir el drop
-   * @param {DragEvent} e 
-   */
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
+  // ── Drag & drop ──────────────────────────────────────────────────────────────
 
-  /**
-   * Maneja el evento dragleave cuando el cursor sale de la zona
-   * @param {DragEvent} e 
-   */
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  /**
-   * Maneja el evento drop cuando se suelta un archivo
-   * @param {DragEvent} e 
-   */
+  const handleDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -187,14 +162,8 @@ export default function ImportPadronForm() {
     if (file) handleFileSelect(file);
   };
 
-  // ====== FUNCIONES DE ARCHIVO ======
-  
-  /**
-   * Procesa la selección de un archivo
-   * Valida tamaño y tipo antes de parsear
-   * 
-   * @param {File} file - Archivo seleccionado
-   */
+  // ── Selección y parseo de archivo ────────────────────────────────────────────
+
   const handleFileSelect = (file) => {
     // Validar tamaño (máximo 100MB)
     const maxSize = 100 * 1024 * 1024;
@@ -209,11 +178,11 @@ export default function ImportPadronForm() {
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ];
-
-    const isValidType = validTypes.includes(file.type) ||
-                       file.name.endsWith('.csv') ||
-                       file.name.endsWith('.xls') ||
-                       file.name.endsWith('.xlsx');
+    const isValidType =
+      validTypes.includes(file.type) ||
+      file.name.endsWith('.csv') ||
+      file.name.endsWith('.xls') ||
+      file.name.endsWith('.xlsx');
 
     if (!isValidType) {
       setMessage({ type: 'error', text: 'Formato de archivo no válido. Use CSV o Excel (XLS/XLSX)' });
@@ -225,7 +194,6 @@ export default function ImportPadronForm() {
     setMessage({ type: '', text: '' });
     parseFile(file);
   };
-
   /**
    * Parsea el archivo seleccionado según su tipo
    * Valida que contenga todas las columnas requeridas
@@ -237,24 +205,13 @@ export default function ImportPadronForm() {
     setMessage({ type: 'info', text: 'Leyendo archivo...' });
 
     try {
-      let result;
-      
-      // Parsear según tipo de archivo
-      if (file.name.endsWith('.csv')) {
-        result = await parseCSVFile(file);
-      } else {
-        result = await parseXLSXFile(file);
-      }
+      const result = file.name.endsWith('.csv')
+        ? await parseCSVFile(file)
+        : await parseXLSXFile(file);
 
-      // Verificar que estén todas las columnas requeridas
       const missingColumns = REQUIRED_COLUMNS.filter(col => !result.headers.includes(col));
-
       if (missingColumns.length > 0) {
-        setMessage({
-          type: 'error',
-          text: `Columnas faltantes en el archivo: ${missingColumns.join(', ')}`
-        });
-        setIsProcessing(false);
+        setMessage({ type: 'error', text: `Columnas faltantes: ${missingColumns.join(', ')}` });
         return;
       }
 
@@ -271,18 +228,8 @@ export default function ImportPadronForm() {
     }
   };
 
-  // ====== FUNCIONES DE VALIDACIÓN ======
-  
-  /**
-   * Inicia el proceso de validación completa del archivo
-   * 
-   * Valida:
-   * 1. Estructura de cada registro (tipos de datos, campos requeridos)
-   * 2. Integridad referencial (existencia de FKs en BD)
-   * 3. Duplicados de documento dentro del archivo
-   * 
-   * Modo: VALIDATION
-   */
+  // ── Validación ───────────────────────────────────────────────────────────────
+
   const startValidation = async () => {
     if (!parsedData || parsedData.records.length === 0) {
       setMessage({ type: 'error', text: 'No hay datos para validar' });
@@ -326,10 +273,7 @@ export default function ImportPadronForm() {
 
         // Actualizar mensaje cada 1000 registros para dar feedback
         if ((i + 1) % 1000 === 0) {
-          setMessage({
-            type: 'info',
-            text: `Validando... ${i + 1} de ${records.length} registros`
-          });
+          setMessage({ type: 'info', text: `Validando... ${i + 1} de ${records.length} registros` });
         }
       }
 
@@ -337,30 +281,45 @@ export default function ImportPadronForm() {
       const duplicateErrors = checkDuplicateDocuments(records);
       allErrors.push(...duplicateErrors);
 
-      // Calcular registros válidos (sin errores)
-      const validRecords = records.length - new Set(allErrors.map(e => e.row)).size;
+      const errorRows = new Set(allErrors.map(e => e.row)).size;
+      const validRecords = records.length - errorRows;
 
-      // Guardar resultados de validación
       setValidationResults({
         totalRecords: records.length,
-        validRecords: validRecords,
-        errorRecords: records.length - validRecords,
+        validRecords,
+        errorRecords: errorRows,
         errors: allErrors,
         isValid: allErrors.length === 0
       });
 
-      // Mensaje final según resultado
+      // Si está activa la opción de eliminar, calcular cuántos se eliminarían
       if (allErrors.length === 0) {
-        setMessage({
-          type: 'success',
-          text: `Validación exitosa. Todos los ${records.length} registros son válidos.`
-        });
-      } else {
-        setMessage({
-          type: 'error',
-          text: `Se encontraron ${allErrors.length} errores en ${records.length - validRecords} registros. Corrija los errores antes de importar.`
-        });
+        const incomingDocs = new Set(records.map(r => Number(r.documento)));
+
+        // Paginar para evitar el límite de 1000 filas de Supabase
+        let allExistingDocs = [];
+        let from = 0;
+        const PAGE_SIZE = 1000;
+        while (true) {
+          const { data: page } = await supabase
+            .from('padron')
+            .select('documento')
+            .range(from, from + PAGE_SIZE - 1);
+          if (!page || page.length === 0) break;
+          allExistingDocs = allExistingDocs.concat(page.map(r => Number(r.documento)));
+          if (page.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+        }
+
+        const toDelete = allExistingDocs.filter(doc => !incomingDocs.has(doc));
+        setToDeleteCount(toDelete.length);
       }
+
+      setMessage(
+        allErrors.length === 0
+          ? { type: 'success', text: `Validación exitosa. Todos los ${records.length} registros son válidos.` }
+          : { type: 'error', text: `Se encontraron ${allErrors.length} errores en ${errorRows} registros.` }
+      );
     } catch (error) {
       setMessage({ type: 'error', text: `Error durante la validación: ${error.message}` });
     } finally {
@@ -368,47 +327,42 @@ export default function ImportPadronForm() {
     }
   };
 
-  // ====== FUNCIONES DE IMPORTACIÓN ======
-  
+  // ── Confirmación por email ───────────────────────────────────────────────────
+
   /**
-   * Inicia el proceso de importación de datos validados
-   * 
-   * Proceso:
-   * 1. Confirmar con el usuario (operación destructiva)
-   * 2. Normalizar todos los registros
-   * 3. Importar en lotes (BATCH_SIZE = 500)
-   * 4. Determinar si cada registro es INSERT o UPDATE
-   * 5. Usar upsert de Supabase para la operación
-   * 6. Actualizar estadísticas de mesas
-   * 
-   * Modo: IMPORTING → COMPLETED
+   * Abre el modal de confirmación (reemplaza al window.confirm anterior)
    */
+  const handleStartImportRequest = () => {
+    if (!validationResults?.isValid) return;
+    setConfirmEmail('');
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmModalCancel = () => {
+    setShowConfirmModal(false);
+    setConfirmEmail('');
+  };
+
+  const handleConfirmModalConfirm = () => {
+    setShowConfirmModal(false);
+    setConfirmEmail('');
+    startImport();
+  };
+
+  // ── Importación ──────────────────────────────────────────────────────────────
+
   const startImport = async () => {
-    // Verificar que no haya errores de validación
-    if (!validationResults?.isValid) {
-      setMessage({ type: 'error', text: 'No se puede importar. Hay errores de validación.' });
-      return;
-    }
+    if (!validationResults?.isValid) return;
 
-    // Confirmar operación destructiva
-    const confirmMessage = `¿Está seguro de importar ${parsedData.records.length} registros?\n\nEsto actualizará TODOS los campos de los registros existentes.\n\nEsta acción no se puede deshacer.`;
-
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    // Iniciar importación
     setMode(MODES.IMPORTING);
     setIsProcessing(true);
     setImportProgress({ current: 0, total: parsedData.records.length, percentage: 0 });
-    setImportStats({ inserted: 0, updated: 0 });
+    setImportStats({ inserted: 0, updated: 0, deleted: 0 });
 
     try {
       // Normalizar todos los registros (convertir tipos, limpiar datos)
       const normalizedRecords = parsedData.records.map(normalizeRecord);
-      
-      // Configuración de lotes
-      const BATCH_SIZE = 500; // Registros por lote
+      const BATCH_SIZE = 500;
       const totalBatches = Math.ceil(normalizedRecords.length / BATCH_SIZE);
 
       let totalInserted = 0;
@@ -420,12 +374,11 @@ export default function ImportPadronForm() {
         const end = Math.min(start + BATCH_SIZE, normalizedRecords.length);
         const batch = normalizedRecords.slice(start, end);
 
-        // Determinar qué registros ya existen para contabilizar correctamente
-        const existingDocs = batch.map(r => r.documento);
+        // Detectar qué documentos ya existen para contabilizar correctamente
         const { data: existing } = await supabase
           .from('padron')
           .select('documento')
-          .in('documento', existingDocs);
+          .in('documento', batch.map(r => r.documento));
 
         const existingSet = new Set(existing?.map(e => e.documento) || []);
 
@@ -435,24 +388,16 @@ export default function ImportPadronForm() {
           .from('padron')
           .upsert(batch, { onConflict: 'documento' });
 
-        if (error) {
-          throw new Error(`Error en lote ${batchIndex + 1}: ${error.message}`);
-        }
+        if (error) throw new Error(`Error en lote ${batchIndex + 1}: ${error.message}`);
 
         // Contabilizar inserts vs updates
         batch.forEach(record => {
-          if (existingSet.has(record.documento)) {
-            totalUpdated++;
-          } else {
-            totalInserted++;
-          }
+          if (existingSet.has(record.documento)) totalUpdated++;
+          else totalInserted++;
         });
 
-        // Actualizar progreso
-        const current = end;
-        const percentage = Math.round((current / normalizedRecords.length) * 100);
-
-        setImportProgress({ current, total: normalizedRecords.length, percentage });
+        const percentage = Math.round((end / normalizedRecords.length) * 100);
+        setImportProgress({ current: end, total: normalizedRecords.length, percentage });
         setImportStats({ inserted: totalInserted, updated: totalUpdated });
 
         // Pausa breve entre lotes para no sobrecargar la BD
@@ -461,14 +406,52 @@ export default function ImportPadronForm() {
         }
       }
 
-      // Actualizar estadísticas de todas las mesas afectadas
+      // Eliminar registros no incluidos en el archivo si la opción está activa
+      let totalDeleted = 0;
+      if (deleteNonMatching) {
+        const incomingDocs = new Set(normalizedRecords.map(r => Number(r.documento)));
+
+        // Paginar para evitar el límite de 1000 filas de Supabase
+        let allExistingDocs = [];
+        let from = 0;
+        const PAGE_SIZE = 1000;
+        while (true) {
+          const { data: page, error: pageError } = await supabase
+            .from('padron')
+            .select('documento')
+            .range(from, from + PAGE_SIZE - 1);
+          if (pageError) throw new Error(`Error leyendo padron: ${pageError.message}`);
+          if (!page || page.length === 0) break;
+          allExistingDocs = allExistingDocs.concat(page.map(r => Number(r.documento)));
+          if (page.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+        }
+
+        const docsToDelete = allExistingDocs.filter(doc => !incomingDocs.has(doc));
+
+        if (docsToDelete.length > 0) {
+          const DELETE_BATCH = 500;
+          for (let i = 0; i < docsToDelete.length; i += DELETE_BATCH) {
+            const batch = docsToDelete.slice(i, i + DELETE_BATCH);
+            const { error: deleteError } = await supabase
+              .from('padron')
+              .delete()
+              .in('documento', batch);
+            if (deleteError) throw new Error(`Error eliminando registros: ${deleteError.message}`);
+            totalDeleted += batch.length;
+            setImportStats({ inserted: totalInserted, updated: totalUpdated, deleted: totalDeleted });
+          }
+        }
+      }
+
+      // Actualizar estadísticas de mesas después de todos los cambios (upsert + delete)
       await updateStatistics();
 
       // Importación completada
       setMode(MODES.COMPLETED);
       setMessage({
         type: 'success',
-        text: `Importación completada: ${totalInserted} nuevos, ${totalUpdated} actualizados`
+        text: `Importación completada: ${totalInserted} nuevos, ${totalUpdated} actualizados${deleteNonMatching ? `, ${totalDeleted} eliminados` : ''}`
       });
     } catch (error) {
       setMessage({ type: 'error', text: `Error durante la importación: ${error.message}` });
@@ -478,46 +461,32 @@ export default function ImportPadronForm() {
     }
   };
 
-  /**
-   * Actualiza las estadísticas de todas las mesas
-   * 
-   * Recalcula:
-   * - total_empadronados: cantidad de registros en padron por mesa
-   * - total_votaron: cantidad de registros con voto_emitido = true
-   * 
-   * Esto es necesario después de cada importación para mantener
-   * las estadísticas sincronizadas
-   */
+  
+  
+  // ── Estadísticas de mesas ─────────────────────────────────────────────────────
+
   const updateStatistics = async () => {
     try {
       // Obtener todas las mesas
       const { data: mesas } = await supabase.from('mesas').select('numero');
+      if (!mesas?.length) return;
 
-      if (mesas && mesas.length > 0) {
-        // Actualizar estadísticas de cada mesa
-        for (const mesa of mesas) {
-          // Contar total de empadronados
-          const { count: totalEmpadronados } = await supabase
-            .from('padron')
-            .select('documento', { count: 'exact', head: true })
-            .eq('mesa_numero', mesa.numero);
+      for (const mesa of mesas) {
+        const { count: totalEmpadronados } = await supabase
+          .from('padron')
+          .select('documento', { count: 'exact', head: true })
+          .eq('mesa_numero', mesa.numero);
 
-          // Contar total de votantes
-          const { count: totalVotaron } = await supabase
-            .from('padron')
-            .select('documento', { count: 'exact', head: true })
-            .eq('mesa_numero', mesa.numero)
-            .eq('voto_emitido', true);
+        const { count: totalVotaron } = await supabase
+          .from('padron')
+          .select('documento', { count: 'exact', head: true })
+          .eq('mesa_numero', mesa.numero)
+          .eq('voto_emitido', true);
 
-          // Actualizar mesa con nuevos totales
-          await supabase
-            .from('mesas')
-            .update({
-              total_empadronados: totalEmpadronados || 0,
-              total_votaron: totalVotaron || 0
-            })
-            .eq('numero', mesa.numero);
-        }
+        await supabase
+          .from('mesas')
+          .update({ total_empadronados: totalEmpadronados || 0, total_votaron: totalVotaron || 0 })
+          .eq('numero', mesa.numero);
       }
     } catch (error) {
       console.error('Error updating statistics:', error);
@@ -525,30 +494,23 @@ export default function ImportPadronForm() {
     }
   };
 
-  // ====== FUNCIONES DE UTILIDAD ======
-  
-  /**
-   * Resetea el formulario a su estado inicial
-   * Vuelve al modo SELECTION
-   */
+  // ── Reset ────────────────────────────────────────────────────────────────────
+
   const resetForm = () => {
     setMode(MODES.SELECTION);
     setSelectedFile(null);
     setParsedData(null);
     setValidationResults(null);
     setImportProgress({ current: 0, total: 0, percentage: 0 });
-    setImportStats({ inserted: 0, updated: 0 });
+    setImportStats({ inserted: 0, updated: 0, deleted: 0 });
     setMessage({ type: '', text: '' });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    setDeleteNonMatching(false);
+    setToDeleteCount(0);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ====== RENDERS CONDICIONALES ======
-  
-  /**
-   * Estado: Cargando permisos
-   */
+  // ── Renders condicionales de permisos ────────────────────────────────────────
+
   if (userPermissions === null) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -557,33 +519,28 @@ export default function ImportPadronForm() {
     );
   }
 
-  /**
-   * Estado: Sin permisos
-   * Solo Superusuario y Administrador pueden acceder
-   */
   if (userPermissions === false) {
     return (
-      <div className="space-y-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center space-x-3">
-            <XCircle className="w-6 h-6 text-red-600" />
-            <div>
-              <h3 className="font-semibold text-red-800">Acceso Denegado</h3>
-              <p className="text-sm text-red-700">
-                Solo superusuarios y administradores pueden importar datos al padrón
-              </p>
-            </div>
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center space-x-3">
+          <XCircle className="w-6 h-6 text-red-600" />
+          <div>
+            <h3 className="font-semibold text-red-800">Acceso Denegado</h3>
+            <p className="text-sm text-red-700">
+              Solo superusuarios y administradores pueden importar datos al padrón.
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
-  // ====== RENDER PRINCIPAL ======
-  
+  // ── Render principal ─────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-4">
-      {/* Header informativo */}
+
+      {/* Header */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <div className="flex items-center space-x-3">
           <Upload className="w-6 h-6 text-green-600" />
@@ -596,350 +553,75 @@ export default function ImportPadronForm() {
         </div>
       </div>
 
-      {/* MODO: SELECTION - Selección y carga de archivo */}
+      {/* SELECTION */}
       {mode === MODES.SELECTION && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Panel informativo */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <Info className="w-5 h-5 text-blue-600" />
-                <h4 className="font-semibold text-blue-900">Información Importante</h4>
-              </div>
-              <ul className="text-sm text-blue-700 space-y-2 ml-7">
-                <li>Los registros existentes serán actualizados completamente</li>
-                <li>Se validará el archivo antes de permitir la importación</li>
-                <li>El archivo debe contener todas las columnas requeridas</li>
-                <li>Tamaño máximo: 100MB o 2 millones de registros</li>
-              </ul>
-            </div>
-
-            {/* Botón descargar plantilla */}
-            <div className="flex justify-center">
-              <button
-                onClick={downloadTemplate}
-                className="flex items-center space-x-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors border border-blue-300"
-              >
-                <Download className="w-5 h-5" />
-                <span>Descargar Plantilla CSV</span>
-              </button>
-            </div>
-
-            {/* Zona de drag & drop */}
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragging
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 bg-white hover:border-gray-400'
-              }`}
-            >
-              <Upload className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-blue-600' : 'text-gray-400'}`} />
-              <p className="text-gray-600 mb-2">
-                Arrastra y suelta un archivo aquí o haz clic para seleccionar
-              </p>
-              <p className="text-sm text-gray-500 mb-4">
-                Formatos soportados: CSV, XLS, XLSX
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xls,.xlsx"
-                onChange={handleFileInputChange}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessing}
-                className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                Seleccionar Archivo
-              </button>
-            </div>
-
-            {/* Información del archivo seleccionado */}
-            {selectedFile && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-6 h-6 text-gray-600" />
-                    <div>
-                      <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  {!isProcessing && (
-                    <button
-                      onClick={resetForm}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium"
-                    >
-                      Cambiar archivo
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Vista previa de datos y botón de validación */}
-            {parsedData && (
-              <div className="space-y-4">
-                {/* Tabla de vista previa */}
-                <div className="bg-white border border-gray-300 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">Vista Previa (primeras 5 filas)</h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          {parsedData.headers.slice(0, 8).map((header, i) => (
-                            <th key={i} className="px-3 py-2 text-left font-medium text-gray-700 border-b">
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {parsedData.records.slice(0, 5).map((record, i) => (
-                          <tr key={i} className="border-b">
-                            {parsedData.headers.slice(0, 8).map((header, j) => (
-                              <td key={j} className="px-3 py-2 text-gray-700">
-                                {record[header] || '-'}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-3">
-                    Mostrando {Math.min(5, parsedData.records.length)} de {parsedData.records.length} registros
-                  </p>
-                </div>
-
-                {/* Botón iniciar validación */}
-                <button
-                  onClick={startValidation}
-                  disabled={isProcessing}
-                  className="w-full bg-orange-600 text-white py-3 px-4 rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Validando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertTriangle className="w-5 h-5" />
-                      <span>Validar Archivo Completo (Modo Simulación)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <FileSelector
+          selectedFile={selectedFile}
+          parsedData={parsedData}
+          isDragging={isDragging}
+          isProcessing={isProcessing}
+          deleteNonMatching={deleteNonMatching}
+          onDeleteNonMatchingChange={setDeleteNonMatching}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onFileSelect={handleFileInputChange}
+          onValidate={startValidation}
+          onReset={resetForm}
+          fileInputRef={fileInputRef}
+        />
       )}
 
-      {/* MODO: VALIDATION - Resultados de validación */}
+      {/* VALIDATION */}
       {mode === MODES.VALIDATION && validationResults && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* Panel de resumen de validación */}
-            <div className={`border rounded-lg p-4 ${
-              validationResults.isValid
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
-            }`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {validationResults.isValid ? (
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                ) : (
-                  <XCircle className="w-6 h-6 text-red-600" />
-                )}
-                <h3 className={`font-semibold ${
-                  validationResults.isValid ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  {validationResults.isValid ? 'Validación Exitosa' : 'Errores Encontrados'}
-                </h3>
-              </div>
-              {/* Estadísticas de validación */}
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">{validationResults.totalRecords}</p>
-                  <p className="text-sm text-gray-600">Total Registros</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-600">{validationResults.validRecords}</p>
-                  <p className="text-sm text-gray-600">Válidos</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-red-600">{validationResults.errorRecords}</p>
-                  <p className="text-sm text-gray-600">Con Errores</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Panel de errores detallados (solo si hay errores) */}
-            {!validationResults.isValid && validationResults.errors.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-gray-900">
-                    Detalle de Errores ({validationResults.errors.length})
-                  </h4>
-                  <button
-                    onClick={() => downloadErrorReport(validationResults.errors)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Descargar Reporte de Errores</span>
-                  </button>
-                </div>
-
-                {/* Tabla de errores con scroll */}
-                <div className="bg-white border border-gray-300 rounded-lg max-h-96 overflow-y-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100 sticky top-0">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-medium text-gray-700 border-b">Fila</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-700 border-b">Campo</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-700 border-b">Valor</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-700 border-b">Error</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {validationResults.errors.slice(0, 100).map((error, i) => (
-                        <tr key={i} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-2 text-gray-700">{error.row}</td>
-                          <td className="px-4 py-2 text-gray-700 font-mono text-xs">{error.field}</td>
-                          <td className="px-4 py-2 text-gray-700">{error.value || '-'}</td>
-                          <td className="px-4 py-2 text-red-600">{error.error}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {/* Mensaje si hay más de 100 errores */}
-                  {validationResults.errors.length > 100 && (
-                    <div className="p-3 text-center text-sm text-gray-600 bg-gray-50 border-t">
-                      Mostrando 100 de {validationResults.errors.length} errores. Descargue el reporte completo.
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Botones de acción */}
-            <div className="flex space-x-4">
-              <button
-                onClick={resetForm}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancelar
-              </button>
-              {/* Botón de importación solo si la validación fue exitosa */}
-              {validationResults.isValid && (
-                <button
-                  onClick={startImport}
-                  disabled={isProcessing}
-                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  <Upload className="w-5 h-5" />
-                  <span>Iniciar Importación</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        <ValidationPanel
+          validationResults={validationResults}
+          deleteNonMatching={deleteNonMatching}
+          toDeleteCount={toDeleteCount}
+          isProcessing={isProcessing}
+          onStartImport={handleStartImportRequest}
+          onReset={resetForm}
+          onDownloadErrors={() => downloadErrorReport(validationResults.errors)}
+        />
       )}
 
-      {/* MODO: IMPORTING - Progreso de importación */}
+      {/* IMPORTING */}
       {mode === MODES.IMPORTING && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Indicador visual de proceso */}
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Importando Padrón...</h3>
-              <p className="text-gray-600">Por favor no cierre esta ventana</p>
-            </div>
-
-            {/* Panel de progreso detallado */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-              {/* Contador de progreso */}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-blue-700 font-medium">
-                  Procesando {importProgress.current.toLocaleString('es-AR')} de {importProgress.total.toLocaleString('es-AR')} registros
-                </span>
-                <span className="text-blue-600 font-bold">
-                  {importProgress.percentage}%
-                </span>
-              </div>
-              
-              {/* Barra de progreso */}
-              <div className="w-full bg-blue-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${importProgress.percentage}%` }}
-                ></div>
-              </div>
-
-              {/* Estadísticas de importación */}
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-blue-300">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600">{importStats.inserted}</p>
-                  <p className="text-sm text-blue-700">Nuevos</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-600">{importStats.updated}</p>
-                  <p className="text-sm text-blue-700">Actualizados</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ImportProgressPanel
+          importProgress={importProgress}
+          importStats={importStats}
+          deleteNonMatching={deleteNonMatching}
+        />
       )}
 
-      {/* MODO: COMPLETED - Importación completada */}
+      {/* COMPLETED */}
       {mode === MODES.COMPLETED && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="max-w-3xl mx-auto space-y-6 text-center">
-            {/* Ícono de éxito */}
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-            <h3 className="text-2xl font-semibold text-gray-900">Importación Completada</h3>
-
-            {/* Resumen de resultados */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-3xl font-bold text-green-600">{importStats.inserted}</p>
-                  <p className="text-gray-700">Registros Nuevos</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-orange-600">{importStats.updated}</p>
-                  <p className="text-gray-700">Registros Actualizados</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón para nueva importación */}
-            <button
-              onClick={resetForm}
-              className="bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Realizar Nueva Importación
-            </button>
-          </div>
-        </div>
+        <CompletionScreen
+          importStats={importStats}
+          deleteNonMatching={deleteNonMatching}
+          onReset={resetForm}
+        />
       )}
 
-      {/* MENSAJES DE FEEDBACK - Se muestra en todos los modos */}
+      {/* Modal de confirmación */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        recordCount={parsedData?.records?.length}
+        deleteNonMatching={deleteNonMatching}
+        toDeleteCount={toDeleteCount}
+        userEmail={userEmail}
+        confirmEmail={confirmEmail}
+        onEmailChange={setConfirmEmail}
+        onConfirm={handleConfirmModalConfirm}
+        onCancel={handleConfirmModalCancel}
+      />
+
+      {/* Mensajes de feedback */}
       {message.text && (
         <div className={`flex items-center space-x-2 p-4 rounded-lg ${
           message.type === 'success' ? 'bg-green-50 border border-green-200' :
-          message.type === 'error' ? 'bg-red-50 border border-red-200' :
-          'bg-blue-50 border border-blue-200'
+          message.type === 'error'   ? 'bg-red-50 border border-red-200' :
+                                       'bg-blue-50 border border-blue-200'
         }`}>
           {message.type === 'success' ? (
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -950,8 +632,8 @@ export default function ImportPadronForm() {
           )}
           <p className={
             message.type === 'success' ? 'text-green-700' :
-            message.type === 'error' ? 'text-red-700' :
-            'text-blue-700'
+            message.type === 'error'   ? 'text-red-700' :
+                                         'text-blue-700'
           }>
             {message.text}
           </p>

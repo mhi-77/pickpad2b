@@ -41,6 +41,7 @@ export default function ExportPadronForm() {
   const [claseHasta, setClaseHasta] = useState('');
 
   const [emopicks, setEmopicks] = useState([]);
+  const [markedCount, setMarkedCount] = useState(0);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -49,6 +50,7 @@ export default function ExportPadronForm() {
 
   useEffect(() => {
     loadEmopicks();
+    loadMarkedCount();
   }, []);
 
   useEffect(() => {
@@ -65,6 +67,21 @@ export default function ExportPadronForm() {
       setEmopicks(data || []);
     } catch (error) {
       console.error('Error loading emopicks:', error);
+    }
+  };
+
+  const loadMarkedCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('padron')
+        .select('documento', { count: 'exact', head: true })
+        .not('emopick_id', 'is', null);
+
+      if (error) throw error;
+      setMarkedCount(count || 0);
+    } catch (error) {
+      console.error('Error loading marked count:', error);
+      setMarkedCount(0);
     }
   };
 
@@ -106,7 +123,11 @@ export default function ExportPadronForm() {
       query = query.eq('voto_emitido', false);
     }
 
-    if (selectedEmopick !== 'all') {
+    if (selectedEmopick === 'marked') {
+      query = query.not('emopick_id', 'is', null);
+    } else if (selectedEmopick === 'none') {
+      query = query.is('emopick_id', null);
+    } else if (selectedEmopick !== 'all') {
       query = query.eq('emopick_id', parseInt(selectedEmopick));
     }
 
@@ -392,6 +413,8 @@ export default function ExportPadronForm() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="all">Todos</option>
+                  <option value="marked">Marcados ({markedCount})</option>
+                  <option value="none">Ninguno</option>
                   {emopicks.map(emopick => (
                     <option key={emopick.id} value={emopick.id}>
                       {formatEmopickDisplay(emopick.display, emopick.count)}

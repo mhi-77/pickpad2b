@@ -37,7 +37,7 @@ export const ALL_COLUMNS = [
   'documento', 'apellido', 'nombre', 'sexo', 'clase', 'domicilio',
   'mesa_numero', 'orden', 'da_es_nuevo', 'da_voto_obligatorio', 'da_texto_libre',
   'emopick_id', 'pick_nota', 'pick_check', 'voto_emitido', 'voto_pick_at',
-  'voto_pick_user', 'emopick_user', 'pick_check_user'
+  'voto_pick_user', 'emopick_user', 'pick_check_user', 'pick_check_at'
 ];
 
 // ============================================================
@@ -233,13 +233,14 @@ export const validateRecordStructure = (record, rowNumber) => {
   const booleanFields = ['voto_emitido', 'pick_check', 'da_es_nuevo', 'da_voto_obligatorio'];
   booleanFields.forEach(field => {
     if (record[field] && record[field] !== '') {
-      const value = String(record[field]).toLowerCase();
-      if (!['true', 'false', '1', '0', 'sí', 'si', 'no', 'yes'].includes(value)) {
+      const value = String(record[field]).toLowerCase().trim();
+      // Acepta formatos de Excel en español (verdadero/falso) e inglés (true/false)
+      if (!['true', 'false', '1', '0', 'sí', 'si', 'no', 'yes', 'verdadero', 'falso'].includes(value)) {
         errors.push({
           row: rowNumber,
           field: field,
           value: record[field],
-          error: `${field} debe ser true/false, 1/0, o sí/no`
+          error: `${field} debe ser true/false, 1/0, sí/no, o verdadero/falso`
         });
       }
     }
@@ -266,6 +267,18 @@ export const validateRecordStructure = (record, rowNumber) => {
         field: 'voto_pick_at',
         value: record.voto_pick_at,
         error: 'voto_pick_at debe ser una fecha válida en formato ISO 8601'
+      });
+    }
+  }
+
+  if (record.pick_check_at && record.pick_check_at !== '') {
+    const date = new Date(record.pick_check_at);
+    if (isNaN(date.getTime())) {
+      errors.push({
+        row: rowNumber,
+        field: 'pick_check_at',
+        value: record.pick_check_at,
+        error: 'pick_check_at debe ser una fecha válida en formato ISO 8601'
       });
     }
   }
@@ -352,7 +365,45 @@ export const checkDuplicateDocuments = (records) => {
 // ============================================================
 
 /**
- * Normaliza un registro convirtiéndolo a los tipos correctos
+ * Convierte un número de serie de Excel a fecha ISO 8601.
+ * Excel cuenta días desde el 30/12/1899 (con un bug histórico del año 1900).
+ * Un valor > 1000 y sin separadores de fecha es casi seguro un serial de Excel.
+ *
+ * @param {string} value
+ * @returns {string|null} ISO 8601 o null si no es un serial válido
+ */
+const excelSerialToISO = (value) => {
+  const serial = parseFloat(value);
+  if (isNaN(serial) || serial < 1) return null;
+  // Epoch de Excel: 30/12/1899
+  const excelEpoch = new Date(1899, 11, 30);
+  const ms = serial * 24 * 60 * 60 * 1000;
+  const date = new Date(excelEpoch.getTime() + ms);
+  if (isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
+/**
+ * Normaliza un valor booleano tolerando los formatos que genera Excel
+ * en español (VERDADERO/FALSO) y en inglés (TRUE/FALSE), además de 1/0.
+ *
+ * @param {string} value
+ * @returns {boolean}
+ */
+const normalizeBoolean = (value) => {
+  const v = String(value).toLowerCase().trim();
+  return ['true', '1', 'sí', 'si', 'yes', 'verdadero', 'vrai', 'wahr'].includes(v);
+};
+
+/**
+ * Normaliza un registro convirtiéndolo a los tipos correctos para Supabase.
+ *
+ * Tolerancias incorporadas para archivos que pasaron por Excel:
+ * - Booleanos: acepta TRUE/FALSE, VERDADERO/FALSO, 1/0
+ * - Fechas: acepta ISO 8601 y números de serie de Excel
+ * - Numéricos: acepta enteros y decimales ("22325545.0" → 22325545)
+ * - Vacíos: cualquier campo opcional vacío queda en null (nunca string vacío
+ *   en campos numéricos, uuid o fecha, para no romper constraints de Supabase)
  */
 export const normalizeRecord = (record) => {
   const normalized = {};
@@ -365,90 +416,83 @@ export const normalizeRecord = (record) => {
     }
   });
 
-  // ===== NORMALIZAR: Campos numéricos (bigint) =====
-  // IMPORTANTE: bigint NO acepta strings vacíos, deben ser null
+  // ===== NORMALIZAR: documento (bigint, obligatorio) =====
   if (normalized.documento && normalized.documento !== '') {
-    normalized.documento = parseInt(normalized.documento);
+    // parseFloat primero para tolerar "22325545.0", luego truncar a entero
+    const parsed = Math.trunc(parseFloat(normalized.documento));
+    if (isNaN(parsed) || parsed <= 0) throw new Error(`documento inválido: ${normalized.documento}`);
+    normalized.documento = parsed;
   } else {
     throw new Error('documento es obligatorio');
   }
 
-  if (normalized.mesa_numero && normalized.mesa_numero !== '') {
-    normalized.mesa_numero = parseInt(normalized.mesa_numero);
-  } else {
-    normalized.mesa_numero = null;
-  }
-
-  if (normalized.orden && normalized.orden !== '') {
-    normalized.orden = parseInt(normalized.orden);
-  } else {
-    normalized.orden = null;
-  }
-
-  if (normalized.clase && normalized.clase !== '') {
-    normalized.clase = parseInt(normalized.clase);
-  } else {
-    normalized.clase = null;
-  }
-
-  if (normalized.emopick_id && normalized.emopick_id !== '') {
-    normalized.emopick_id = parseInt(normalized.emopick_id);
-  } else {
-    normalized.emopick_id = null;
-  }
+  // ===== NORMALIZAR: Campos numéricos enteros opcionales =====
+  ['mesa_numero', 'orden', 'clase', 'emopick_id'].forEach(field => {
+    if (normalized[field] !== undefined && normalized[field] !== '') {
+      const parsed = Math.trunc(parseFloat(normalized[field]));
+      normalized[field] = isNaN(parsed) ? null : parsed;
+    } else {
+      normalized[field] = null;
+    }
+  });
 
   // ===== NORMALIZAR: Sexo (uppercase o null) =====
   if (normalized.sexo && normalized.sexo !== '') {
-    normalized.sexo = normalized.sexo.toUpperCase();
+    normalized.sexo = normalized.sexo.toUpperCase().trim();
   } else {
     normalized.sexo = null;
   }
 
   // ===== NORMALIZAR: Campos booleanos =====
-  const booleanFields = ['voto_emitido', 'pick_check', 'da_es_nuevo', 'da_voto_obligatorio'];
-  booleanFields.forEach(field => {
+  // Acepta: true/false, TRUE/FALSE, VERDADERO/FALSO, 1/0, sí/no
+  ['voto_emitido', 'pick_check', 'da_es_nuevo', 'da_voto_obligatorio'].forEach(field => {
     if (normalized[field] !== undefined && normalized[field] !== '') {
-      const value = String(normalized[field]).toLowerCase();
-      normalized[field] = ['true', '1', 'sí', 'si', 'yes'].includes(value);
+      normalized[field] = normalizeBoolean(normalized[field]);
     } else {
       normalized[field] = false;
     }
   });
 
   // ===== NORMALIZAR: Campos UUID (null si vacío) =====
-  const uuidFields = ['voto_pick_user', 'emopick_user', 'pick_check_user'];
-  uuidFields.forEach(field => {
-    if (normalized[field] && normalized[field] !== '') {
-      // Mantener el UUID como string
-      normalized[field] = normalized[field];
-    } else {
-      normalized[field] = null;
-    }
+  ['voto_pick_user', 'emopick_user', 'pick_check_user'].forEach(field => {
+    const v = normalized[field];
+    normalized[field] = (v && v !== '') ? String(v).trim() : null;
   });
 
-  // ===== NORMALIZAR: voto_pick_at (fecha ISO 8601 o null) =====
-  if (normalized.voto_pick_at && normalized.voto_pick_at !== '') {
-    normalized.voto_pick_at = new Date(normalized.voto_pick_at).toISOString();
-  } else {
-    normalized.voto_pick_at = null;
-  }
+  // ===== NORMALIZAR: Campos de fecha (ISO 8601 o null) =====
+  // Acepta: ISO 8601 estándar y números de serie de Excel
+  ['voto_pick_at', 'pick_check_at'].forEach(field => {
+    const v = normalized[field];
+    if (!v || v === '') {
+      normalized[field] = null;
+      return;
+    }
+    const str = String(v).trim();
 
-  // ===== NORMALIZAR: Campos de texto (string vacío o valor) =====
-  if (!normalized.pick_nota) normalized.pick_nota = '';
-  if (!normalized.da_texto_libre) normalized.da_texto_libre = '';
+    // ¿Es un número de serie de Excel?
+    if (/^\d+(\.\d+)?$/.test(str)) {
+      normalized[field] = excelSerialToISO(str);
+      return;
+    }
 
-  const stringFields = ['apellido', 'nombre', 'domicilio'];
-  stringFields.forEach(field => {
+    // ISO 8601 o cualquier formato que Date() entienda
+    const date = new Date(str);
+    normalized[field] = isNaN(date.getTime()) ? null : date.toISOString();
+  });
+
+  // ===== NORMALIZAR: Campos de texto (nunca null, string vacío si falta) =====
+  ['pick_nota', 'da_texto_libre'].forEach(field => {
+    if (!normalized[field]) normalized[field] = '';
+  });
+  ['apellido', 'nombre', 'domicilio'].forEach(field => {
     if (normalized[field] === undefined || normalized[field] === null) {
       normalized[field] = '';
     }
   });
 
-  // ===== PASO FINAL: Eliminar cualquier campo con nombre vacío que pueda haber quedado =====
+  // ===== PASO FINAL: Eliminar campos con nombre vacío =====
   Object.keys(normalized).forEach(key => {
-    if (!key || key.trim() === '') {
-      delete normalized[key];
-    }
+    if (!key || key.trim() === '') delete normalized[key];
   });
 
   return normalized;
@@ -466,14 +510,14 @@ export const generateImportTemplate = () => {
     'documento', 'apellido', 'nombre', 'sexo', 'clase', 'domicilio',
     'mesa_numero', 'orden', 'da_es_nuevo', 'da_voto_obligatorio', 'da_texto_libre',
     'emopick_id', 'pick_nota', 'pick_check', 'voto_emitido', 'voto_pick_at',
-    'voto_pick_user', 'emopick_user', 'pick_check_user'
+    'voto_pick_user', 'emopick_user', 'pick_check_user', 'pick_check_at'
   ];
 
   const exampleRow = [
     '12345678', 'GARCIA', 'JUAN', 'M', '1985', 'CALLE FALSA 123',
     '1000', '1', 'false', 'true', '',
     '1', 'Votó temprano', 'true', 'true', '2025-10-22T10:30:00Z',
-    '', '', ''
+    '', '', '', ''
   ];
 
   const escapeCSV = (value) => {

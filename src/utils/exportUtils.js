@@ -18,6 +18,27 @@ export const formatBoolean = (value) => {
   return value ? 'Sí' : 'No';
 };
 
+export const formatPickCheckDateTime = (timestamp) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const today = new Date();
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  const isToday = date.getDate() === today.getDate() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getFullYear() === today.getFullYear();
+
+  if (isToday) {
+    return `${hours}:${minutes}`;
+  }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+};
+
 export const processBasicData = (data) => {
   return data.map(record => ({
     'Documento': record.documento || '',
@@ -90,8 +111,16 @@ export const downloadFile = (content, filename, mimeType) => {
 };
 
 export const generateFileName = (format, isBasic) => {
-  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-  const type = isBasic ? 'basico' : 'completo';
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  const timestamp = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+  const type = isBasic ? 'filtrado' : 'completo';
   return `padron_${type}_${timestamp}.${format}`;
 };
 
@@ -101,19 +130,31 @@ export const processRawData = (data) => {
 };
 
 export const processExtendedBasicData = (data) => {
-  return data.map(record => ({
-    'Pick': record.emopicks?.display || '',
-    'Nota Pick': record.pick_nota || '',
-    'Voto Emitido': formatBoolean(record.voto_emitido),
-    'Documento': record.documento || '',
-    'Apellido': record.apellido || '',
-    'Nombre': record.nombre || '',
-    'Sexo': record.sexo || '',
-    'Clase': record.clase || '',
-    'Domicilio': record.domicilio || '',
-    'Mesa N°': record.mesa_numero || '',
-    'Localidad': record.mesas?.establecimientos?.circuitos?.localidad || ''
-  }));
+  return data.map(record => {
+    let checkVerifiedBy = '';
+    if (record.pick_check && record.pick_check_user_profile?.full_name) {
+      checkVerifiedBy = record.pick_check_user_profile.full_name;
+      if (record.pick_check_at) {
+        checkVerifiedBy += ` - ${formatPickCheckDateTime(record.pick_check_at)}`;
+      }
+    }
+
+    return {
+      'Pick': record.emopicks?.display || '',
+      'Marcado por:': record.emopick_user_profile?.full_name || '',
+      'Nota Pick': record.pick_nota || '',
+      'Check verificado por:': checkVerifiedBy,
+      'Voto Emitido': formatBoolean(record.voto_emitido),
+      'Documento': record.documento || '',
+      'Apellido': record.apellido || '',
+      'Nombre': record.nombre || '',
+      'Sexo': record.sexo || '',
+      'Clase': record.clase || '',
+      'Domicilio': record.domicilio || '',
+      'Mesa N°': record.mesa_numero || '',
+      'Localidad': record.mesas?.establecimientos?.circuitos?.localidad || ''
+    };
+  });
 };
 
 export const convertRawToCSV = (data) => {
