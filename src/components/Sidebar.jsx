@@ -9,9 +9,9 @@ import CreditsModal from './CreditsModal';
 // disabled: indica si la funcionalidad está temporalmente deshabilitada
 const menuItems = [
   { id: 'search', label: 'Búsqueda', icon: Search, maxRole: 5, disabled: false },
+  { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3, disabled: false },
   { id: 'fiscalizar', label: 'Fiscalizar', icon: ListChecks, maxRole: 4, disabled: false },
   { id: 'testigo', label: 'Mesa Testigo', icon: ScanEye, maxRole: 4, disabled: !FEATURES.MESA_TESTIGO_ENABLED },
-  { id: 'gpicks', label: 'Picks', icon: SquarePen, maxRole: 3, disabled: false },
   { id: 'stats', label: 'Estadísticas', icon: Database, maxRole: 3, disabled: false },
   { id: 'control', label: 'Control', icon: ScreenShare, maxRole: 2, disabled: false },
   { id: 'gusers', label: 'Usuarios', icon: User, maxRole: 2, disabled: false },

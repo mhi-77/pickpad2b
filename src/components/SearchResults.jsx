@@ -20,6 +20,7 @@ import PickModal from './gpicks/PickModal';
 import Pagination from './shared/Pagination';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { canEditPick, getBlockedMessage, updatePadronPick } from './gusers/PickService';
 
 /**
  * @param {Array} results - Array de registros de votantes a mostrar
@@ -92,6 +93,11 @@ export default function SearchResults({
    * @param {Object} record - Registro del votante a clasificar
    */
   const handleOpenPickModal = (record) => {
+    if (!canEditPick(record.voto_emitido, userRole)) {
+      alert('No puedes editar picks de votantes que ya emitieron su voto.');
+      return;
+    }
+
     setCurrentRecordToPick(record);
     setShowPickModal(true);
   };
@@ -118,45 +124,11 @@ export default function SearchResults({
    * @param {string} pickNota - Nota adicional sobre la clasificación
    */
   const handlePickSave = async (emopickId, pickNota) => {
-    // Validación: Asegurar que existe un registro seleccionado
     if (!currentRecordToPick) return;
 
     try {
-      let updateData;
+      await updatePadronPick(currentRecordToPick.documento, emopickId, pickNota, user?.id);
 
-      // Determinar el tipo de operación y preparar datos de actualización
-      if (emopickId === null) {
-        // Flujo DESMARCAR: Limpiar todos los campos relacionados con picks
-        // Esto elimina la clasificación completa del votante
-        updateData = {
-          emopick_id: null,
-          pick_nota: null,
-          emopick_user: null,
-          pick_check_user: null,
-          pick_check: false
-        };
-      } else {
-        // Flujo ASIGNAR: Actualizar con la nueva clasificación
-        // Solo se modifican los campos necesarios, manteniendo pick_check intacto
-        updateData = {
-          emopick_id: emopickId,
-          pick_nota: pickNota || null,
-          emopick_user: user?.id || null
-        };
-      }
-
-      // Persistir cambios en la base de datos
-      const { error } = await supabase
-        .from('padron')
-        .update(updateData)
-        .eq('documento', currentRecordToPick.documento);
-
-      if (error) {
-        throw new Error('Error al guardar la selección');
-      }
-
-      // Actualización optimista de UI: Aplicar cambios localmente sin esperar recarga
-      // Esto mejora la percepción de velocidad de la aplicación
       const updatedResults = localResults.map(record =>
         record.documento === currentRecordToPick.documento
           ? {
@@ -166,7 +138,6 @@ export default function SearchResults({
               emopick_user: emopickId === null ? null : (user?.id || null),
               pick_check_user: emopickId === null ? null : record.pick_check_user,
               pick_check: emopickId === null ? false : record.pick_check,
-              // Actualizar objeto emopicks completo para mostrar el emoji/display correcto
               emopicks: emopickId === null ? null : (availableEmopicks.find(e => e.id === emopickId) || record.emopicks)
             }
           : record
@@ -174,8 +145,6 @@ export default function SearchResults({
 
       setLocalResults(updatedResults);
 
-      // Persistir última selección en localStorage (solo para operaciones de asignación)
-      // Esto permite pre-seleccionar los mismos valores en la próxima clasificación
       if (emopickId !== null) {
         setLastUsedEmopickId(emopickId);
         setLastUsedPickNota(pickNota);
@@ -183,12 +152,9 @@ export default function SearchResults({
         localStorage.setItem('lastUsedPickNota', pickNota);
       }
 
-      // Cerrar modal tras operación exitosa
       handleClosePickModal();
 
     } catch (error) {
-      // Manejo de errores: Mostrar mensaje al usuario
-      // TODO: Implementar sistema de notificaciones más sofisticado
       alert(error.message || 'Error al guardar la selección');
     }
   };
@@ -229,9 +195,14 @@ export default function SearchResults({
     <div className="bg-white rounded-xl shadow-lg p-2">
       {/* Header con contador de resultados */}
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-m  text-gray-800">
+        <h3 className="text-m text-gray-700 font-semibold">
           <span>
-            Registros encontrados: {totalCount}
+            Registros encontrados: -
+
+                    <span className="px-1.5 py-0.25 bg-blue-100 text-blue-800 rounded-md font-semibold">
+                      <span>{totalCount}</span>
+                    </span>
+            -
           </span>
         </h3>
       </div>
@@ -334,7 +305,7 @@ export default function SearchResults({
                   <span className="font-medium"> </span>
                   <div className="mt-1">
                     {record.emopicks?.display ? (
-                      <span className="px-2 py-2 bg-yellow-100 rounded-full text-xl font-medium">
+                      <span className="px-2 py-2 bg-yellow-100 rounded-full border border-yellow-200 text-xl font-medium">
                         {record.emopicks.display}
                       </span>
                     ) : (
@@ -385,6 +356,8 @@ export default function SearchResults({
         initialPickNota={currentRecordToPick?.pick_nota || lastUsedPickNota}
         votanteName={currentRecordToPick ? `${currentRecordToPick.apellido}, ${currentRecordToPick.nombre}` : ''}
         currentVoterEmopickId={currentRecordToPick?.emopick_id}
+        isBlocked={currentRecordToPick ? !canEditPick(currentRecordToPick.voto_emitido, userRole) : false}
+        blockedMessage={currentRecordToPick ? getBlockedMessage(currentRecordToPick.voto_emitido) : ''}
       />
     </div>
   );
