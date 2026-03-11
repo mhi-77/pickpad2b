@@ -90,7 +90,7 @@ export default defineConfig({
   ],
 
   // Rutas relativas en el build: necesario cuando el dominio sirve desde la raíz
-  base: './',
+  base: '/',
   build: {                          
     rollupOptions: {
       output: {
