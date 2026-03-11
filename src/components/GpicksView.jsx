@@ -83,6 +83,9 @@ export default function GpicksView() {
   const [isConfirmUncheckModalOpen, setIsConfirmUncheckModalOpen] = useState(false);
   const [pendingUncheckData, setPendingUncheckData] = useState(null);
 
+  // Estado para forzar recarga de datos
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   /**
    * Efecto para cargar los datos cuando el componente se monta
    * Inicializa el filtro de usuario al usuario actual
@@ -98,12 +101,13 @@ export default function GpicksView() {
    * Efecto para cargar datos cuando cambian los filtros o la paginación
    * Solo ejecuta fetchGpicks cuando filterAssignedByUserId está inicializado (no es null)
    * Esto previene la ejecución antes de que se establezca el usuario actual
+   * refreshTrigger permite forzar recarga sin cambiar los filtros
    */
   useEffect(() => {
     if (user?.id && filterAssignedByUserId !== null) {
       fetchGpicks();
     }
-  }, [user?.id, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize]);
+  }, [user?.id, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize, refreshTrigger]);
 
   /**
    * Carga los datos necesarios para poblar los selectores de filtros
@@ -295,8 +299,38 @@ export default function GpicksView() {
       setIsModalOpen(false);
       setSelectedVoter(null);
 
-      // Recargar los datos manteniendo los filtros actuales
-      await fetchGpicks();
+      // Recargar las opciones de filtros con conteos actualizados
+      await loadFilterData();
+
+      // Verificar si el emopick actualmente filtrado tiene ahora 0 asignaciones
+      // y ajustar automáticamente el filtro a "Todos" si es necesario
+      if (filterEmopickId) {
+        const { data: emopicks } = await supabase
+          .from('emopicks')
+          .select('id, display')
+          .eq('id', parseInt(filterEmopickId))
+          .single();
+
+        // Contar cuántos registros del padrón tienen este emopick asignado
+        const { count } = await supabase
+          .from('padron')
+          .select('emopick_id', { count: 'exact', head: true })
+          .eq('emopick_id', parseInt(filterEmopickId));
+
+        // Si el emopick seleccionado ahora tiene 0 asignaciones, resetear el filtro a "Todos"
+        if (count === 0) {
+          setFilterEmopickId('');
+        } else {
+          // Si el count NO es 0, forzar recarga incrementando el trigger
+          setRefreshTrigger(prev => prev + 1);
+        }
+      } else {
+        // Si no hay filtro de emopick, también forzar recarga
+        setRefreshTrigger(prev => prev + 1);
+      }
+
+      // El useEffect se encargará automáticamente de recargar los datos
+      // cuando filterEmopickId cambie o refreshTrigger se incremente
 
     } catch (error) {
       console.error('Error saving pick:', error);
@@ -622,7 +656,11 @@ export default function GpicksView() {
                            style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
                         {/* Primera fila visual */}
                         <div className="flex items-center justify-left">
-                          <span className="items-center px-1 py-1 bg-yellow-100 rounded-full border border-yellow-200 text-xl">
+                          <span className={`items-center px-1 py-1 rounded-full border text-xl ${
+                            record.voto_emitido
+                              ? 'bg-green-100 border-green-300'
+                              : 'bg-yellow-100 border-yellow-200'
+                          }`}>
                             {record.emopicks?.display || '❓'}
                           </span>
                         </div>
@@ -678,7 +716,11 @@ export default function GpicksView() {
                           )}
                         </div>
                         <div>
-                          <span className="inline-flex items-center px-1.5 py-1 rounded-full border border-yellow-200 text-xs bg-yellow-50 text-yellow-800 tracking-wider italic">
+                          <span className={`inline-flex items-center px-1.5 py-1 rounded-full border text-xs tracking-wider italic ${
+                            record.voto_emitido
+                              ? 'bg-green-50 border-green-200 text-green-800'
+                              : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                          }`}>
                             {record.pick_nota || '-'}
                           </span>
                         </div>

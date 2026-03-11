@@ -57,6 +57,14 @@ export default defineConfig({
         // Esto permite que la app cargue offline (al menos la UI estática)
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
 
+        // Forzar que el SW nuevo tome control inmediatamente sin esperar
+        // a que se cierren todas las pestañas de la versión anterior
+        skipWaiting: true,
+
+        // Forzar que el SW nuevo tome control de todas las pestañas abiertas
+        // inmediatamente después de activarse, sin esperar a que recarguen
+        clientsClaim: true,
+
         // Caché en tiempo de ejecución: para requests que ocurren mientras la app corre
         runtimeCaching: [
           {
