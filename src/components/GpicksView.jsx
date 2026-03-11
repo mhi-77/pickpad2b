@@ -88,11 +88,10 @@ export default function GpicksView() {
 
   /**
    * Efecto para cargar los datos cuando el componente se monta
-   * Inicializa el filtro de usuario al usuario actual
+   * Inicializa el filtro de usuario según si tiene picks asignados o no
    */
   useEffect(() => {
     if (user?.id) {
-      setFilterAssignedByUserId(user.id);
       loadFilterData();
     }
   }, [user?.id]);
@@ -130,6 +129,13 @@ export default function GpicksView() {
 
       if (!usersError) {
         setAvailableUsers(users || []);
+
+        // Verificar si el usuario actual tiene picks asignados
+        const userHasPicks = users?.some(u => u.id === user?.id);
+
+        // Si el usuario NO tiene picks, establecer el filtro en '' (todos los usuarios)
+        // Si el usuario tiene picks, establecer el filtro en su ID
+        setFilterAssignedByUserId(userHasPicks ? user.id : '');
       }
 
     } catch (error) {

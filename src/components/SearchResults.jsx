@@ -197,12 +197,12 @@ export default function SearchResults({
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-m text-gray-700 font-semibold">
           <span>
-            Registros encontrados: -
+            Registros encontrados:&nbsp;
 
-                    <span className="px-1.5 py-0.25 bg-blue-100 text-blue-800 rounded-md font-semibold">
+                    <span className="px-1.5 py-0.25 text-blue-800 border border-blue-500 rounded-xl font-semibold">
                       <span>{totalCount}</span>
                     </span>
-            -
+            
           </span>
         </h3>
       </div>
