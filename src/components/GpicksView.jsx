@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw } from 'lucide-react';
+import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loadEmopicksWithCount, loadAllEmopicks, formatEmopickDisplay } from '../utils/emopicksUtils';
@@ -63,12 +63,27 @@ export default function GpicksView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
+  // Estados para ordenamiento
+  const [sortField, setSortField] = useState('emopick_id');
+  const [sortDirection, setSortDirection] = useState('asc');
+
   // Estados para filtros
   const [filterVoteStatus, setFilterVoteStatus] = useState('all');
   const [filterVerified, setFilterVerified] = useState(null); // null = todos, true = verificados, false = no verificados
+
   const [filterEmopickId, setFilterEmopickId] = useState('');
-  // null = no inicializado, '' = todos los usuarios, <uuid> = usuario específico
-  const [filterAssignedByUserId, setFilterAssignedByUserId] = useState(null);
+
+  // Inicializado en '' en lugar de null para evitar que el <select> reciba
+  // value={null}, lo que genera una advertencia de React. El flag filtersReady
+  // reemplaza a null como señal de "aún no inicializado", permitiendo que
+  // fetchGpicks espere a que loadFilterData termine antes de ejecutarse.
+  // '' = todos los usuarios, <uuid> = usuario específico
+  const [filterAssignedByUserId, setFilterAssignedByUserId] = useState('');
+
+  // Flag que indica si los filtros ya fueron inicializados por loadFilterData.
+  // Reemplaza el uso de null en filterAssignedByUserId como señal de espera,
+  // evitando que fetchGpicks se ejecute antes de conocer el usuario actual.
+  const [filtersReady, setFiltersReady] = useState(false);
 
   // Estados para datos de los selectores
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
@@ -98,15 +113,16 @@ export default function GpicksView() {
 
   /**
    * Efecto para cargar datos cuando cambian los filtros o la paginación
-   * Solo ejecuta fetchGpicks cuando filterAssignedByUserId está inicializado (no es null)
-   * Esto previene la ejecución antes de que se establezca el usuario actual
-   * refreshTrigger permite forzar recarga sin cambiar los filtros
+   * Solo ejecuta fetchGpicks cuando filtersReady es true, garantizando que
+   * loadFilterData ya terminó y filterAssignedByUserId tiene su valor correcto.
+   * Esto previene la ejecución antes de que se establezca el usuario actual.
+   * refreshTrigger permite forzar recarga sin cambiar los filtros.
    */
   useEffect(() => {
-    if (user?.id && filterAssignedByUserId !== null) {
+    if (user?.id && filtersReady) {
       fetchGpicks();
     }
-  }, [user?.id, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize, refreshTrigger]);
+  }, [user?.id, filtersReady, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize, sortField, sortDirection, refreshTrigger]);
 
   /**
    * Carga los datos necesarios para poblar los selectores de filtros
@@ -138,8 +154,15 @@ export default function GpicksView() {
         setFilterAssignedByUserId(userHasPicks ? user.id : '');
       }
 
+      // Marcar los filtros como listos para habilitar fetchGpicks.
+      // Se hace siempre al final, incluso si hubo error en users, para no
+      // dejar la vista bloqueada en un estado de carga infinita.
+      setFiltersReady(true);
+
     } catch (error) {
       console.error('Error loading filter data:', error);
+      // Marcar como listo igual para no bloquear la vista
+      setFiltersReady(true);
     }
   };
 
@@ -206,10 +229,12 @@ export default function GpicksView() {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
 
+      // Aplicar ordenamiento principal y secundario
       query = query
-        .order('emopick_id', { ascending: true })
-        .order('apellido', { ascending: true })
-        .range(from, to);
+        .order(sortField, { ascending: sortDirection === 'asc' })
+        .order('apellido', { ascending: true });
+
+      query = query.range(from, to);
 
       const { data, error, count } = await query;
 
@@ -231,13 +256,43 @@ export default function GpicksView() {
 
   /**
    * Limpia todos los filtros y vuelve al usuario actual
+   * No resetea filtersReady ya que los filtros ya fueron inicializados
    */
   const handleClearFilters = () => {
     setFilterVoteStatus('all');
     setFilterVerified(null);
     setFilterEmopickId('');
-    setFilterAssignedByUserId(user.id);
+    const userHasPicks = availableUsers?.some(u => u.id === user?.id);
+    setFilterAssignedByUserId(userHasPicks ? user.id : '');
+    setSortField('emopick_id');
+    setSortDirection('asc');
     setCurrentPage(1);
+  };
+
+  /**
+   * Maneja el cambio de ordenamiento
+   * Alterna dirección si se hace clic en la misma columna
+   */
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  /**
+   * Retorna icono de ordenamiento según el estado actual
+   */
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return <ChevronsUpDown className="w-4 h-4 ml-1" />;
+    }
+    return sortDirection === 'asc'
+      ? <ChevronUp className="w-4 h-4 ml-1" />
+      : <ChevronDown className="w-4 h-4 ml-1" />;
   };
 
   /**
@@ -543,7 +598,9 @@ export default function GpicksView() {
 
           {/* Línea 3: Check de gestión y botón Limpiar Filtros */}
           <div className="grid grid-cols-2 gap-3 items-end">
-            {/* Filtro por estado de verificación */}
+            {/* Filtro por estado de verificación
+                Usa conversión toString/parse para evitar value={null} en el select,
+                ya que React no acepta null como value en elementos controlados */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Check
@@ -573,6 +630,7 @@ export default function GpicksView() {
           </div>
         </div>
       </div>
+
 
       {/* Contenido principal */}
       {isLoading ? (
@@ -619,12 +677,24 @@ export default function GpicksView() {
                   <th colSpan={5} className="px-4 py-2">
                     <div className="grid gap-x-2 gap-y-1 items-center text-xs"
                          style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
-                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                      <button
+                        onClick={() => handleSort('emopick_id')}
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-400 px-2 py-1 rounded ${
+                          sortField === 'emopick_id' ? 'text-blue-700' : 'text-gray-900'
+                        }`}
+                      >
                         Pick
-                      </div>
-                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
+                        {getSortIcon('emopick_id')}
+                      </button>
+                      <button
+                        onClick={() => handleSort('apellido')}
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-400 px-2 py-1 rounded ${
+                          sortField === 'apellido' ? 'text-blue-700' : 'text-gray-900'
+                        }`}
+                      >
                         Votante
-                      </div>
+                        {getSortIcon('apellido')}
+                      </button>
                       <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
                         Localidad
                       </div>
@@ -705,7 +775,7 @@ export default function GpicksView() {
                             checked={record.pick_check || false}
                             onChange={(e) => handlePickCheckToggle(record.documento, e.target.checked, record)}
                             disabled={isUpdating || (user.usuario_tipo >= 3 && record.voto_emitido)}
-                            className={`w-4 h-4 accent-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 ${(user.usuario_tipo >= 3 && record.voto_emitido) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-4 h-4 accent-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2 ${(user.usuario_tipo >= 3 && record.voto_emitido) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                           <span className="text-xs text-gray-800">Check</span>
                         </div>

@@ -64,7 +64,11 @@ export default function SignupForm({ userTypes = [] }) {
         Crear Cuenta
       </h2>
       
-      <div className="space-y-4">
+      {/* Usar <form> en lugar de <div> para que el navegador reconozca el formulario.
+          Esto permite que los gestores de contraseñas detecten los campos correctamente
+          y elimina la advertencia "[DOM] Password field is not contained in a form". 
+          handleSubmit ya llama e.preventDefault() así que no hay riesgo de recarga. */}
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
             Nombre Completo
@@ -75,6 +79,7 @@ export default function SignupForm({ userTypes = [] }) {
             placeholder="Juan Pérez"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            autoComplete="name"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -89,6 +94,7 @@ export default function SignupForm({ userTypes = [] }) {
             placeholder="12345678"
             value={dni}
             onChange={(e) => setDni(e.target.value)}
+            autoComplete="off"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -122,6 +128,9 @@ export default function SignupForm({ userTypes = [] }) {
             placeholder="direccionde@correo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            // "email" indica al navegador que este campo es el usuario/email del formulario,
+            // habilitando el autocompletado y la detección por gestores de contraseñas
+            autoComplete="email"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -138,6 +147,9 @@ export default function SignupForm({ userTypes = [] }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               minLength={6}
+              // "new-password" indica al navegador que es una contraseña nueva (no de login),
+              // habilitando la sugerencia de contraseñas seguras y el guardado en el gestor
+              autoComplete="new-password"
               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
@@ -154,8 +166,10 @@ export default function SignupForm({ userTypes = [] }) {
           </div>
         </div>
 
+        {/* type="submit" delega el envío al onSubmit del form, eliminando la necesidad
+            de onClick. Esto también permite enviar el formulario con la tecla Enter. */}
         <button
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading || !email || !password || !fullName || !userType || userTypes.length === 0}
           className={`w-full py-2 px-4 rounded-md text-white font-medium ${
             loading || !email || !password || !fullName || !userType || userTypes.length === 0
@@ -165,7 +179,7 @@ export default function SignupForm({ userTypes = [] }) {
         >
           {loading ? 'Creando usuario...' : 'Crear Usuario'}
         </button>
-      </div>
+      </form>
 
       {/* Mensaje de error si no hay tipos de usuario disponibles */}
       {userTypes.length === 0 && (

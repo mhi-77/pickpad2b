@@ -93,6 +93,7 @@ export default function LoginForm({ appVersion, onInstallClick, canNativeInstall
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               placeholder="usuario@ejemplo.com"
               required
@@ -110,6 +111,7 @@ export default function LoginForm({ appVersion, onInstallClick, canNativeInstall
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 placeholder="••••••••"
                 required
