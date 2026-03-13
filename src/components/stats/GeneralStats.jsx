@@ -351,7 +351,7 @@ const formatNumber = (num) => {
             <button
               type="button"
               onClick={() => setIsRealtime(!isRealtime)}
-              className={`flex items-center space-x-2 px-2 py-1 rounded-lg font-medium text-sm transition-all min-w-[170px] shadow-sm hover:shadow-md ${
+              className={`flex items-center space-x-1 px-1 py-1 rounded-lg font-medium text-sm transition-all min-w-[150px] shadow-sm hover:shadow-md ${
                 isRealtime
                   ? 'bg-green-200 text-green-800 hover:bg-green-300 border border-green-400'
                   : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-gray-300'
@@ -372,7 +372,7 @@ const formatNumber = (num) => {
               type="button"
               onClick={fetchGeneralStats}
               disabled={isLoading || isRealtime}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-800 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm border border-blue-400 hover:shadow-md"
+              className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-800 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm border border-blue-400 hover:shadow-md"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>{isLoading ? 'Actualizando...' : 'Actualizar ahora'}</span>
@@ -434,6 +434,9 @@ const formatNumber = (num) => {
             </div>
 
             {/* Detalles por categoría */}
+
+  {/*DESACTIVADO DESDE ACA...
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Sexo</h3>
@@ -518,6 +521,7 @@ const formatNumber = (num) => {
               </div>
             </div>
 
+      DESACTIVADO HASTA ACA - CAMBIAR DE PESTAÑA O ELIMINAR  /*}
             
             {/* Participación por hora */}
             <div className="bg-white border border-gray-200 rounded-lg p-4">

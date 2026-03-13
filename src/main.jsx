@@ -46,8 +46,8 @@ function showUpdateBanner() {
   const text = document.createElement('span');
   text.style.cssText = 'flex: 1; text-align: center; cursor: pointer; line-height: 1.5;';
   text.innerHTML = `
-    <div style="font-size: 14px; font-weight: 600;">🔄 Nueva versión disponible</div>
-    <div style="font-size: 12px; opacity: 0.9;">Tocá para actualizar y reiniciar</div>
+    <div style="font-size: 15px; font-weight: 600;">🔄 Nueva versión disponible</div>
+    <div style="font-size: 13px; opacity: 0.9;">Tocá para actualizar y reiniciar</div>
   `;
   text.onclick = () => window.location.reload();
 
