@@ -3,10 +3,6 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'child_process';
 
-const lastCommitDate = execSync('git log -1 --format=%cd --date=format:"%B %Y"')
-  .toString()
-  .trim();
-
 // Obtener la fecha del último commit de Git para mostrarla en el modal de créditos.
 // Se ejecuta en tiempo de build (no en el navegador), por lo que siempre refleja
 // la fecha del último deploy sin necesidad de actualizarla manualmente.
