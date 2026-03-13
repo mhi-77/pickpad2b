@@ -8,22 +8,44 @@ import App from './App.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-// Registrar el Service Worker con callback de actualización automática.
+// Registrar el Service Worker con callback de actualización.
 // Con registerType: 'autoUpdate' en vite.config.js, el SW nuevo se descarga
-// e instala en segundo plano. Este callback se ejecuta cuando ya está listo
-// y fuerza la recarga de la página para que el usuario vea la versión nueva
-// sin necesidad de cerrar y volver a abrir la app manualmente.
-registerSW({
+// e instala en segundo plano. Cuando está listo, se muestra un banner
+// para que el usuario actualice manualmente cuando lo desee.
+let updateSW;
+
+// Inyectar un banner en el DOM cuando hay una nueva versión disponible.
+// El usuario decide cuándo recargar tocando el banner.
+function showUpdateBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #2563EA;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    z-index: 9999;
+    cursor: pointer;
+  `;
+  banner.textContent = '🔄 Nueva versión disponible — Tocá para actualizar';
+  banner.onclick = () => updateSW(true);
+  document.body.appendChild(banner);
+}
+
+// onNeedRefresh: se dispara cuando el SW nuevo está listo para tomar control.
+// En lugar de recargar automáticamente, muestra el banner para no interrumpir al usuario.
+updateSW = registerSW({
   onNeedRefresh() {
-    // Nueva versión disponible y activada: recargar para aplicarla
-    updateSW(true);
+    showUpdateBanner();
   },
   onOfflineReady() {
     // App lista para funcionar sin conexión (archivos pre-cacheados)
     console.log('PickPad lista para uso offline');
   },
 });
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
