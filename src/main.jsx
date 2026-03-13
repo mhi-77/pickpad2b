@@ -34,16 +34,39 @@ function showUpdateBanner() {
   banner.style.cssText = `
     position: fixed;
     top: 0; left: 0; right: 0;
-    background: #2563EA;
+    background: #04C0B9;
     color: white;
-    text-align: center;
-    padding: 10px;
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
     z-index: 9999;
-    cursor: pointer;
   `;
-  banner.textContent = '🔄 Nueva versión disponible — Tocá para actualizar';
-  banner.onclick = () => window.location.reload();
+  
+  const text = document.createElement('span');
+  text.style.cssText = 'flex: 1; text-align: center; cursor: pointer; line-height: 1.5;';
+  text.innerHTML = `
+    <div style="font-size: 14px; font-weight: 600;">🔄 Nueva versión disponible</div>
+    <div style="font-size: 12px; opacity: 0.9;">Tocá para actualizar y reiniciar</div>
+  `;
+  text.onclick = () => window.location.reload();
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = `
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 0 0 12px;
+    line-height: 1;
+    opacity: 0.8;
+  `;
+  closeBtn.onclick = () => banner.remove();
+
+  banner.appendChild(text);
+  banner.appendChild(closeBtn);
   document.body.appendChild(banner);
 }
 
