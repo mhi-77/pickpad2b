@@ -340,33 +340,39 @@ const formatNumber = (num) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="bg-white rounded-xl shadow-lg p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
             {/* <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2> */}
             <p className="text-sm text-gray-600">Activar tiempo real para actualización automática</p>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             {/* Botón para activar/desactivar modo en tiempo real */}
             <button
               type="button"
               onClick={() => setIsRealtime(!isRealtime)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                isRealtime 
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              className={`flex items-center space-x-2 px-2 py-1 rounded-lg font-medium text-sm transition-all min-w-[170px] shadow-sm hover:shadow-md ${
+                isRealtime
+                  ? 'bg-green-200 text-green-800 hover:bg-green-300 border border-green-400'
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-gray-300'
               }`}
             >
-              {isRealtime ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-              <span>{isRealtime ? 'En tiempo real' : 'Manual'}</span>
+              {isRealtime ? <ToggleRight className="w-8 h-6" /> : <ToggleLeft className="w-8 h-6" />}
+              <span>{isRealtime ? 'TIEMPO REAL ' : 'Modo Manual'}</span>
+              {isRealtime && (
+                <span className="relative flex h-3 w-3 ml-1">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-700 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                </span>
+              )}
             </button>
 
             {/* Botón de actualización manual */}
             <button
               type="button"
               onClick={fetchGeneralStats}
-              disabled={isLoading}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors"
+              disabled={isLoading || isRealtime}
+              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-800 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm border border-blue-400 hover:shadow-md"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>{isLoading ? 'Actualizando...' : 'Actualizar ahora'}</span>
@@ -512,6 +518,7 @@ const formatNumber = (num) => {
               </div>
             </div>
 
+            
             {/* Participación por hora */}
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango Horario</h3>
