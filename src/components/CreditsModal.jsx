@@ -10,9 +10,12 @@ import mhiImage from '../mhi.png';
  * Props:
  * - isOpen: boolean - Controla si el modal está visible
  * - onClose: function - Función para cerrar el modal
- * - appVersion: string - Versión de la aplicación
+ *
+ * Versión, licencia y fecha de actualización se leen desde las variables
+ * globales del build (__APP_VERSION__, __APP_LICENSE__, __LAST_UPDATED__)
+ * inyectadas por vite.config.js, sin necesidad de recibirlas como props.
  */
-export default function CreditsModal({ isOpen, onClose, appVersion }) {
+export default function CreditsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
@@ -64,7 +67,9 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
 
             <div className="pt-4 border-t border-gray-200">
               <p className="text-lg font-bold text-gray-900">PickPad</p>
-              <p className="text-sm text-gray-600">Versión {appVersion}</p>
+              {/* Versión leída desde package.json via variable global del build */}
+              <p className="text-sm text-gray-600">Versión {__APP_VERSION__}</p>
+              {/* Fecha del último commit de Git, inyectada en tiempo de build */}
               <p className="text-xs text-gray-500 mt-1">Última actualización: {__LAST_UPDATED__}</p>
               <a
                 href="/docs/index.html"
@@ -77,8 +82,9 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             </div>
 
             <div className="pt-4 border-t border-gray-200">
+              {/* Licencia leída desde package.json via variable global del build */}
               <p className="text-xs text-gray-600 italic">
-                Licencia de uso: PJ-TQST
+                Licencia de uso: {__APP_LICENSE__}
               </p>
             </div>
           </div>

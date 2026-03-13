@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import useBackButton from './hooks/useBackButton';
-import packageJson from '../package.json';
 import { useInstallPWA } from './hooks/useInstallPWA';
 import InstallPWAModal from './components/InstallPWAModal';
 
@@ -29,7 +28,8 @@ import InstallPWAModal from './components/InstallPWAModal';
  *     · Al hacer logout: retrocede exactamente 1 posición (la entrada propia)
  *     · Solo limpia el historial si hubo sesión previa, evitando que el
  *       primer render en Chrome navegador retroceda a la página anterior
- * - Pasa la versión de la aplicación desde package.json
+ * - Versión, licencia y fecha de actualización disponibles como variables
+ *   globales del build inyectadas desde vite.config.js
  * - Muestra modal de instalación PWA en el primer acceso y bajo demanda
  */
 
@@ -110,10 +110,11 @@ function ExitConfirmationModal({ onConfirm, onCancel }) {
  * Propósito: Gestiona la lógica de renderizado condicional según autenticación
  * y coordina los modales de la app (cierre de sesión, instalación PWA).
  *
- * Props:
- * - appVersion {string} → versión de la app leída desde package.json
+ * Versión, licencia y fecha de actualización se leen desde las variables
+ * globales del build (__APP_VERSION__, __APP_LICENSE__, __LAST_UPDATED__)
+ * inyectadas por vite.config.js, sin necesidad de pasarlas como props.
  */
-function AppContent({ appVersion }) {
+function AppContent() {
   const { user, logout } = useAuth();
 
   // Estado del sidebar compartido entre AppContent y Dashboard
@@ -271,7 +272,6 @@ function AppContent({ appVersion }) {
         // del sidebar y openModal para que el botón "Cerrar Sesión" del
         // header abra el modal de confirmación en lugar de hacer logout directo
         ? <Dashboard
-            appVersion={appVersion}
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
             onLogoutRequest={openModal}
@@ -279,7 +279,6 @@ function AppContent({ appVersion }) {
         // Si no está autenticado muestra el Login y le pasa openInstall
         // para que pueda abrir el modal desde el botón "Instalá PickPad"
         : <LoginForm
-            appVersion={appVersion}
             onInstallClick={openInstall}
             canNativeInstall={canNativeInstall}
           />
@@ -307,7 +306,11 @@ function App() {
   return (
     <AuthProvider>
       <div className="font-sans antialiased">
-        <AppContent appVersion={packageJson.version} />
+        {/* AppContent no recibe appVersion como prop: la versión, licencia y
+            fecha de actualización se leen directamente desde las variables
+            globales del build (__APP_VERSION__, __APP_LICENSE__, __LAST_UPDATED__)
+            en los componentes que las necesitan */}
+        <AppContent />
       </div>
     </AuthProvider>
   );

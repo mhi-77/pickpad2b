@@ -11,9 +11,13 @@ import CreditsModal from './CreditsModal';
  * en el sistema PickPad. Incluye validación de campos y manejo de errores.
  * 
  * Props:
- * - appVersion: string - Versión de la aplicación para mostrar en la UI
+ * - onInstallClick: function - Abre el modal de instalación PWA
+ * - canNativeInstall: boolean - Indica si el navegador soporta instalación nativa
+ *
+ * Versión de la aplicación leída desde la variable global del build (__APP_VERSION__)
+ * inyectada por vite.config.js, sin necesidad de recibirla como prop.
  */
-export default function LoginForm({ appVersion, onInstallClick, canNativeInstall }) {
+export default function LoginForm({ onInstallClick, canNativeInstall }) {
   // Estados locales para el manejo del formulario
   const [email, setEmail] = useState('');
   // Estado para almacenar la contraseña ingresada por el usuario
@@ -76,7 +80,7 @@ export default function LoginForm({ appVersion, onInstallClick, canNativeInstall
             onClick={() => setShowCreditsModal(true)}
             className="text-2xl font-bold text-gray-900 mb-4 hover:text-blue-600 transition-colors cursor-pointer"
           >
-            PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
+            PickPad <span className="text-sm text-gray-900">v{__APP_VERSION__}</span>
           </button>
           <p className="text-gray-600">Ingresa tus credenciales para continuar</p>
         </div>
@@ -193,7 +197,6 @@ export default function LoginForm({ appVersion, onInstallClick, canNativeInstall
       <CreditsModal
         isOpen={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
-        appVersion={appVersion}
       />
     </div>
   );

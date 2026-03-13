@@ -26,13 +26,15 @@ const menuItems = [
  * Incluye control de permisos basado en el rol del usuario y diseño responsivo.
  *
  * Props:
- * - isOpen: boolean - Controla si el sidebar está abierto (importante para móviles)
+ * - isOpen: boolean - Controla si el sidebar está abierto
  * - setIsOpen: function - Función para cambiar el estado de apertura
  * - activeView: string - Vista actualmente activa
  * - setActiveView: function - Función para cambiar la vista activa
- * - appVersion: string - Versión de la aplicación
+ *
+ * Versión de la aplicación leída desde la variable global del build (__APP_VERSION__)
+ * inyectada por vite.config.js, sin necesidad de recibirla como prop.
  */
-export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, appVersion }) {
+export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView }) {
   // Obtener datos del usuario autenticado
   const { user } = useAuth();
   // Estado para controlar el modal de créditos
@@ -88,7 +90,7 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
           >
             <CheckCheck className="w-6 h-6 text-blue-600" />
             <h1 className="text-xl font-bold text-gray-900">
-              PickPad <span className="text-sm text-gray-900">v{appVersion}</span>
+              PickPad <span className="text-sm text-gray-900">v{__APP_VERSION__}</span>
             </h1>
           </button>
           {/* Botón de cierre solo visible en dispositivos móviles */}
@@ -234,7 +236,6 @@ export default function Sidebar({ isOpen, setIsOpen, activeView, setActiveView, 
       <CreditsModal
         isOpen={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
-        appVersion={appVersion}
       />
     </>
   );

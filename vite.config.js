@@ -2,6 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+
+// Leer package.json para extraer versión y licencia.
+// Centraliza estos valores: modificar package.json actualiza automáticamente
+// la UI sin necesidad de tocar ningún componente manualmente.
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 // Obtener la fecha del último commit de Git para mostrarla en el modal de créditos.
 // Se ejecuta en tiempo de build (no en el navegador), por lo que siempre refleja
@@ -18,6 +24,12 @@ const lastCommitDate = `${months[parseInt(month) - 1]} ${year}`;
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
+    // Versión de la app leída desde package.json, disponible globalmente en el bundle
+    __APP_VERSION__: JSON.stringify(pkg.version),
+
+    // Licencia de uso leída desde package.json, disponible globalmente en el bundle
+    __APP_LICENSE__: JSON.stringify(pkg.license),
+
     // Variable global inyectada en el bundle con la fecha del último commit, 
     // para mostrar en la UI cuándo fue la última actualización del código
     __LAST_UPDATED__: JSON.stringify(lastCommitDate),

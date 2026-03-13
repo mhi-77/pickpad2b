@@ -27,14 +27,17 @@ import ControlView from './ControlView';
  * inactividad y la búsqueda en el padrón electoral.
  *
  * Props:
- * - appVersion: string - Versión de la aplicación
  * - sidebarOpen: boolean - Estado del sidebar, controlado desde App.jsx para
  *   permitir que el botón "atrás" del dispositivo lo abra (via useBackButton)
  * - setSidebarOpen: function - Setter del estado del sidebar
  * - onLogoutRequest: function - Abre el modal de confirmación de cierre de
  *   sesión definido en App.jsx, compartido con el botón "atrás" del dispositivo
+ *
+ * Versión, licencia y fecha de actualización se leen desde las variables
+ * globales del build (__APP_VERSION__, __APP_LICENSE__, __LAST_UPDATED__)
+ * inyectadas por vite.config.js, sin necesidad de recibirlas como props.
  */
-export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen, onLogoutRequest }) {
+export default function Dashboard({ sidebarOpen, setSidebarOpen, onLogoutRequest }) {
   // Obtener datos del usuario y función de logout del contexto de autenticación
   const { user, logout } = useAuth();
 
@@ -411,13 +414,14 @@ export default function Dashboard({ appVersion, sidebarOpen, setSidebarOpen, onL
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar de navegación */}
+      {/* Sidebar de navegación
+          Recibe __APP_VERSION__ directamente como variable global del build,
+          sin necesidad de pasarla como prop desde Dashboard */}
       <Sidebar 
         isOpen={sidebarOpen} 
         setIsOpen={setSidebarOpen}
         activeView={activeView}
         setActiveView={setActiveView}
-        appVersion={appVersion}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
