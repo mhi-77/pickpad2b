@@ -6,16 +6,28 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
-import { registerSW } from 'virtual:pwa-register';
 
-// Registrar el Service Worker con callback de actualización.
-// Con registerType: 'autoUpdate' en vite.config.js, el SW nuevo se descarga
-// e instala en segundo plano. Cuando está listo, se muestra un banner
-// para que el usuario actualice manualmente cuando lo desee.
-let updateSW;
+// Registrar el Service Worker y escuchar actualizaciones con la API nativa del navegador,
+// evitando dependencia de virtual:pwa-register que no se resuelve correctamente.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(registration => {
 
-// Inyectar un banner en el DOM cuando hay una nueva versión disponible.
-// El usuario decide cuándo recargar tocando el banner.
+    // Cada vez que el SW detecta un archivo nuevo, 'updatefound' se dispara
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+
+      newWorker.addEventListener('statechange', () => {
+        // Cuando el SW nuevo está instalado y listo para activarse
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner();
+        }
+      });
+    });
+
+  }).catch(err => console.error('Service Workers registration failed:', err));
+}
+
+// Mostrar banner no intrusivo para que el usuario decida cuándo actualizar
 function showUpdateBanner() {
   const banner = document.createElement('div');
   banner.id = 'update-banner';
@@ -31,27 +43,10 @@ function showUpdateBanner() {
     cursor: pointer;
   `;
   banner.textContent = '🔄 Nueva versión disponible — Tocá para actualizar';
-  banner.onclick = () => updateSW(true);
+  banner.onclick = () => window.location.reload();
   document.body.appendChild(banner);
 }
 
-// onNeedRefresh: se dispara cuando el SW nuevo está listo para tomar control.
-// En lugar de recargar automáticamente, muestra el banner para no interrumpir al usuario.
-updateSW = registerSW({
-  onNeedRefresh() {                        console.log('🔄 onNeedRefresh disparado');
-    showUpdateBanner();
-  },
-  onOfflineReady() {                        console.log('✅ onOfflineReady disparado');
-    // App lista para funcionar sin conexión (archivos pre-cacheados)
-    console.log('PickPad lista para uso offline');
-  },
-  onRegistered(r) {
-    console.log('📦 SW registrado:', r);
-  },
-  onRegisterError(error) {
-    console.error('❌ Error registrando SW:', error);
-  }
-});
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
