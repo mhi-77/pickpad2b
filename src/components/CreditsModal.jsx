@@ -53,7 +53,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             <div>
               <p className="text-sm font-medium text-gray-500">Sitio Web</p>
               <a
-                href="https://www.mihavasideon.com.ar"
+                href="https://mhi-77.github.io/4yt/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-base text-blue-600 hover:text-blue-800 hover:underline transition-colors"
@@ -65,7 +65,7 @@ export default function CreditsModal({ isOpen, onClose, appVersion }) {
             <div className="pt-4 border-t border-gray-200">
               <p className="text-lg font-bold text-gray-900">PickPad</p>
               <p className="text-sm text-gray-600">Versión {appVersion}</p>
-              <p className="text-xs text-gray-500 mt-1">Última actualización: Febrero 2026</p>
+              <p className="text-xs text-gray-500 mt-1">Última actualización: {__LAST_UPDATED__}</p>
               <a
                 href="/docs/index.html"
                 target="_blank"

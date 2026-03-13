@@ -1,9 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { execSync } from 'child_process';
+
+const lastCommitDate = execSync('git log -1 --format=%cd --date=format:"%B %Y"')
+  .toString()
+  .trim();
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    // Variable global inyectada en el bundle con la fecha del último commit, 
+    // para mostrar en la UI cuándo fue la última actualización del código
+    __LAST_UPDATED__: JSON.stringify(lastCommitDate),
+  },
   plugins: [
     react(),
 
