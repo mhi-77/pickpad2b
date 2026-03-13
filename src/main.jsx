@@ -24,7 +24,10 @@ if ('serviceWorker' in navigator) {
       });
     });
 
-  }).catch(err => console.error('Service Workers registration failed:', err));
+  }).catch(err => {
+    if (import.meta.env.DEV) return; // ignorar en desarrollo/Bolt
+    console.error('SW registration failed:', err);
+  });
 }
 
 // Mostrar banner no intrusivo para que el usuario decida cuándo actualizar
@@ -46,7 +49,14 @@ function showUpdateBanner() {
   const text = document.createElement('span');
   text.style.cssText = 'flex: 1; text-align: center; cursor: pointer; line-height: 1.5;';
   text.innerHTML = `
-    <div style="font-size: 15px; font-weight: 600;">🔄 Nueva versión disponible</div>
+    <div style="font-size: 15px; font-weight: 600;">
+    <svg style="display:inline; vertical-align: middle; margin-right: 6px;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"   stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+    </svg>
+    Nueva versión disponible
+    </div>
     <div style="font-size: 13px; opacity: 0.9;">Tocá para actualizar y reiniciar</div>
   `;
   text.onclick = () => window.location.reload();
