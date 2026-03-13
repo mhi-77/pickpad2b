@@ -194,12 +194,12 @@ export default function SearchResults({
   return (
     <div className="bg-white rounded-xl shadow-lg p-2">
       {/* Header con contador de resultados */}
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-m text-gray-700 font-semibold">
+      <div className="flex items-center justify-center mb-3">
+        <h3 className="text-m text-gray-700 ">
           <span>
             Registros encontrados:&nbsp;
 
-                    <span className="px-1.5 py-0.25 text-blue-800 border border-blue-500 rounded-xl font-semibold">
+                    <span className="px-1.5 py-0.25 text-blue-800 border border-blue-500 rounded-lg font-semibold">
                       <span>{totalCount}</span>
                     </span>
             
