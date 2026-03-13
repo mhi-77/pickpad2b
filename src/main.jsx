@@ -38,13 +38,19 @@ function showUpdateBanner() {
 // onNeedRefresh: se dispara cuando el SW nuevo está listo para tomar control.
 // En lugar de recargar automáticamente, muestra el banner para no interrumpir al usuario.
 updateSW = registerSW({
-  onNeedRefresh() {
+  onNeedRefresh() {                        console.log('🔄 onNeedRefresh disparado');
     showUpdateBanner();
   },
-  onOfflineReady() {
+  onOfflineReady() {                        console.log('✅ onOfflineReady disparado');
     // App lista para funcionar sin conexión (archivos pre-cacheados)
     console.log('PickPad lista para uso offline');
   },
+  onRegistered(r) {
+    console.log('📦 SW registrado:', r);
+  },
+  onRegisterError(error) {
+    console.error('❌ Error registrando SW:', error);
+  }
 });
 createRoot(document.getElementById('root')).render(
   <StrictMode>
