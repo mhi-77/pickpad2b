@@ -679,7 +679,7 @@ export default function GpicksView() {
                          style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
                       <button
                         onClick={() => handleSort('emopick_id')}
-                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-400 px-2 py-1 rounded ${
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-2 py-1 rounded ${
                           sortField === 'emopick_id' ? 'text-blue-700' : 'text-gray-900'
                         }`}
                       >
@@ -688,7 +688,7 @@ export default function GpicksView() {
                       </button>
                       <button
                         onClick={() => handleSort('apellido')}
-                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-400 px-2 py-1 rounded ${
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-2 py-1 rounded ${
                           sortField === 'apellido' ? 'text-blue-700' : 'text-gray-900'
                         }`}
                       >
