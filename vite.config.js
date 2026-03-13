@@ -7,6 +7,18 @@ const lastCommitDate = execSync('git log -1 --format=%cd --date=format:"%B %Y"')
   .toString()
   .trim();
 
+// Obtener la fecha del último commit de Git para mostrarla en el modal de créditos.
+// Se ejecuta en tiempo de build (no en el navegador), por lo que siempre refleja
+// la fecha del último deploy sin necesidad de actualizarla manualmente.
+const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const raw = execSync('git log -1 --format=%cd --date=format:"%m %Y"').toString().trim();
+const [month, year] = raw.split(' ');
+
+// Mapeo manual del mes a español para evitar dependencia del locale del servidor
+const lastCommitDate = `${months[parseInt(month) - 1]} ${year}`;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
