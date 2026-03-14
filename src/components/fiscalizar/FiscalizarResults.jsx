@@ -207,7 +207,7 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, on
             </div>
 
             {/* Información adicional si existe */}
-            {(record.voto_pick_user || record.voto_pick_at) && (
+            {(record.voto_pick_user || record.voto_pick_at || record.pick_check || record.pick_nota) && (
               <div className="mt-2 pt-2 border-t border-gray-200">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -230,9 +230,15 @@ export default function FiscalizarResults({ results, isLoading, onMarcarVoto, on
                         <strong>Usuario:</strong> {record.voto_pick_user_profile?.full_name || 'N/A'}
                       </p>
                     )}
+
+                    {(record.pick_check || record.pick_nota) && (
+                      <p className="text-xs text-gray-500">
+                        <strong>Nota:</strong> {record.pick_nota || '-'}
+                      </p>
+                    )}
                   </div>
 
-                  {userRole && userRole <= 2 && (
+                  {userRole && userRole <= 2 && record.voto_emitido && (
                     <button
                       onClick={() => handleOpenUndoModal(record.documento, record)}
                       disabled={isUpdating}
