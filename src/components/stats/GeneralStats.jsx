@@ -358,7 +358,7 @@ const formatNumber = (num) => {
               className={`flex items-center space-x-1 text-m transition-all min-w-[170px] ${
                 isRealtime
                   ? 'text-green-800'
-                  : 'text-gray-800 hover:text-red-800'
+                  : 'text-gray-800 hover:text-gray-500'
               }`}
             >
               {isRealtime ? <ToggleRight className="w-8 h-6" /> : <ToggleLeft className="w-8 h-6" />}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Filter, RefreshCw, User, AlertCircle, MousePointerClick } from 'lucide-react';
+import { Filter, RefreshCw, User, AlertCircle, MousePointerClick, ToggleLeft, ToggleRight } from 'lucide-react';
 import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
 import Pagination from '../shared/Pagination';
 
@@ -197,6 +197,8 @@ export default function RealtimeStats() {
     pendientesConEmopick: 0,
     pendientesSinEmopick: 0
   });
+
+  const [isRealtime, setIsRealtime] = useState(false);
 
   // ==========================================
   // EFFECT: CARGA INICIAL DE DATOS
@@ -590,6 +592,29 @@ export default function RealtimeStats() {
     fetchUnvotedVoters().finally(() => setIsLoading(false));
   }, [currentPage, pageSize, filterMesa, filterEmopick, filterMetricType]);
 
+  useEffect(() => {
+    let channel = null;
+
+    if (isRealtime) {
+      channel = supabase
+        .channel('realtime-stats-padron')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'padron', filter: 'voto_emitido=eq.true' },
+          (payload) => {
+            if (payload.new.voto_emitido === true && payload.old.voto_emitido !== true) {
+              fetchUnvotedVoters();
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [isRealtime]);
+
   // ==========================================
   // RENDER - INTERFAZ DE USUARIO
   // ==========================================
@@ -598,8 +623,26 @@ export default function RealtimeStats() {
     <div className="space-y-4">
       <div className="bg-white rounded-xl shadow-lg p-2">
         {/* Encabezado con título y descripción */}
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Votantes Pendientes</h2>
-        <p className="text-gray-600 mb-4">Electorado que aún no ha emitido su voto.</p>
+        <div className="mb-1">
+          <h2 className="text-2xl font-bold text-gray-900">Votantes Pendientes</h2>
+        </div>
+        <p className="text-gray-600 mb-3">Electorado que aún no ha emitido su voto.</p>
+        <button
+          type="button"
+          onClick={() => setIsRealtime(!isRealtime)}
+          className={`flex items-center space-x-1 text-m transition-all min-w-[170px] mb-2 ${
+            isRealtime ? 'text-green-800' : 'text-gray-800 hover:text-gray-500'
+          }`}
+        >
+          {isRealtime ? <ToggleRight className="w-8 h-6" /> : <ToggleLeft className="w-8 h-6" />}
+          <span>{isRealtime ? 'TIEMPO REAL' : 'Modo Manual'}&nbsp;</span>
+          {isRealtime && (
+            <span className="relative flex h-3 w-3 ml-1">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-700 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+            </span>
+          )}
+        </button>
 
         {/* ====================================== */}
         {/* SECCIÓN DE FILTROS                      */}
@@ -681,11 +724,15 @@ export default function RealtimeStats() {
           Cuando está activa, muestra borde destacado y sombra más pronunciada.
         */}
         <div className="grid grid-cols-2 gap-2 mb-4">
-          {/* Tarjeta de métrica: Total Pendientes (no clickeable) */}
-          <div className="bg-blue-0 border border-blue-200 rounded-lg p-2">
+          {/* Tarjeta de métrica: Total Pendientes (desactiva filtro conPicks si está activo) */}
+          <button
+            type="button"
+            onClick={() => { if (filterMetricType === 'conPicks') { setFilterMetricType(null); setCurrentPage(1); } }}
+            className="bg-blue-0 border border-blue-200 rounded-lg p-2 text-left w-full"
+          >
             <h3 className="text-sm font-semibold text-gray-900">Total Pendientes</h3>
             <p className="text-xl font-bold text-gray-900">{metrics.totalPendientes}</p>
-          </div>
+          </button>
 
           {/* Tarjeta de métrica: Pendientes con Picks (clickeable como filtro) */}
           <button
@@ -693,7 +740,7 @@ export default function RealtimeStats() {
             className={`rounded-lg p-2 transition-all duration-200 text-left ${
               filterMetricType === 'conPicks'
                 ? 'bg-yellow-100 border-2 border-yellow-500 shadow-md ring-2 ring-yellow-300'
-                : 'bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 hover:shadow-sm'
+                : 'bg-yellow-50 border border-yellow-200'
             }`}
           >
             <h3 className="text-sm font-semibold text-yellow-900 flex items-center justify-between">
