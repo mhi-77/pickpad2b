@@ -171,6 +171,8 @@ const formatNumber = (num) => {
         })
         .sort((a, b) => a.localidad.localeCompare(b.localidad));
 
+{/* ***************** DESACTIVADO DESDE ACA *****************************************************
+      
       // --- 5. PARTICIPACIÓN POR SEXO ---
       // Usamos una función RPC para contar eficientemente
       // Asegurarse de que la función devuelve "sexo" y "count"
@@ -242,6 +244,8 @@ const formatNumber = (num) => {
 
       const participacionObligatorios = { voted: obligatoriosVotaron || 0, total: obligatoriosTotal || 0 };
 
+**************** HASTA ACA ******************************************************************************************/}
+
       // --- 9. PARTICIPACIÓN POR HORA ---
       // Usamos RPC que agrupa votos por hora
       let participacionPorHora = [];
@@ -273,10 +277,10 @@ const formatNumber = (num) => {
         totalVotosEmitidos,
         porcentajeParticipacion: parseFloat(porcentajeParticipacion),
         mesasActivas,
-        participacionPorSexo,
-        participacionPorEdad,
-        participacionNuevos,
-        participacionObligatorios,
+    //  participacionPorSexo,
+    //  participacionPorEdad,
+    //  participacionNuevos,
+    //  participacionObligatorios,
         participacionPorHora,
         mesasPorParticipacion,
         localidades
@@ -344,21 +348,21 @@ const formatNumber = (num) => {
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
             {/* <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2> */}
-            <p className="text-sm text-gray-600">Activar tiempo real para actualización automática</p>
+            <p className="text-sm text-gray-600">Activa tiempo real para actualización automática</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             {/* Botón para activar/desactivar modo en tiempo real */}
             <button
               type="button"
               onClick={() => setIsRealtime(!isRealtime)}
-              className={`flex items-center space-x-1 px-1 py-1 rounded-lg font-medium text-sm transition-all min-w-[150px] shadow-sm hover:shadow-md ${
+              className={`flex items-center space-x-1 text-m transition-all min-w-[170px] ${
                 isRealtime
-                  ? 'bg-green-200 text-green-800 hover:bg-green-300 border border-green-400'
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300 border border-gray-300'
+                  ? 'text-green-800'
+                  : 'text-gray-800 hover:text-red-800'
               }`}
             >
               {isRealtime ? <ToggleRight className="w-8 h-6" /> : <ToggleLeft className="w-8 h-6" />}
-              <span>{isRealtime ? 'TIEMPO REAL ' : 'Modo Manual'}</span>
+              <span>{isRealtime ? 'TIEMPO REAL' : 'Modo Manual'}&nbsp;</span>
               {isRealtime && (
                 <span className="relative flex h-3 w-3 ml-1">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-700 opacity-75"></span>
@@ -367,19 +371,23 @@ const formatNumber = (num) => {
               )}
             </button>
 
-            {/* Botón de actualización manual */}
-            <button
-              type="button"
-              onClick={fetchGeneralStats}
-              disabled={isLoading || isRealtime}
-              className="flex items-center space-x-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-800 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm border border-blue-400 hover:shadow-md"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>{isLoading ? 'Actualizando...' : 'Actualizar ahora'}</span>
-            </button>
+            
+            {/* Botón de actualización manual: pegado al margen derecho de su mitad */}
+            <div className="min-w-[135px]">
+                <button
+                  type="button"
+                  onClick={fetchGeneralStats}
+                  disabled={isLoading || isRealtime}
+                  className="w-full px-2 py-1.5 bg-blue-600 hover:bg-blue-800 focus:bg-blue-600 focus:outline-none focus:ring-0 disabled:bg-blue-300 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-sm border border-blue-400 hover:shadow-md"
+                >
+                  <RefreshCw className={`w-4 h-4 inline mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>{isLoading ? 'Actualizando...' : 'Actualizar'}</span>
+                </button>
+              </div>
           </div>
         </div>
 
+        
         {/* Estado de carga */}
         {isLoading ? (
           <div className="text-center py-8">

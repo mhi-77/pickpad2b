@@ -15,11 +15,16 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-const raw = execSync('git log -1 --format=%cd --date=format:"%m %Y"').toString().trim();
-const [month, year] = raw.split(' ');
-
 // Mapeo manual del mes a español para evitar dependencia del locale del servidor
-const lastCommitDate = `${months[parseInt(month) - 1]} ${year}`;
+let lastCommitDate;
+try {
+  const raw = execSync('git log -1 --format=%cd --date=format:"%m %Y"').toString().trim();
+  const [month, year] = raw.split(' ');
+  lastCommitDate = `${months[parseInt(month) - 1]} ${year}`;
+} catch {
+  const now = new Date();
+  lastCommitDate = `${months[now.getMonth()]} ${now.getFullYear()}`;
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
