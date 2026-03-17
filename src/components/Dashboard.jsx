@@ -296,6 +296,10 @@ export default function Dashboard({ sidebarOpen, setSidebarOpen, onLogoutRequest
         }
       }
 
+      if (filters.voto_emitido !== undefined && filters.voto_emitido !== '') {
+        query = query.eq('voto_emitido', filters.voto_emitido);
+      }
+
       if (filters.mesa_numero) {
         query = query.order('orden', { ascending: true });
       } else {
