@@ -212,7 +212,7 @@ export default function SearchResults({
         {localResults.map((record) => (
           <div
             key={record.documento}
-            className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow duration-200"
+            className={`border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow duration-200 ${userRole && userRole <= 3 && record.voto_emitido ? 'bg-green-50' : ''}`}
           >
             {/* NIVEL 1: Identificación principal - Apellido y Nombre */}
             <div className="mb-2">
@@ -281,7 +281,7 @@ export default function SearchResults({
                 <div className="flex items-center justify-center">
                   {record.voto_emitido !== null && (
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      record.voto_emitido ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      record.voto_emitido ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800'
                     }`}>
                       {record.voto_emitido ? 'Votó' : 'No.Votó'}
                     </span>

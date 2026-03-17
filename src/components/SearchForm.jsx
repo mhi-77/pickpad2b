@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Search, Filter, RefreshCw, User, Users, MapPin, Hash } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Componente SearchForm - Formulario de búsqueda en el padrón electoral
- * 
+ *
  * Propósito: Proporciona una interfaz para buscar registros en el padrón electoral
  * con opciones de búsqueda simple (por documento) y avanzada (múltiples campos).
- * 
+ *
  * Props:
  * - onSearch: function - Callback que se ejecuta cuando se realiza una búsqueda
  * - isLoading: boolean - Indica si se está procesando una búsqueda
  * - availableLocalities: array - Lista de localidades disponibles para el dropdown
  */
 export default function SearchForm({ onSearch, isLoading, availableLocalities = [], onClear }) {
+  const { user } = useAuth();
+  const isPrivilegedUser = user?.usuario_tipo <= 3;
   // Estado para almacenar todos los filtros de búsqueda
   const [filters, setFilters] = useState({});
   // Estado para controlar si se muestra la búsqueda avanzada o simple
@@ -56,7 +59,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
     } else {
       // Al desactivar búsqueda avanzada, limpiar todos los campos avanzados
       setFilters(prev => {
-        const { apellido, nombre, localidad, mesa_numero, clase, ...rest } = prev;
+        const { apellido, nombre, localidad, mesa_numero, clase, voto_emitido, ...rest } = prev;
         return rest;
       });
     }
@@ -73,7 +76,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
     setFilters(prev => {
       const newFilters = { ...prev };
 
-      if (!value || value === '') {
+      if (value === undefined || value === null || value === '') {
         delete newFilters[key];
       } else {
         newFilters[key] = value;
@@ -113,7 +116,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
               type="number"
               value={filters.documento || ''}
               onChange={(e) => updateFilter('documento', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               placeholder="Ej: 12345678"
             />
           </div>
@@ -137,7 +140,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
                   type="text"
                   value={filters.apellido || ''}
                   onChange={(e) => updateFilter('apellido', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Apellido del votante"
                 />
               </div>
@@ -154,7 +157,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
                   type="text"
                   value={filters.nombre || ''}
                   onChange={(e) => updateFilter('nombre', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   placeholder="Nombre del votante"
                 />
               </div>
@@ -170,7 +173,7 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
                 <select
                   value={filters.localidad || ''}
                   onChange={(e) => updateFilter('localidad', e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 >
                   <option value="">Todas las localidades</option>
                   {availableLocalities.map((localidad) => (
@@ -195,24 +198,48 @@ export default function SearchForm({ onSearch, isLoading, availableLocalities = 
                     type="number"
                     value={filters.mesa_numero || ''}
                     onChange={(e) => updateFilter('mesa_numero', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     placeholder="N° de mesa"
                   />
                 </div>
 
-                {/* Campo de clase (año de nacimiento) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Clase (Año)
-                  </label>
-                  <input
-                    type="number"
-                    value={filters.clase || ''}
-                    onChange={(e) => updateFilter('clase', e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                    placeholder="Ej: 1977"
-                  />
-                </div>
+                {/* Campo de clase (año de nacimiento) o Estado de Votación según tipo de usuario */}
+                {isPrivilegedUser ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Estado de Votación
+                    </label>
+                    <select
+                      value={filters.voto_emitido !== undefined ? String(filters.voto_emitido) : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          updateFilter('voto_emitido', '');
+                        } else {
+                          updateFilter('voto_emitido', val === 'true');
+                        }
+                      }}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    >
+                      <option value="">Todos</option>
+                      <option value="true">Votó</option>
+                      <option value="false">No Votó</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Clase (Año)
+                    </label>
+                    <input
+                      type="number"
+                      value={filters.clase || ''}
+                      onChange={(e) => updateFilter('clase', e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Ej: 1977"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
