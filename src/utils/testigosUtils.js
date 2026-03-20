@@ -1,5 +1,3 @@
-// utils/testigosUtils.js
-
 /**
  * Calcula el porcentaje de eficiencia de la mesa testigo
  * @param {number} pilaFaltante - Boletas que faltaron del montón
@@ -17,8 +15,8 @@ export const calculateTestigoPercentage = (pilaFaltante, votosDiferencia) => {
  * @returns {object} - Clasificación con color y texto
  */
 export const classifyTestigoSample = (percentage) => {
-  const perc = Math.abs(percentage - 100); // Distancia del 100% ideal
-  
+  const perc = Math.abs(percentage - 100);
+
   if (perc <= 5) {
     return {
       level: 'excellent',
@@ -57,7 +55,7 @@ export const classifyTestigoSample = (percentage) => {
  */
 export const calculateAggregateStats = (samples) => {
   const validSamples = samples.filter(s => s.muestra_valida && s.votos_diferencia > 0);
-  
+
   if (validSamples.length === 0) {
     return {
       totalSamples: samples.length,
@@ -69,19 +67,16 @@ export const calculateAggregateStats = (samples) => {
     };
   }
 
-  // Calcular porcentajes
-  const percentages = validSamples.map(s => 
+  const percentages = validSamples.map(s =>
     calculateTestigoPercentage(s.pila_faltante, s.votos_diferencia)
   );
 
-  // Estadísticas básicas
   const sum = percentages.reduce((a, b) => a + b, 0);
   const average = sum / percentages.length;
-  
+
   const sortedPercentages = [...percentages].sort((a, b) => a - b);
   const median = sortedPercentages[Math.floor(sortedPercentages.length / 2)];
 
-  // Nivel de confianza basado en cantidad y dispersión
   const standardDeviation = Math.sqrt(
     percentages.reduce((sq, p) => sq + Math.pow(p - average, 2), 0) / percentages.length
   );
@@ -100,7 +95,7 @@ export const calculateAggregateStats = (samples) => {
     medianPercentage: Math.round(median * 10) / 10,
     standardDeviation: Math.round(standardDeviation * 10) / 10,
     confidenceLevel,
-    participationEstimate: Math.round(average), // Estimación simple
+    participationEstimate: Math.round(average),
     qualityDistribution: getQualityDistribution(percentages)
   };
 };
@@ -189,7 +184,6 @@ export const validateTestigoData = (data) => {
   const errors = [];
   const warnings = [];
 
-  // Validaciones básicas
   if (!data.pila_inicio || data.pila_inicio <= 0) {
     errors.push('La pila inicial debe ser mayor a 0');
   }
@@ -202,7 +196,6 @@ export const validateTestigoData = (data) => {
     errors.push('La pila retirada no puede ser mayor a la inicial');
   }
 
-  // Validaciones de lógica
   const pilaFaltante = data.pila_inicio - data.pila_retirada;
   if (data.votos_diferencia && pilaFaltante > data.votos_diferencia * 2) {
     warnings.push('Las boletas faltantes son muy superiores a los votos registrados');

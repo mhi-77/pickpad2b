@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Filter, RefreshCw, User, AlertCircle, MousePointerClick, ToggleLeft, ToggleRight } from 'lucide-react';
-import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
+import { loadEmopicksWithCount, formatEmopickDisplay } from '../../services/emopicksService';
 import Pagination from '../shared/Pagination';
 
 /**

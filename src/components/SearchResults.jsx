@@ -20,7 +20,7 @@ import PickModal from './gpicks/PickModal';
 import Pagination from './shared/Pagination';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { canEditPick, getBlockedMessage, updatePadronPick } from './gusers/PickService';
+import { canEditPick, getBlockedMessage, updatePadronPick } from '../services/pickService';
 
 /**
  * @param {Array} results - Array de registros de votantes a mostrar

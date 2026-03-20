@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { SquarePen, User, MapPin, Hash, FileText, AlertCircle, Users, CheckCircle, XCircle, Filter, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { loadEmopicksWithCount, loadAllEmopicks, formatEmopickDisplay } from '../utils/emopicksUtils';
+import { loadEmopicksWithCount, loadAllEmopicks, formatEmopickDisplay } from '../services/emopicksService';
 import Pagination from './shared/Pagination';
 import PickModal from './gpicks/PickModal';
 import ConfirmUncheckModal from './gpicks/ConfirmUncheckModal';
-import { canEditPick, getBlockedMessage, updatePadronPick, updatePickCheck } from './gusers/PickService';
+import { canEditPick, getBlockedMessage, updatePadronPick, updatePickCheck } from '../services/pickService';
 
 /**
  * Formatea un timestamp a formato "DD/MM HH:mm" o solo "HH:mm" si es hoy

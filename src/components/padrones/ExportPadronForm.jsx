@@ -8,7 +8,7 @@ import {
   generateFileName,
   exportToExcelWithFormat
 } from '../../utils/exportUtils';
-import { loadEmopicksWithCount, formatEmopickDisplay } from '../../utils/emopicksUtils';
+import { loadEmopicksWithCount, formatEmopickDisplay } from '../../services/emopicksService';
 
 /**
  * Componente ExportPadronForm - Exportación de datos del padrón electoral
