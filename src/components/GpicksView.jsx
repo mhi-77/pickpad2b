@@ -90,6 +90,7 @@ export default function GpicksView() {
   const [availableEmopicks, setAvailableEmopicks] = useState([]);
   const [allEmopicks, setAllEmopicks] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [availableMesas, setAvailableMesas] = useState([]);
 
   // Estados para el modal de edición de picks
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,7 +124,7 @@ export default function GpicksView() {
     if (user?.id && filtersReady) {
       fetchGpicks();
     }
-  }, [user?.id, filtersReady, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, currentPage, pageSize, sortField, sortDirection, refreshTrigger]);
+  }, [user?.id, filtersReady, filterAssignedByUserId, filterVoteStatus, filterVerified, filterEmopickId, filterMesa, currentPage, pageSize, sortField, sortDirection, refreshTrigger]);
 
   /**
    * Carga los datos necesarios para poblar los selectores de filtros
@@ -153,6 +154,27 @@ export default function GpicksView() {
         // Si el usuario NO tiene picks, establecer el filtro en '' (todos los usuarios)
         // Si el usuario tiene picks, establecer el filtro en su ID
         setFilterAssignedByUserId(userHasPicks ? user.id : '');
+      }
+
+      // Cargar mesas que tienen al menos un pick asignado
+      const { data: mesasData } = await supabase
+        .from('padron')
+        .select('mesa_numero, mesas(numero, mesa_localidad)')
+        .not('emopick_id', 'is', null)
+        .not('mesa_numero', 'is', null);
+
+      if (mesasData) {
+        const mesasMap = new Map();
+        mesasData.forEach(row => {
+          if (row.mesa_numero && !mesasMap.has(row.mesa_numero)) {
+            mesasMap.set(row.mesa_numero, {
+              numero: row.mesa_numero,
+              localidad: row.mesas?.mesa_localidad || ''
+            });
+          }
+        });
+        const sortedMesas = Array.from(mesasMap.values()).sort((a, b) => a.numero - b.numero);
+        setAvailableMesas(sortedMesas);
       }
 
       // Marcar los filtros como listos para habilitar fetchGpicks.
@@ -221,6 +243,10 @@ export default function GpicksView() {
       // '' = todos los usuarios (no aplica filtro), <uuid> = filtrar por ese usuario
       if (filterAssignedByUserId && filterAssignedByUserId !== '') {
         query = query.eq('emopick_user', filterAssignedByUserId);
+      }
+
+      if (filterMesa !== '') {
+        query = query.eq('mesa_numero', parseInt(filterMesa));
       }
 
       // Aplicar paginación y ordenamiento
@@ -634,10 +660,19 @@ export default function GpicksView() {
               </label>
               <select
                 value={filterMesa}
-                onChange={(e) => setFilterMesa(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                onChange={(e) => {
+                  setFilterMesa(e.target.value);
+                  setCurrentPage(1);
+                }}
+                disabled={availableMesas.length === 0}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100"
               >
-                <option value="">Todos</option>
+                <option value="">Todas</option>
+                {availableMesas.map((mesa) => (
+                  <option key={mesa.numero} value={mesa.numero}>
+                    {mesa.numero}{mesa.localidad ? ` - ${mesa.localidad}` : ''}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -687,12 +722,12 @@ export default function GpicksView() {
             <table className="w-full" style={{minWidth: '670px'}}>
               <thead className="bg-gray-300">
                 <tr>
-                  <th colSpan={5} className="px-4 py-2">
+                  <th colSpan={5} className="px-3 py-2">
                     <div className="grid gap-x-2 gap-y-1 items-center text-xs"
-                         style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(10px, 1fr) minmax(99px, 1fr) 82px'}}>
+                         style={{gridTemplateColumns: '67px minmax(185px, 1fr) minmax(30px, 1fr) minmax(99px, 1fr) 82px'}}>
                       <button
                         onClick={() => handleSort('emopick_id')}
-                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-2 py-1 rounded ${
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-0.5 py-1 rounded ${
                           sortField === 'emopick_id' ? 'text-blue-700' : 'text-gray-900'
                         }`}
                       >
@@ -701,16 +736,22 @@ export default function GpicksView() {
                       </button>
                       <button
                         onClick={() => handleSort('apellido')}
-                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-2 py-1 rounded ${
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-0.5 py-1 rounded ${
                           sortField === 'apellido' ? 'text-blue-700' : 'text-gray-900'
                         }`}
                       >
                         Votante
                         {getSortIcon('apellido')}
                       </button>
-                      <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
-                        Localidad
-                      </div>
+                      <button
+                        onClick={() => handleSort('mesa_numero')}
+                        className={`flex items-center font-bold uppercase tracking-wider text-left transition-colors hover:bg-gray-200 px-0.5 py-1 rounded ${
+                          sortField === 'mesa_numero' ? 'text-blue-700' : 'text-gray-900'
+                        }`}
+                      >
+                        Mesa-Localidad
+                        {getSortIcon('mesa_numero')}
+                      </button>
                       <div className="font-bold text-gray-900 uppercase tracking-wider text-left">
                         Domicilio
                       </div>
@@ -767,7 +808,9 @@ export default function GpicksView() {
                         </div>
                         <div>
                           <span className="text-xs text-gray-700">
-                            {record.mesas?.mesa_localidad || 'No especificada'}
+                            {record.mesa_numero && record.mesas?.mesa_localidad
+                              ? `${record.mesa_numero} - ${record.mesas.mesa_localidad}`
+                              : record.mesas?.mesa_localidad || 'No especificada'}
                           </span>
                         </div>
                         <div>
