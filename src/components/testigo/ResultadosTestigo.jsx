@@ -46,17 +46,17 @@ export default function ResultadosTestigo() {
   const fetchLocalidades = async () => {
     try {
       const { data, error } = await supabase
-        .from('circuitos')
-        .select('localidad')
-        .not('localidad', 'is', null)
-        .order('localidad');
+        .from('mesas')
+        .select('mesa_localidad')
+        .not('mesa_localidad', 'is', null)
+        .order('mesa_localidad');
 
       if (error) {
         console.error('Error fetching localidades:', error);
         return;
       }
 
-      const uniqueLocalidades = [...new Set(data.map(item => item.localidad))];
+      const uniqueLocalidades = [...new Set(data.map(item => item.mesa_localidad))];
       setAvailableLocalidades(uniqueLocalidades);
     } catch (error) {
       console.error('Error loading localidades:', error);
@@ -80,11 +80,9 @@ export default function ResultadosTestigo() {
           ),
           mesas!testigos_mesa_numero_fkey(
             numero,
+            mesa_localidad,
             establecimientos(
-              nombre,
-              circuitos(
-                localidad
-              )
+              nombre
             )
           )
         `);
@@ -99,7 +97,7 @@ export default function ResultadosTestigo() {
         }
 
         if (filterLocalidad) {
-          query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filterLocalidad}%`);
+          query = query.ilike('mesas.mesa_localidad', `%${filterLocalidad}%`);
         }
       }
 
@@ -398,7 +396,7 @@ export default function ResultadosTestigo() {
                         Mesa {record.mesa_numero}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {record.mesas?.establecimientos?.circuitos?.localidad || 'N/A'}
+                        {record.mesas?.mesa_localidad || 'N/A'}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                         {record.mesas?.establecimientos?.nombre || 'N/A'}

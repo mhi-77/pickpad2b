@@ -122,23 +122,23 @@ export default function Dashboard({ sidebarOpen, setSidebarOpen, onLogoutRequest
   }, []);
 
   /**
-   * Obtiene la lista de localidades únicas desde la tabla circuitos
+   * Obtiene la lista de localidades únicas desde la tabla mesas
+   * Usa mesa_localidad directamente en lugar de hacer joins hacia circuitos
    */
   const fetchLocalities = async () => {
     try {
       const { data, error } = await supabase
-        .from('circuitos')
-        .select('localidad')
-        .not('localidad', 'is', null)
-        .order('localidad');
+        .from('mesas')
+        .select('mesa_localidad')
+        .not('mesa_localidad', 'is', null)
+        .order('mesa_localidad');
 
       if (error) {
         console.error('Error fetching localities:', error);
         return;
       }
 
-      // Extraer localidades únicas
-      const uniqueLocalities = [...new Set(data.map(item => item.localidad))];
+      const uniqueLocalities = [...new Set(data.map(item => item.mesa_localidad))];
       setAvailableLocalities(uniqueLocalities);
     } catch (error) {
       console.error('Error loading localities:', error);
@@ -246,14 +246,7 @@ export default function Dashboard({ sidebarOpen, setSidebarOpen, onLogoutRequest
         ),
         mesas!inner(
           numero,
-          establecimientos!inner(
-            id,
-            nombre,
-            circuitos!inner(
-              codigo,
-              localidad
-            )
-          )
+          mesa_localidad
         )
       `, { count: 'exact' });
 
@@ -275,10 +268,13 @@ export default function Dashboard({ sidebarOpen, setSidebarOpen, onLogoutRequest
       }
 
       if (filters.localidad) {
-        query = query.ilike('mesas.establecimientos.circuitos.localidad', `%${filters.localidad}%`);
+        query = query.ilike('mesas.mesa_localidad', `%${filters.localidad}%`);
       }
 
       if (filters.circuito) {
+        // Este filtro requiere el join anidado hacia circuitos porque mesa_localidad
+        // solo almacena la localidad, no el código de circuito. Se mantiene el
+        // path nested para este campo específico.
         query = query.ilike('mesas.establecimientos.circuitos.codigo', `%${filters.circuito}%`);
       }
 

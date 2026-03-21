@@ -70,6 +70,7 @@ export default function GpicksView() {
   // Estados para filtros
   const [filterVoteStatus, setFilterVoteStatus] = useState('all');
   const [filterVerified, setFilterVerified] = useState(null); // null = todos, true = verificados, false = no verificados
+  const [filterMesa, setFilterMesa] = useState('');
 
   const [filterEmopickId, setFilterEmopickId] = useState('');
 
@@ -181,13 +182,10 @@ export default function GpicksView() {
           *,
           mesas(
             numero,
+            mesa_localidad,
             establecimientos(
               id,
-              nombre,
-              circuitos(
-                codigo,
-                localidad
-              )
+              nombre
             )
           ),
           emopicks(
@@ -262,6 +260,7 @@ export default function GpicksView() {
     setFilterVoteStatus('all');
     setFilterVerified(null);
     setFilterEmopickId('');
+    setFilterMesa('');
     const userHasPicks = availableUsers?.some(u => u.id === user?.id);
     setFilterAssignedByUserId(userHasPicks ? user.id : '');
     setSortField('emopick_id');
@@ -529,15 +528,27 @@ export default function GpicksView() {
       
       {/* Panel de filtros */}
       <div className="bg-white rounded-xl shadow-lg p-3">
-        <div className="flex items-center space-x-2 mb-2">
-          <Filter className="w-5 h-5 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-5 h-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
+          </div>
+          <div>
+            <button
+              onClick={handleClearFilters}
+              disabled={isLoading}
+              className="flex items-center space-x-2 px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 text-m"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Limpiar Filtros</span>
+            </button>
+          </div>
         </div>
         
         <div className="space-y-2">
           {/* Línea 1: Marcados por (ancho completo) */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Marcados por
             </label>
             <select
@@ -562,7 +573,7 @@ export default function GpicksView() {
           <div className="grid grid-cols-2 gap-3">    
             {/* Filtro por tipo de emopick */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Pick
               </label>
               <select
@@ -581,7 +592,7 @@ export default function GpicksView() {
             
             {/* Filtro por estado de votación */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Estado de Votación
               </label>
               <select
@@ -596,13 +607,13 @@ export default function GpicksView() {
             </div>
           </div>
 
-          {/* Línea 3: Check de gestión y botón Limpiar Filtros */}
-          <div className="grid grid-cols-2 gap-3 items-end">
+          {/* Línea 3: Check de gestión y Mesa */}
+          <div className="grid grid-cols-2 gap-3">
             {/* Filtro por estado de verificación
                 Usa conversión toString/parse para evitar value={null} en el select,
                 ya que React no acepta null como value en elementos controlados */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Check
               </label>
               <select
@@ -616,16 +627,18 @@ export default function GpicksView() {
               </select>
             </div>
 
-            {/* Botón de limpiar filtros */}
+            {/* Filtro por mesa */}
             <div>
-              <button
-                onClick={handleClearFilters}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50"
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mesa
+              </label>
+              <select
+                value={filterMesa}
+                onChange={(e) => setFilterMesa(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span>Limpiar Filtros</span>
-              </button>
+                <option value="">Todos</option>
+              </select>
             </div>
           </div>
         </div>
@@ -754,7 +767,7 @@ export default function GpicksView() {
                         </div>
                         <div>
                           <span className="text-xs text-gray-700">
-                            {record.mesas?.establecimientos?.circuitos?.localidad || 'No especificada'}
+                            {record.mesas?.mesa_localidad || 'No especificada'}
                           </span>
                         </div>
                         <div>

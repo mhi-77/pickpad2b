@@ -86,11 +86,9 @@ const formatNumber = (num) => {
           numero,
           total_empadronados,
           total_votaron,
+          mesa_localidad,
           establecimientos (
-            nombre,
-            circuitos (
-              localidad
-            )
+            nombre
           )
         `)
         .not('total_empadronados', 'eq', 0); // Evita mesas sin empadronados
@@ -145,10 +143,10 @@ const formatNumber = (num) => {
       setHoraActual(horaFormateada);
 
       // --- 4. RESUMEN POR LOCALIDAD ---
-      // Agrupamos mesas por localidad (desde circuitos)
+      // Agrupamos mesas por localidad
       const localidadesMap = new Map();
       for (const mesa of mesasData || []) {
-        const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
+        const localidad = mesa.mesa_localidad || 'Sin localidad';
         if (!localidadesMap.has(localidad)) {
           localidadesMap.set(localidad, { empadronados: 0, votaron: 0 });
         }

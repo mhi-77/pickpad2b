@@ -68,11 +68,9 @@ export default function FiscalesList({ userTypes = [] }) {
         .select(`
           numero,
           total_fiscales_asignados,
+          mesa_localidad,
           establecimientos (
-            nombre,
-            circuitos (
-              localidad
-            )
+            nombre
           )
         `)
         .order('numero', { ascending: true });
@@ -688,7 +686,7 @@ export default function FiscalesList({ userTypes = [] }) {
                   {mesasData.map(mesa => {
                     const asignados = fiscalesPorMesa.get(mesa.numero) || 0;
                     const establecimiento = mesa.establecimientos?.nombre || 'Sin establecimiento';
-                    const localidad = mesa.establecimientos?.circuitos?.localidad || 'Sin localidad';
+                    const localidad = mesa.mesa_localidad || 'Sin localidad';
                     return (
                       <tr key={mesa.numero} className="hover:bg-gray-50">
                         <td className="px-4 py-2 font-medium">{mesa.numero}</td>

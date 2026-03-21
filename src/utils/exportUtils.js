@@ -152,7 +152,7 @@ export const processExtendedBasicData = (data) => {
       'Clase': record.clase || '',
       'Domicilio': record.domicilio || '',
       'Mesa N°': record.mesa_numero || '',
-      'Localidad': record.mesas?.establecimientos?.circuitos?.localidad || ''
+      'Localidad': record.mesas?.mesa_localidad || ''
     };
   });
 };

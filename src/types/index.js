@@ -53,10 +53,9 @@
  * @property {string|null} profiles.full_name
  * @property {Object|null} mesas
  * @property {number|null} mesas.numero
+ * @property {string|null} mesas.mesa_localidad
  * @property {Object|null} mesas.establecimientos
  * @property {string|null} mesas.establecimientos.nombre
- * @property {Object|null} mesas.establecimientos.circuitos
- * @property {string|null} mesas.establecimientos.circuitos.localidad
  */
 
 

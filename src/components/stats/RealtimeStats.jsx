@@ -309,13 +309,10 @@ export default function RealtimeStats() {
           pick_check_user,
           mesas!inner(
             numero,
+            mesa_localidad,
             establecimientos!inner(
               id,
-              nombre,
-              circuitos!inner(
-                codigo,
-                localidad
-              )
+              nombre
             )
           ),
           emopicks(
@@ -861,9 +858,9 @@ export default function RealtimeStats() {
                     {/* Columna: Número de mesa */}
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-center text-gray-900">{voter.mesa_numero}</td>
 
-                    {/* Columna: Localidad (obtenida via joins) */}
+                    {/* Columna: Localidad */}
                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                      {voter.mesas?.establecimientos?.circuitos?.localidad || 'N/A'}
+                      {voter.mesas?.mesa_localidad || 'N/A'}
                     </td>
                   </tr>
                 ))}

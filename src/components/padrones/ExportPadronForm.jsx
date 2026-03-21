@@ -168,11 +168,9 @@ export default function ExportPadronForm() {
         pick_check_user_profile:profiles!padron_pick_check_user_fkey(full_name),
         mesas(
           numero,
+          mesa_localidad,
           establecimientos(
-            nombre,
-            circuitos(
-              localidad
-            )
+            nombre
           )
         )
       `)
@@ -216,11 +214,9 @@ export default function ExportPadronForm() {
             pick_check_user_profile:profiles!padron_pick_check_user_fkey(full_name),
             mesas(
               numero,
+              mesa_localidad,
               establecimientos(
-                nombre,
-                circuitos(
-                  localidad
-                )
+                nombre
               )
             )
           `)

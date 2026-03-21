@@ -247,7 +247,7 @@ export default function SearchResults({
                 <span>Mesa: {record.mesa_numero || '---'}</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span> {record.mesas?.establecimientos?.circuitos?.localidad || 'No especificada'}</span>
+                <span> {record.mesas?.mesa_localidad || 'No especificada'}</span>
               </div>
             </div>
 

@@ -97,14 +97,10 @@ export default function ReportsStats() {
         .select(`
           voto_emitido,
           mesas!inner(
-            establecimientos!inner(
-              circuitos!inner(
-                localidad
-              )
-            )
+            mesa_localidad
           )
         `)
-        .not('mesas.establecimientos.circuitos.localidad', 'is', null);
+        .not('mesas.mesa_localidad', 'is', null);
 
       if (error) throw error;
 
@@ -112,7 +108,7 @@ export default function ReportsStats() {
       const localidadMap = new Map();
       
       data.forEach(registro => {
-        const localidad = registro.mesas?.establecimientos?.circuitos?.localidad;
+        const localidad = registro.mesas?.mesa_localidad;
         if (localidad) {
           if (!localidadMap.has(localidad)) {
             localidadMap.set(localidad, { total: 0, votaron: 0 });
