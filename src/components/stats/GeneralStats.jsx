@@ -4,6 +4,8 @@
 // Muestra métricas clave: participación, mesas, sexo, edad, etc.
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { supabase } from '../../lib/supabase';
 import {
   Users,
@@ -18,7 +20,10 @@ import {
   ToggleLeft,
   ToggleRight,
   X,
-  BarChart3
+  BarChart3,
+  List,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   calcularTendenciaProyectada,
@@ -26,6 +31,8 @@ import {
   obtenerColorTendencia,
   obtenerHoraFormateada
 } from '../../utils/tendenciaParticipacion';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // Función de debounce para evitar múltiples llamadas rápidas
 // Útil si hay muchos cambios en tiempo real
@@ -53,13 +60,21 @@ export default function GeneralStats() {
     localidades: [] // Participación por localidad
   });
 
+  const [ultimosVotos, setUltimosVotos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isRealtime, setIsRealtime] = useState(false); // Modo manual por defecto
-  const [showMesasModal, setShowMesasModal] = useState(false); // Modal de mesas
-  const [showTendencia, setShowTendencia] = useState(false); // Toggle para mostrar tendencia
+  const [isRealtime, setIsRealtime] = useState(false);
+  const [showMesasModal, setShowMesasModal] = useState(false);
+  const [showTendencia, setShowTendencia] = useState(false);
   const [horaActual, setHoraActual] = useState('');
   const [puedeCalcularTendencia, setPuedeCalcularTendencia] = useState(false);
+
+  const [showVotosModal, setShowVotosModal] = useState(false);
+  const [modalVotos, setModalVotos] = useState([]);
+  const [modalPage, setModalPage] = useState(1);
+  const [modalTotal, setModalTotal] = useState(0);
+  const [modalLoading, setModalLoading] = useState(false);
+  const MODAL_PAGE_SIZE = 50;
   
 // Formatea números con punto como separador de miles y coma como decimal
 const formatNumber = (num) => {
@@ -68,6 +83,55 @@ const formatNumber = (num) => {
     maximumFractionDigits: 2
   }).format(num);
 };
+
+  const fetchVotosModal = async (page) => {
+    setModalLoading(true);
+    try {
+      const from = (page - 1) * MODAL_PAGE_SIZE;
+      const to = from + MODAL_PAGE_SIZE - 1;
+
+      const { data, count, error: fetchError } = await supabase
+        .from('padron')
+        .select(`
+          documento,
+          apellido,
+          nombre,
+          mesa_numero,
+          voto_pick_at,
+          emopick_id,
+          emopicks!left(display),
+          mesas!left(mesa_localidad)
+        `, { count: 'exact' })
+        .eq('voto_emitido', true)
+        .not('voto_pick_at', 'is', null)
+        .order('voto_pick_at', { ascending: false })
+        .range(from, to);
+
+      if (fetchError) throw fetchError;
+
+      const mapped = (data || []).map(v => ({
+        hora: new Date(v.voto_pick_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        mesa: v.mesa_numero,
+        localidad: v.mesas?.mesa_localidad || '-',
+        votante: `${v.apellido}, ${v.nombre}`,
+        documento: v.documento,
+        pick: v.emopicks?.display || (v.emopick_id ? `#${v.emopick_id}` : null)
+      }));
+
+      setModalVotos(mapped);
+      setModalTotal(count || 0);
+      setModalPage(page);
+    } catch (err) {
+      console.error('Error cargando votos modal:', err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const openVotosModal = () => {
+    setShowVotosModal(true);
+    fetchVotosModal(1);
+  };
 
   // Función principal para cargar todas las estadísticas
   const fetchGeneralStats = async () => {
@@ -268,7 +332,40 @@ const formatNumber = (num) => {
         console.error('RPC get_votos_por_hora_art falló:', err);
       }
 
-      // --- 10. ACTUALIZAR ESTADO ---
+      // --- 10. ULTIMOS 5 VOTOS EMITIDOS ---
+      let ultimosVotosData = [];
+      try {
+        const { data: votosData } = await supabase
+          .from('padron')
+          .select(`
+            documento,
+            apellido,
+            nombre,
+            mesa_numero,
+            voto_pick_at,
+            emopick_id,
+            emopicks!left(display),
+            mesas!left(mesa_localidad)
+          `)
+          .eq('voto_emitido', true)
+          .not('voto_pick_at', 'is', null)
+          .order('voto_pick_at', { ascending: false })
+          .limit(5);
+
+        ultimosVotosData = (votosData || []).map(v => ({
+          hora: new Date(v.voto_pick_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          mesa: v.mesa_numero,
+          localidad: v.mesas?.mesa_localidad || '-',
+          votante: `${v.apellido}, ${v.nombre}`,
+          documento: v.documento,
+          pick: v.emopicks?.display || (v.emopick_id ? `#${v.emopick_id}` : null)
+        }));
+      } catch (err) {
+        console.error('Error cargando últimos votos:', err);
+      }
+      setUltimosVotos(ultimosVotosData);
+
+      // --- 11. ACTUALIZAR ESTADO ---
       // Todo listo, actualizamos el estado
       setStats({
         totalEmpadronados,
@@ -346,7 +443,9 @@ const formatNumber = (num) => {
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
             {/* <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2> */}
-            <p className="text-sm text-gray-600">Activa tiempo real para actualización automática</p>
+            <p className={`text-sm ${isRealtime ? 'text-red-800' : 'text-gray-600'}`}>
+              {isRealtime ? 'Vuelve a modo manual para ahorrar datos' : 'Activa tiempo real para actualización automática'}
+            </p>
           </div>
           <div className="flex items-center">
             {/* Botón para activar/desactivar modo en tiempo real */}
@@ -436,6 +535,93 @@ const formatNumber = (num) => {
                     <p className="text-sm text-purple-700">Mesas Activas</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Ultimos 5 votos registrados */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-900">Últimos Votos Registrados</h3>
+                <button
+                  type="button"
+                  onClick={openVotosModal}
+                  className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg transition-colors"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>Ver historial</span>
+                </button>
+              </div>
+              {ultimosVotos.length === 0 ? (
+                <p className="text-gray-500 text-sm">No hay votos registrados aún</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Hora</th>
+                        <th className="px-2 py-1 text-right text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                        <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                        <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Votante</th>
+                        <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
+                        <th className="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase">Pick</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {ultimosVotos.map((v, i) => (
+                        <tr key={i} className={`hover:bg-gray-50 ${v.pick ? 'text-green-800' : ''}`}>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.hora}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-right">{v.mesa}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.localidad}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.votante}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.documento}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">
+                            {v.pick ? v.pick : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Gráfico de barras: Participación por hora */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Participación por Hora</h3>
+              </div>
+              <div className="h-72">
+                {stats.participacionPorHora.some(item => item.count > 0) ? (
+                  <Bar
+                    data={{
+                      labels: stats.participacionPorHora.map(item => item.hour),
+                      datasets: [{
+                        label: 'Votos por Hora',
+                        data: stats.participacionPorHora.map(item => item.count),
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'top', labels: { font: { size: 12 } } },
+                        title: { display: false }
+                      },
+                      scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Número de Votos' } },
+                        x: { title: { display: true, text: 'Hora del Día' } }
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                    No hay datos de participación por hora disponibles
+                  </div>
+                )}
               </div>
             </div>
 
@@ -530,18 +716,34 @@ const formatNumber = (num) => {
       DESACTIVADO HASTA ACA - CAMBIAR DE PESTAÑA O ELIMINAR  /*}
             
             {/* Participación por hora */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-2">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Participación por Rango Horario</h3>
               {stats.participacionPorHora.every(item => item.count === 0) ? (
                 <p className="text-gray-500 text-sm">No hay datos de horario registrados</p>
               ) : (
-                <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {stats.participacionPorHora.map((item, index) => (
-                    <div key={index} className="text-center">
-                      <div className="text-sm text-gray-600">{item.hour}</div>
-                      <div className="text-lg font-bold text-blue-600">{formatNumber(item.count)}</div>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-5 gap-4">
+                    {['08:00','09:00','10:00','11:00','12:00'].map(h => {
+                      const item = stats.participacionPorHora.find(i => i.hour === h);
+                      return (
+                        <div key={h} className="text-center">
+                          <div className="text-sm text-gray-600">{h}</div>
+                          <div className="text-lg font-bold text-blue-600">{formatNumber(item?.count || 0)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="grid grid-cols-5 gap-4">
+                    {['13:00','14:00','15:00','16:00','17:00'].map(h => {
+                      const item = stats.participacionPorHora.find(i => i.hour === h);
+                      return (
+                        <div key={h} className="text-center">
+                          <div className="text-sm text-gray-600">{h}</div>
+                          <div className="text-lg font-bold text-blue-600">{formatNumber(item?.count || 0)}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -735,6 +937,101 @@ const formatNumber = (num) => {
                 className="px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Historial de Votos */}
+      {showVotosModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowVotosModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Historial de Votos</h3>
+                {modalTotal > 0 && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {modalTotal.toLocaleString()} votos registrados &mdash; Página {modalPage} de {Math.ceil(modalTotal / MODAL_PAGE_SIZE)}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowVotosModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {modalLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-sm text-gray-500">Cargando...</span>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Hora</th>
+                        <th className="px-2 py-1.5 text-right text-xs font-medium text-gray-500 uppercase">Mesa</th>
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Localidad</th>
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Votante</th>
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Documento</th>
+                        <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500 uppercase">Pick</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {modalVotos.map((v, i) => (
+                        <tr key={i} className={`hover:bg-gray-50 ${v.pick ? 'text-green-800' : ''}`}>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.hora}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-right">{v.mesa}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.localidad}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.votante}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.documento}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">{v.pick || null}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Paginación */}
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => fetchVotosModal(modalPage - 1)}
+                disabled={modalPage <= 1 || modalLoading}
+                className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Anterior</span>
+              </button>
+
+              <span className="text-xs text-gray-500">
+                {modalTotal > 0
+                  ? `${((modalPage - 1) * MODAL_PAGE_SIZE) + 1}–${Math.min(modalPage * MODAL_PAGE_SIZE, modalTotal)} de ${modalTotal.toLocaleString()}`
+                  : ''}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => fetchVotosModal(modalPage + 1)}
+                disabled={modalPage >= Math.ceil(modalTotal / MODAL_PAGE_SIZE) || modalLoading}
+                className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <span>Siguiente</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
