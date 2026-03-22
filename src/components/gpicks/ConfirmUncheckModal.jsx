@@ -1,3 +1,20 @@
+/**
+ * ConfirmUncheckModal.jsx
+ *
+ * Modal de confirmación para quitar el check de una verificación ya confirmada.
+ * Se muestra cuando un usuario intenta revertir un check existente en el módulo de picks,
+ * informando quién realizó la verificación original y en qué momento.
+ *
+ * El modal no se renderiza si `isOpen` es false (early return para evitar montaje innecesario).
+ *
+ * Props:
+ * @param {boolean}  isOpen           - Controla la visibilidad del modal.
+ * @param {Function} onClose          - Callback invocado al cancelar o cerrar (botón X o "Cancelar").
+ * @param {Function} onConfirm        - Callback invocado al confirmar la acción de quitar el check.
+ * @param {string}   verifierName     - Nombre completo del usuario que realizó la verificación.
+ * @param {string}   verificationDate - Timestamp ISO de la fecha/hora en que se realizó el check.
+ */
+
 import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 
@@ -10,6 +27,12 @@ export default function ConfirmUncheckModal({
 }) {
   if (!isOpen) return null;
 
+  /**
+   * Convierte un string ISO a formato legible: "DD/MM/YYYY a las HH:MM".
+   *
+   * @param {string|null} isoString - Timestamp ISO (ej: "2026-03-22T14:35:00Z").
+   * @returns {string} Fecha formateada o cadena vacía si el valor es falsy.
+   */
   const formatDateTime = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -24,6 +47,7 @@ export default function ConfirmUncheckModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        {/* Encabezado: ícono de advertencia + título + botón de cierre */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -41,6 +65,7 @@ export default function ConfirmUncheckModal({
           </button>
         </div>
 
+        {/* Cuerpo: mensaje con nombre del verificador y fecha de la verificación */}
         <div className="mb-6">
           <p className="text-gray-700 leading-relaxed">
             ¿Está seguro de quitar el check de la verificación confirmada por{' '}
@@ -53,6 +78,7 @@ export default function ConfirmUncheckModal({
           </p>
         </div>
 
+        {/* Acciones: Cancelar (gris) y Confirmar (rojo) */}
         <div className="flex space-x-3">
           <button
             onClick={onClose}
